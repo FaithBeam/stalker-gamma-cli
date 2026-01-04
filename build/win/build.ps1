@@ -1,9 +1,9 @@
-﻿$ErrorActionPreference = 'Stop'
-$ProgressPreference = 'SilentlyContinue'
-
-param (
+﻿param (
     [string]$Version = "1.0.0"
 )
+
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 $scriptDir = $PSScriptRoot
 
