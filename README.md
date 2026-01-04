@@ -82,7 +82,7 @@ After installing homebrew:
 
 ```bash
 brew tap FaithBeam/stalker-gamma \
-brew install --cask stalker-gamma
+&& brew install --cask stalker-gamma
 ```
 
 ## Build
