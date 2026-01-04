@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "stalker-gamma-cli", "stalker-gamma-cli\stalker-gamma-cli.csproj", "{E6C325EE-8AAF-4E1F-86FD-2511822AD25B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stalker.Gamma", "Stalker.Gamma\Stalker.Gamma.csproj", "{B4D13DA9-D2C7-4A57-974C-DDAE853C2989}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E6C325EE-8AAF-4E1F-86FD-2511822AD25B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6C325EE-8AAF-4E1F-86FD-2511822AD25B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6C325EE-8AAF-4E1F-86FD-2511822AD25B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6C325EE-8AAF-4E1F-86FD-2511822AD25B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4D13DA9-D2C7-4A57-974C-DDAE853C2989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4D13DA9-D2C7-4A57-974C-DDAE853C2989}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4D13DA9-D2C7-4A57-974C-DDAE853C2989}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4D13DA9-D2C7-4A57-974C-DDAE853C2989}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
