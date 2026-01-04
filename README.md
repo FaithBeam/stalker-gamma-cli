@@ -57,6 +57,17 @@ Commands:
     ```
 6. (Linux/MacOS) `winetricks d3dcompiler_43 d3dcompiler_47 d3dx10 d3dx11_43 d3dx9 vcrun2022`
 7. Run gamma/ModOrganizer.exe
+
+#### homebrew
+
+macos users should prefer to use homebrew to install `stalker-gamma` cli.
+
+After installing homebrew:
+
+```bash
+brew tap FaithBeam/stalker-gamma \
+brew install --cask stalker-gamma
+```
    
 ### Update
 
