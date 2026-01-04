@@ -79,7 +79,7 @@ public class AnomalyInstallCmd(
             gammaProgressDisposable.Dispose();
         }
     }
-    
+
     /// <summary>
     /// Verifies the integrity of Stalker Anomaly
     /// </summary>
@@ -126,11 +126,19 @@ public class AnomalyInstallCmd(
             {
                 if (checksum.Md5 == await md5)
                 {
-                    _logger.Information(InformationalCheck, checksum.Path.PadRight(longestPath), "OK");
+                    _logger.Information(
+                        InformationalCheck,
+                        checksum.Path.PadRight(longestPath),
+                        "OK"
+                    );
                 }
                 else
                 {
-                    _logger.Error(InformationalCheck, checksum.Path.PadRight(longestPath), "CORRUPT");
+                    _logger.Error(
+                        InformationalCheck,
+                        checksum.Path.PadRight(longestPath),
+                        "CORRUPT"
+                    );
                 }
             }
             else
