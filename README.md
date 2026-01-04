@@ -81,8 +81,8 @@ macos users should prefer to use homebrew to install `stalker-gamma` cli.
 After installing homebrew:
 
 ```bash
-brew tap FaithBeam/stalker-gamma \
-&& brew install stalker-gamma
+brew tap FaithBeam/stalker-gamma
+brew install --cask stalker-gamma
 ```
 
 Enter your password and select always allow in the keychain
@@ -93,15 +93,15 @@ Enter your password and select always allow in the keychain
 **Linux**
 
 ```bash
-cd build/linux \
-&& make build
+cd build/linux
+make build
 ```
 
 **macOS**
 
 ```bash
-cd build/mac \
-&& make build
+cd build/mac
+make build
 ```
 
 **Windows**
