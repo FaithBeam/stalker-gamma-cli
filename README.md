@@ -83,16 +83,12 @@ cd build/linux \
 && make build
 ```
 
-Artifacts in the `build/stalker-gamma-cli` folder.
-
 **macOS**
 
 ```bash
 cd build/mac \
 && make build
 ```
-
-Artifacts in the `build/stalker-gamma-cli` folder.
 
 **Windows**
 
