@@ -48,7 +48,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma-cli+linux.x64
+          name: stalker-gamma-cli.${{ steps.gitversion.outputs.AssemblySemFileVer }}+linux.x64
           path: build/linux/build/stalker-gamma-cli
           compression-level: 9
 
@@ -91,7 +91,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma-cli+mac.arm64
+          name: stalker-gamma-cli.${{ steps.gitversion.outputs.AssemblySemFileVer }}+mac.arm64
           path: build/mac/build/stalker-gamma-cli
           compression-level: 9
 
@@ -129,6 +129,6 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma-cli+win.x64
+          name: stalker-gamma-cli.${{ steps.gitversion.outputs.AssemblySemFileVer }}+win.x64
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
