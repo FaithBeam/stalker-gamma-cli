@@ -74,20 +74,34 @@ Apply updates:
 ./stalker-gamma update apply
 ```
 
+## Homebrew
+
+macos users should prefer to use homebrew to install `stalker-gamma` cli.
+
+After installing homebrew:
+
+```bash
+brew tap FaithBeam/stalker-gamma
+brew install --cask stalker-gamma
+```
+
+Enter your password and select always allow in the keychain
+   - You're asked for your password because the install removes the quarantine attribute from multiple files and doing so requires your password
+
 ## Build
 
 **Linux**
 
 ```bash
-cd build/linux \
-&& make build
+cd build/linux
+make build
 ```
 
 **macOS**
 
 ```bash
-cd build/mac \
-&& make build
+cd build/mac
+make build
 ```
 
 **Windows**
