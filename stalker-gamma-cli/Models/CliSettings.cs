@@ -14,7 +14,10 @@ public class CliSettings
     {
         await File.WriteAllTextAsync(
             _settingsPath,
-            JsonSerializer.Serialize<CliSettings>(this, jsonTypeInfo: CliSettingsCtx.Default.CliSettings)
+            JsonSerializer.Serialize<CliSettings>(
+                this,
+                jsonTypeInfo: CliSettingsCtx.Default.CliSettings
+            )
         );
         return ActiveProfile?.ProfileName;
     }

@@ -42,7 +42,11 @@ public class CheckAnomalyCmd(ILogger logger, CliSettings cliSettings)
         await ValidateChecksums(checksums, actual, longestPath);
     }
 
-    private async Task ValidateChecksums(List<(string Md5, string Path)> checksums, Dictionary<string, Task<string>> actual, int longestPath)
+    private async Task ValidateChecksums(
+        List<(string Md5, string Path)> checksums,
+        Dictionary<string, Task<string>> actual,
+        int longestPath
+    )
     {
         foreach (var checksum in checksums)
         {
@@ -64,15 +68,24 @@ public class CheckAnomalyCmd(ILogger logger, CliSettings cliSettings)
         }
     }
 
-    private static async Task<Dictionary<string, Task<string>>> GetActualHashes(CancellationToken cancellationToken, string anomaly)
+    private static async Task<Dictionary<string, Task<string>>> GetActualHashes(
+        CancellationToken cancellationToken,
+        string anomaly
+    )
     {
-        var actual = await new FileSystemEnumerable<FileSystemInfo>(anomaly,
+        var actual = await new FileSystemEnumerable<FileSystemInfo>(
+            anomaly,
             transform: (ref entry) => entry.ToFileSystemInfo(),
-            new EnumerationOptions
-            {
-                RecurseSubdirectories = true,
-            }).Where(x => !x.Attributes.HasFlag(FileAttributes.Directory)).ToAsyncEnumerable().Select(x => x.FullName).ToDictionaryAsync(x => x,
-            async x => await HashUtility.Md5HashFile(x, cancellationToken), cancellationToken: cancellationToken);
+            new EnumerationOptions { RecurseSubdirectories = true }
+        )
+            .Where(x => !x.Attributes.HasFlag(FileAttributes.Directory))
+            .ToAsyncEnumerable()
+            .Select(x => x.FullName)
+            .ToDictionaryAsync(
+                x => x,
+                async x => await HashUtility.Md5HashFile(x, cancellationToken),
+                cancellationToken: cancellationToken
+            );
         return actual;
     }
 
@@ -81,27 +94,29 @@ public class CheckAnomalyCmd(ILogger logger, CliSettings cliSettings)
         string anomalyChecksumsPath
     ) =>
         (await File.ReadAllTextAsync(anomalyChecksumsPath))
-        .Split(
-            Environment.NewLine,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        )
-        .Select(line =>
-        {
-            var split = line.Split(
-                ' ',
-                2,
+            .Split(
+                Environment.NewLine,
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-            );
-            return
-                (split[0],
+            )
+            .Select(line =>
+            {
+                var split = line.Split(
+                    ' ',
+                    2,
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+                );
+                return (
+                    split[0],
                     Path.GetFullPath(
                         Path.Join(
                             split[1]
                                 .Replace("*", $"{anomaly}{Path.DirectorySeparatorChar}")
                                 .Replace('\\', Path.DirectorySeparatorChar)
                         )
-                    ));
-        }).ToList();
+                    )
+                );
+            })
+            .ToList();
 
     private readonly ILogger _logger = logger;
 

@@ -10,7 +10,7 @@ public enum HashType
 {
     Blake3,
     Sha256,
-    Md5
+    Md5,
 }
 
 public static class HashUtility
@@ -26,10 +26,17 @@ public static class HashUtility
     )
     {
         await using var zaS = File.Create(destinationArchive);
-        await using var za = await ZipArchive.CreateAsync(zaS, ZipArchiveMode.Create,
+        await using var za = await ZipArchive.CreateAsync(
+            zaS,
+            ZipArchiveMode.Create,
             cancellationToken: cancellationToken,
-            leaveOpen: false, entryNameEncoding: null);
-        var entry = za.CreateEntry($"hashes-{hashType}-{Environment.UserName}.txt", CompressionLevel.SmallestSize);
+            leaveOpen: false,
+            entryNameEncoding: null
+        );
+        var entry = za.CreateEntry(
+            $"hashes-{hashType}-{Environment.UserName}.txt",
+            CompressionLevel.SmallestSize
+        );
         await using var entryStream = await entry.OpenAsync(cancellationToken);
         await using var fs = new StreamWriter(entryStream);
         var files = GetFiles(anomaly).Concat(GetFiles(cache)).Concat(GetFiles(gamma)).ToList();
@@ -44,13 +51,15 @@ public static class HashUtility
         }
     }
 
-    private static IEnumerable<FileSystemInfo> GetFiles(string path) => new FileSystemEnumerable<FileSystemInfo>(path,
+    private static IEnumerable<FileSystemInfo> GetFiles(string path) =>
+        new FileSystemEnumerable<FileSystemInfo>(
+            path,
             transform: (ref entry) => entry.ToFileSystemInfo(),
-            new EnumerationOptions
-            {
-                RecurseSubdirectories = true
-            })
-        .Where(x => string.IsNullOrWhiteSpace(x.LinkTarget) && !x.Attributes.HasFlag(FileAttributes.Directory));
+            new EnumerationOptions { RecurseSubdirectories = true }
+        ).Where(x =>
+            string.IsNullOrWhiteSpace(x.LinkTarget)
+            && !x.Attributes.HasFlag(FileAttributes.Directory)
+        );
 
     public static IAsyncEnumerable<Task<KeyValuePair<string, string>>> GenerateFileHashesAsync(
         IEnumerable<FileSystemInfo> paths,
@@ -67,12 +76,15 @@ public static class HashUtility
                     HashType.Blake3 => await Blake3HashFile(x, cancellationToken),
                     HashType.Sha256 => await Sha256HashFile(x, cancellationToken),
                     HashType.Md5 => await Md5HashFile(x, cancellationToken),
-                    _ => throw new ArgumentOutOfRangeException(nameof(hashType), hashType, null)
+                    _ => throw new ArgumentOutOfRangeException(nameof(hashType), hashType, null),
                 },
                 x
             ));
 
-    public static async Task<string> Sha256HashFile(string path, CancellationToken cancellationToken = default)
+    public static async Task<string> Sha256HashFile(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
         using var sha256 = SHA256.Create();
         await using var stream = File.OpenRead(path);
@@ -94,7 +106,10 @@ public static class HashUtility
         }
     }
 
-    public static async Task<string> Md5HashFile(string path, CancellationToken cancellationToken = default)
+    public static async Task<string> Md5HashFile(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
         using var md5 = MD5.Create();
         await using var stream = File.OpenRead(path);
