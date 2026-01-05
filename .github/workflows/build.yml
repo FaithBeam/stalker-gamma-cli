@@ -91,6 +91,22 @@ jobs:
 
       - name: Make Build
         run: make build -C build/linux VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
+        
+      - name: Download appimagetool
+        run: curl appimagetool-aarch64.AppImage -Lo https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage
+        
+      - name: Make AppImage
+        run: |
+          chmod +x appimagetool-aarch64.AppImage
+          cp build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir          
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stalker_GAMMA-aarch64.AppImage
+          path: Stalker_GAMMA-aarch64.AppImage
+          compression-level: 9
 
       - name: Upload
         uses: actions/upload-artifact@v4
