@@ -98,6 +98,7 @@ jobs:
       - name: Make AppImage
         run: |
           chmod +x appimagetool-aarch64.AppImage
+          mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir          
 
