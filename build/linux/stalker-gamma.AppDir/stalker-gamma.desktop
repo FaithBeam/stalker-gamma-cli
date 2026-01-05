@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Stalker GAMMA
+Exec=stalker-gamma
+Icon=stalker-gamma
+Type=Application
+Categories=Utility;
+Terminal=true

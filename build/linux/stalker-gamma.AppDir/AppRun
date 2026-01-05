@@ -1,0 +1,5 @@
+#!/bin/sh
+# Find the path where the AppImage is mounted
+HERE="$(dirname "$(readlink -f "${0}")")"
+# Execute the binary located in usr/bin
+exec "${HERE}/usr/bin/stalker-gamma" "$@"
