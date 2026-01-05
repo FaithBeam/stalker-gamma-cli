@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using CliWrap;
 using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -17,16 +18,13 @@ public static class Program
             .Create()
             .ConfigureServices(services =>
             {
-                var settingsPath = Path.Join(
-                    Path.Join(Path.GetDirectoryName(AppContext.BaseDirectory)!, "settings.json")
-                );
-                var settings = File.Exists(settingsPath)
+                var settings = File.Exists(CliSettings.SettingsPath)
                     ? JsonSerializer.Deserialize<CliSettings>(
-                        File.ReadAllText(settingsPath),
+                        File.ReadAllText(CliSettings.SettingsPath),
                         jsonTypeInfo: CliSettingsCtx.Default.CliSettings
                     )
                         ?? throw new InvalidOperationException(
-                            $"Unable to deserialize settings file {settingsPath}"
+                            $"Unable to deserialize settings file {CliSettings.SettingsPath}"
                         )
                     : new CliSettings();
                 services.AddSingleton(settings);

@@ -12,8 +12,12 @@ public class CliSettings
 
     public async Task<string?> SaveAsync()
     {
+        if (!Directory.Exists(_appDataPath))
+        {
+            Directory.CreateDirectory(_appDataPath);
+        }
         await File.WriteAllTextAsync(
-            _settingsPath,
+            SettingsPath,
             JsonSerializer.Serialize<CliSettings>(
                 this,
                 jsonTypeInfo: CliSettingsCtx.Default.CliSettings
@@ -21,9 +25,11 @@ public class CliSettings
         );
         return ActiveProfile?.ProfileName;
     }
+    
+    private static string _appDataPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "stalker-gamma");
 
-    private readonly string _settingsPath = Path.Join(
-        Path.GetDirectoryName(AppContext.BaseDirectory)!,
+    public static string SettingsPath => Path.Join(
+        _appDataPath,
         "settings.json"
     );
 }
