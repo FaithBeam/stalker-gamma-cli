@@ -45,6 +45,23 @@ jobs:
 
       - name: Make Build
         run: make build -C build/linux VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
+        
+      - name: Download appimagetool
+        run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -Lo appimagetool-aarch64.AppImage
+
+      - name: Make AppImage
+        run: |
+          chmod +x appimagetool-aarch64.AppImage
+          mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
+          cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}      
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
+          path: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
+          compression-level: 9
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -100,13 +117,13 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir          
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}      
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Stalker_GAMMA-aarch64.AppImage
-          path: Stalker_GAMMA-aarch64.AppImage
+          name: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
+          path: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
           compression-level: 9
 
       - name: Upload
