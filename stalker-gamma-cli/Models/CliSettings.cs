@@ -25,13 +25,13 @@ public class CliSettings
         );
         return ActiveProfile?.ProfileName;
     }
-    
-    private static string _appDataPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "stalker-gamma");
 
-    public static string SettingsPath => Path.Join(
-        _appDataPath,
-        "settings.json"
+    private static string _appDataPath = Path.Join(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "stalker-gamma"
     );
+
+    public static string SettingsPath => Path.Join(_appDataPath, "settings.json");
 }
 
 [JsonSerializable(typeof(CliSettings))]
