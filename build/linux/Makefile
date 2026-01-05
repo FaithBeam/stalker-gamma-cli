@@ -1,4 +1,5 @@
 VERSION ?= 1.0.0
+ARCH ?= x64
 
 CUR_DIR = $(realpath .)
 ROOT = $(realpath ../../)
@@ -10,14 +11,38 @@ DOTNET_INSTALL_SCRIPT_PATH = $(BUILD_DIR)/dotnet-install.sh
 DOTNET_INSTALL_PATH = $(BUILD_DIR)/.dotnet
 
 CURL_IMPERSONATE_VERSION = v1.2.5
+CURL_ARCH = x86_64
+case "$ARCH" in 
+	"x64")
+		CURL_ARCH = "x86_64"
+		;;
+	"arm64")
+		CURL_ARCH = "aarch64"
+		;;
+	*)
+		CURL_ARCH = "unknown"
+		;;
+esac
 CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
-CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).x86_64-linux-gnu.tar.gz
-CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).x86_64-linux-gnu.tar.gz
+CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-linux-gnu.tar.gz
+CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-linux-gnu.tar.gz
 
 7Z_VERSION = 2501
+7Z_ARCH = x64
+case "$ARCH" in 
+	"x64")
+		7Z_ARCH = "x64"
+		;;
+	"arm64")
+		7Z_ARCH = "arm64"
+		;;
+	*)
+		7Z_ARCH = "unknown"
+		;;
+esac
 7Z_BUILD_DIR = $(BUILD_DIR)/7zip
-7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-linux-x64.tar.xz
-7Z_DL_URL = https://www.7-zip.org/a/7z$(7Z_VERSION)-linux-x64.tar.xz
+7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-linux-$(7Z_ARCH).tar.xz
+7Z_DL_URL = https://www.7-zip.org/a/7z$(7Z_VERSION)-linux-$(7Z_ARCH).tar.xz
 
 STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
