@@ -47,7 +47,7 @@ jobs:
         run: make build -C build/linux VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
         
       - name: Download appimagetool
-        run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -Lo appimagetool-aarch64.AppImage
+        run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -Lo appimagetool-aarch64.AppImage
 
       - name: Make AppImage
         run: |
