@@ -85,9 +85,6 @@ brew tap FaithBeam/stalker-gamma
 brew install --cask stalker-gamma
 ```
 
-Enter your password and select always allow in the keychain
-   - You're asked for your password because the install removes the quarantine attribute from multiple files and doing so requires your password
-
 ## Build
 
 **Linux**
