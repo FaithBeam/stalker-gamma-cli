@@ -56,10 +56,12 @@ jobs:
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage
 
-      - name: Upload
-        uses: actions/upload-pages-artifact@v4
+      - name: Create Release
+        uses: actions/checkout@v6
         with:
-          path: stalker-gamma.AppImage
+          files: stalker-gamma.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -117,10 +119,12 @@ jobs:
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage      
 
-      - name: Upload
-        uses: actions/upload-pages-artifact@v4
+      - name: Create Release
+        uses: actions/checkout@v6
         with:
-          path: stalker-gamma.AppImage
+          files: stalker-gamma.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
