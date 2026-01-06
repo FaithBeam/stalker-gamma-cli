@@ -52,7 +52,7 @@ public class AnomalyInstallCmd(
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         var cache = _cliSettings.ActiveProfile!.Cache;
@@ -113,7 +113,7 @@ public class AnomalyInstallCmd(
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         if (!Directory.Exists(anomaly))

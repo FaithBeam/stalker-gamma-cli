@@ -30,7 +30,7 @@ public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utili
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
         var anomaly = cliSettings.ActiveProfile!.Anomaly;
         var gamma = cliSettings.ActiveProfile!.Gamma;

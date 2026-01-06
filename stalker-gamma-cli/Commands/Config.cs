@@ -43,7 +43,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             );
             Environment.Exit(1);
         }
-        
+
         foreach (var profile in cliSettings.Profiles)
         {
             profile.Active = false;
@@ -104,7 +104,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             );
             Environment.Exit(1);
         }
-        
+
         foreach (var profile in cliSettings.Profiles)
         {
             _logger.Information(
@@ -132,7 +132,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             );
             Environment.Exit(1);
         }
-        
+
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.Active);
         if (foundProfile is null)
         {
@@ -161,7 +161,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             );
             Environment.Exit(1);
         }
-        
+
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {
@@ -199,7 +199,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             );
             Environment.Exit(1);
         }
-        
+
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {

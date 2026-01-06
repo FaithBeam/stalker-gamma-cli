@@ -27,7 +27,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 
         var gamma = _cliSettings.ActiveProfile!.Gamma;
@@ -68,7 +68,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var modOrganizerIniPath = Path.Join(gamma, "ModOrganizer.ini");
@@ -111,7 +111,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);
@@ -140,7 +140,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);
@@ -170,7 +170,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var gammaProfilesPath = Path.Join(gamma, "profiles");
@@ -206,7 +206,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;
@@ -243,7 +243,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;
@@ -322,7 +322,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesR
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;

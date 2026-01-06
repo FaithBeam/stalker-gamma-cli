@@ -70,7 +70,7 @@ public class FullInstallCmd(
             );
             Environment.Exit(1);
         }
-        
+
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
         var anomaly = cliSettings.ActiveProfile!.Anomaly;
         var gamma = cliSettings.ActiveProfile!.Gamma;
