@@ -57,7 +57,7 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage
 
       - name: Upload
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: stalker-gamma.AppImage
 
@@ -118,7 +118,7 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage      
 
       - name: Upload
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: stalker-gamma.AppImage
 
