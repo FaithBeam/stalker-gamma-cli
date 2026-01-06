@@ -59,7 +59,7 @@ build:
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:
-	tar -cvJf stalker-gamma-cli.tar.xz --directory=$(STALKER_GAMMA_BUILD_DIR) .
+	tar -cvf stalker-gamma-cli.tar.gz --directory=$(STALKER_GAMMA_BUILD_DIR) .
 
 clean:
 	rm -rf $(BUILD_DIR)
