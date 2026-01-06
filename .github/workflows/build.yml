@@ -54,13 +54,13 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}      
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
-          path: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
+          path: stalker-gamma.AppImage
           compression-level: 9
 
       - name: Upload
@@ -117,13 +117,13 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}      
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage      
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
-          path: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
+          path: stalker-gamma.AppImage
           compression-level: 9
 
       - name: Upload
