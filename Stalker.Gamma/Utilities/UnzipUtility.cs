@@ -1,6 +1,7 @@
 using System.Text;
 using CliWrap;
 using CliWrap.Builders;
+using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -19,7 +20,9 @@ public class UnzipUtility(StalkerGammaSettings settings)
             cancellationToken: ct
         );
 
-    public bool Ready => File.Exists(settings.PathToUnzip);
+    public bool Ready =>
+        File.Exists(settings.PathToUnzip)
+        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "unzip.exe" : "unzip");
 
     private async Task<StdOutStdErrOutput> ExecuteSevenZipCmdAsync(
         string[] args,

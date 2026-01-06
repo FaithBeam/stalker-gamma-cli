@@ -161,19 +161,6 @@ public class UpdateCmds(
         stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
         stalkerGammaSettings.ModListUrl = modListUrl;
 
-        var resourcesPath = Path.Join(Path.GetDirectoryName(AppContext.BaseDirectory), "resources");
-        stalkerGammaSettings.PathToCurl = Path.Join(
-            resourcesPath,
-            OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate"
-        );
-        stalkerGammaSettings.PathTo7Z = Path.Join(
-            resourcesPath,
-            OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
-        );
-        stalkerGammaSettings.PathToGit = OperatingSystem.IsWindows()
-            ? Path.Join(resourcesPath, "git", "cmd", "git.exe")
-            : "git";
-
         var gammaProgressObservable = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
                 handler => gammaInstaller.Progress.ProgressChanged += handler,

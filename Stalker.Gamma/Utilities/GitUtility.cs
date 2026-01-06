@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
 using CliWrap.Builders;
+using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -100,7 +101,7 @@ public partial class GitUtility(StalkerGammaSettings settings)
 
         try
         {
-            await Cli.Wrap(_pathToGit)
+            await Cli.Wrap(PathToGit)
                 .WithArguments(argBuilder => AppendArgument([.. finalArgs], argBuilder))
                 .WithStandardOutputPipe(
                     PipeTarget.Merge(
@@ -149,7 +150,9 @@ public partial class GitUtility(StalkerGammaSettings settings)
         return new StdOutStdErrOutput(stdOut.ToString().Trim(), stdErr.ToString().Trim());
     }
 
-    public bool Ready => File.Exists(_pathToGit);
+    public bool Ready =>
+        File.Exists(PathToGit)
+        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "git.exe" : "git");
 
     private void AppendArgument(string[] args, ArgumentsBuilder argBuilder)
     {
@@ -159,7 +162,7 @@ public partial class GitUtility(StalkerGammaSettings settings)
         }
     }
 
-    private string _pathToGit => settings.PathToGit;
+    private string PathToGit => settings.PathToGit;
 
     [GeneratedRegex(@"Receiving objects:\s*(\d+)%")]
     private partial Regex ProgressRegex();

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
 using CliWrap.Builders;
+using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -101,7 +102,9 @@ public partial class CurlUtility(StalkerGammaSettings settings)
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.
     /// </summary>
-    public bool Ready => File.Exists(PathToCurlImpersonate);
+    public bool Ready =>
+        File.Exists(PathToCurlImpersonate)
+        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate");
 
     [GeneratedRegex(@"(\d+(\.\d+)?)\s*%", RegexOptions.Compiled)]
     private partial Regex ProgressRx();

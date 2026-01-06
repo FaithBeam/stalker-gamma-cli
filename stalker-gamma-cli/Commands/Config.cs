@@ -76,6 +76,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             foundProfile.DownloadThreads = downloadThreads;
             foundProfile.ModPackMakerUrl = modPackMakerUrl;
             foundProfile.ModListUrl = modListUrl;
+            await foundProfile.SetActiveAsync();
         }
         await cliSettings.SaveAsync();
         foreach (var profile in cliSettings.Profiles)

@@ -1,6 +1,7 @@
 using System.Text;
 using CliWrap;
 using CliWrap.Builders;
+using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -22,7 +23,9 @@ public class TarUtility(StalkerGammaSettings settings)
         );
     }
 
-    public bool Ready => File.Exists(settings.PathToTar);
+    public bool Ready =>
+        File.Exists(settings.PathToTar)
+        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "tar.exe" : "tar");
 
     private async Task<StdOutStdErrOutput> ExecuteTarCmdAsync(
         string[] args,
