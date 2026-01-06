@@ -14,8 +14,8 @@ public class UtilitiesReady(
         curlUtility.Ready
         && gitUtility.Ready
         && sevenZipUtility.Ready
-        && tarUtility.Ready
-        && unzipUtility.Ready;
+        && (OperatingSystem.IsWindows() || tarUtility.Ready)
+        && (OperatingSystem.IsWindows() || unzipUtility.Ready);
 
     public string NotReadyReason =>
         IsReady
