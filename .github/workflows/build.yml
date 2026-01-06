@@ -57,11 +57,9 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage
 
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
           path: stalker-gamma.AppImage
-          compression-level: 9
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -120,11 +118,9 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage      
 
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}.AppImage+linux.${{ env.ARCHITECTURE }}
           path: stalker-gamma.AppImage
-          compression-level: 9
 
       - name: Upload
         uses: actions/upload-artifact@v4
