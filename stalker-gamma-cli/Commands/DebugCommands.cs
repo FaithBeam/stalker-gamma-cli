@@ -6,7 +6,7 @@ using stalker_gamma_cli.Utilities;
 namespace stalker_gamma_cli.Commands;
 
 [RegisterCommands("debug")]
-public class Debug(ILogger logger, CliSettings cliSettings)
+public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
 {
     /// <summary>
     /// For debugging broken installations only. Hashes installation folders and creates a compressed archive containing the computed hashes.
@@ -19,6 +19,18 @@ public class Debug(ILogger logger, CliSettings cliSettings)
         HashType hashType = HashType.Blake3
     )
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
         var anomaly = cliSettings.ActiveProfile!.Anomaly;
         var gamma = cliSettings.ActiveProfile!.Gamma;

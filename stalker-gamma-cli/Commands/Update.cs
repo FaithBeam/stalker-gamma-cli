@@ -18,7 +18,8 @@ public class UpdateCmds(
     StalkerGammaSettings stalkerGammaSettings,
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IModListRecordFactory modListRecordFactory,
-    GammaInstaller gammaInstaller
+    GammaInstaller gammaInstaller,
+    UtilitiesReady utilitiesReady
 )
 {
     /// <summary>
@@ -27,6 +28,17 @@ public class UpdateCmds(
     [Command("check")]
     public async Task CheckUpdates()
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 
@@ -125,6 +137,17 @@ public class UpdateCmds(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 

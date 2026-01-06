@@ -2,11 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
+using stalker_gamma_cli.Utilities;
 
 namespace stalker_gamma_cli.Commands;
 
 [RegisterCommands("config")]
-public class Config(ILogger logger, CliSettings cliSettings)
+public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
 {
     /// <summary>
     /// Create settings file
@@ -31,6 +32,18 @@ public class Config(ILogger logger, CliSettings cliSettings)
         [Range(1, 6)] int downloadThreads = 2
     )
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         foreach (var profile in cliSettings.Profiles)
         {
             profile.Active = false;
@@ -80,6 +93,18 @@ public class Config(ILogger logger, CliSettings cliSettings)
     /// </summary>
     public void List()
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         foreach (var profile in cliSettings.Profiles)
         {
             _logger.Information(
@@ -96,6 +121,18 @@ public class Config(ILogger logger, CliSettings cliSettings)
     [Command("")]
     public void GetActive()
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.Active);
         if (foundProfile is null)
         {
@@ -113,6 +150,18 @@ public class Config(ILogger logger, CliSettings cliSettings)
     /// <param name="name">Name of the profile to delete</param>
     public async Task Delete([Argument] string name)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {
@@ -139,6 +188,18 @@ public class Config(ILogger logger, CliSettings cliSettings)
     /// <param name="name">The name of the profile to set as active</param>
     public async Task Use([Argument] string name)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {

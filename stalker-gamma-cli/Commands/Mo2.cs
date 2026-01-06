@@ -8,7 +8,7 @@ using Stalker.Gamma.Utilities;
 namespace stalker_gamma_cli.Commands;
 
 [RegisterCommands("mo2")]
-public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
+public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
 {
     /// <summary>
     /// Retrieves the selected profile information from the ModOrganizer.ini file within the specified directory.
@@ -16,6 +16,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("config get selected-profile")]
     public async Task<int> GetProfile()
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 
         var gamma = _cliSettings.ActiveProfile!.Gamma;
@@ -45,6 +57,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("config set selected-profile")]
     public async Task<int> SetProfile([Argument] string profile)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var modOrganizerIniPath = Path.Join(gamma, "ModOrganizer.ini");
@@ -76,6 +100,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("profiles list")]
     public void ListProfiles()
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);
@@ -93,6 +129,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("profile list mods")]
     public async Task ListMods([Argument] string profile)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);
@@ -111,6 +159,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("profile delete")]
     public void DeleteProfile([Argument] string profile)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var gammaProfilesPath = Path.Join(gamma, "profiles");
@@ -135,6 +195,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("mod status")]
     public async Task Status([Argument] string mod)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;
@@ -160,6 +232,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("mod enable")]
     public async Task Enable([Argument] string mod)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;
@@ -188,6 +272,17 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("mod disable")]
     public async Task Disable([Argument] string mod)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;
@@ -216,6 +311,18 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
     [Command("mod delete")]
     public async Task Delete([Argument] string mod)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;

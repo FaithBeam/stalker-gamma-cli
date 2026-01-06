@@ -149,6 +149,8 @@ public partial class GitUtility(StalkerGammaSettings settings)
         return new StdOutStdErrOutput(stdOut.ToString().Trim(), stdErr.ToString().Trim());
     }
 
+    public bool Ready => File.Exists(_pathToGit);
+
     private void AppendArgument(string[] args, ArgumentsBuilder argBuilder)
     {
         foreach (var arg in args)

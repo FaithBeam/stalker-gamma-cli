@@ -74,6 +74,8 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         );
     }
 
+    public bool Ready => File.Exists(PathTo7Z);
+
     private async Task<StdOutStdErrOutput> ExecuteSevenZipCmdAsync(
         string[] args,
         Action<double>? onProgress = null,

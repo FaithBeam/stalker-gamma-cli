@@ -22,6 +22,8 @@ public class TarUtility(StalkerGammaSettings settings)
         );
     }
 
+    public bool Ready => File.Exists(settings.PathToTar);
+
     private async Task<StdOutStdErrOutput> ExecuteTarCmdAsync(
         string[] args,
         string? workingDirectory = null,

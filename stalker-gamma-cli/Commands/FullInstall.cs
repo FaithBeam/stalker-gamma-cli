@@ -16,7 +16,8 @@ public class FullInstallCmd(
     StalkerGammaSettings stalkerGammaSettings,
     GammaInstaller gammaInstaller,
     AddFoldersToWinDefenderExclusionService addFoldersToWinDefenderExclusionService,
-    EnableLongPathsOnWindowsService enableLongPathsOnWindowsService
+    EnableLongPathsOnWindowsService enableLongPathsOnWindowsService,
+    UtilitiesReady utilitiesReady
 )
 {
     /// <summary>
@@ -58,6 +59,18 @@ public class FullInstallCmd(
         [Hidden] string stalkerAnomalyArchiveMd5 = "d6bce51a4e6d98f9610ef0aa967ba964"
     )
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
         var anomaly = cliSettings.ActiveProfile!.Anomaly;
         var gamma = cliSettings.ActiveProfile!.Gamma;

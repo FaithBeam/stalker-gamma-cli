@@ -16,7 +16,8 @@ public class AnomalyInstallCmd(
     CliSettings cliSettings,
     StalkerGammaSettings stalkerGammaSettings,
     GammaProgress gammaProgress,
-    IDownloadableRecordFactory downloadableRecordFactory
+    IDownloadableRecordFactory downloadableRecordFactory,
+    UtilitiesReady utilitiesReady
 )
 {
     /// <summary>
@@ -40,6 +41,18 @@ public class AnomalyInstallCmd(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         var cache = _cliSettings.ActiveProfile!.Cache;
@@ -89,6 +102,18 @@ public class AnomalyInstallCmd(
     [Command("check")]
     public async Task CheckAnomaly(CancellationToken cancellationToken)
     {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         if (!Directory.Exists(anomaly))

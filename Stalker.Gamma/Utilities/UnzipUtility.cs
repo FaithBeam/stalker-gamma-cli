@@ -19,6 +19,8 @@ public class UnzipUtility(StalkerGammaSettings settings)
             cancellationToken: ct
         );
 
+    public bool Ready => File.Exists(settings.PathToUnzip);
+
     private async Task<StdOutStdErrOutput> ExecuteSevenZipCmdAsync(
         string[] args,
         string? workingDirectory = null,
