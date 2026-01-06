@@ -57,9 +57,9 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage
 
       - name: Create Release
-        uses: actions/checkout@v6
+        uses: softprops/action-gh-release@v2
         with:
-          path: stalker-gamma.AppImage
+          files: stalker-gamma.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -120,9 +120,9 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage      
 
       - name: Create Release
-        uses: actions/checkout@v6
+        uses: softprops/action-gh-release@v2
         with:
-          path: stalker-gamma.AppImage
+          files: stalker-gamma.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
