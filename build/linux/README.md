@@ -2,8 +2,7 @@
 
 You need these applications installed to run stalker-gamma:
 
-1. git
-2. unzip
+1. unzip
 
 Refer to your distro how to install them if they're not installed.
 

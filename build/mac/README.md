@@ -2,9 +2,8 @@
 
 You need these applications installed to run stalker-gamma:
 
-1. git
-2. libidn2
-3. zstd
+1. libidn2
+2. zstd
 
 You should install them with homebrew:
 
