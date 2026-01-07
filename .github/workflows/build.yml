@@ -175,14 +175,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: build/mac/stalker-gamma-cli.${{ steps.gitversion.outputs.SemVer }}+mac.arm64.tar.gz
+          files: build/mac/stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+mac.arm64.tar.gz
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+mac.arm64
-          path: build/mac/build/stalker-gamma-cli
+          path: build/mac/build/stalker-gamma
           compression-level: 9
 
   cli-windows:
@@ -220,7 +220,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: build/win/build/stalker-gamma-cli.${{ steps.gitversion.outputs.AssemblySemFileVer }}+win.x64.7z
+          files: build/win/build/stalker-gamma.${{ steps.gitversion.outputs.AssemblySemFileVer }}+win.x64.zip
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
