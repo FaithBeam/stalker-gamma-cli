@@ -54,13 +54,13 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: stalker-gamma.AppImage
+          files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
       
       - name: Upload
@@ -117,13 +117,13 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.AppImage      
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: stalker-gamma.AppImage
+          files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
@@ -167,15 +167,16 @@ jobs:
         uses: gittools/actions/gitversion/execute@v0
 
       - name: Make Build
-        run: make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} && make archive -C build/mac
+        run: |
+          make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }}
+          make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: build/mac/stalker-gamma-cli.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: build/mac/stalker-gamma-cli.${{ steps.gitversion.outputs.SemVer }}+mac.arm64.tar.gz
+          token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -214,6 +215,13 @@ jobs:
 
       - name: Build CLI
         run: build/win/build.bat ${{ steps.gitversion.outputs.AssemblySemFileVer }}
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: build/win/build/stalker-gamma-cli.${{ steps.gitversion.outputs.AssemblySemFileVer }}+win.x64.7z
+          token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
