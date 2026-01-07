@@ -18,11 +18,11 @@ public class GammaSetupRepo(
     public string DownloadPath => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
 
-    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         if (Directory.Exists(DownloadPath))
         {
-            await gitUtility.PullGitRepo(
+            gitUtility.PullGitRepo(
                 DownloadPath,
                 onProgress: pct =>
                     gammaProgress.OnProgressChanged(
@@ -33,7 +33,7 @@ public class GammaSetupRepo(
         }
         else
         {
-            await gitUtility.CloneGitRepo(
+            gitUtility.CloneGitRepo(
                 DownloadPath,
                 Url,
                 onProgress: pct =>
@@ -45,6 +45,7 @@ public class GammaSetupRepo(
             );
         }
         Downloaded = true;
+        return Task.CompletedTask;
     }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)

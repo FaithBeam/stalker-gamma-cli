@@ -18,11 +18,11 @@ public class GammaLargeFilesRepo(
     protected string Url = url;
     private string DestinationDir => Path.Join(gammaDir, "mods");
 
-    public virtual async Task DownloadAsync(CancellationToken ct = default)
+    public virtual Task DownloadAsync(CancellationToken ct = default)
     {
         if (Directory.Exists(DownloadPath))
         {
-            await gitUtility.PullGitRepo(
+            gitUtility.PullGitRepo(
                 DownloadPath,
                 onProgress: pct =>
                     gammaProgress.OnProgressChanged(
@@ -33,7 +33,7 @@ public class GammaLargeFilesRepo(
         }
         else
         {
-            await gitUtility.CloneGitRepo(
+            gitUtility.CloneGitRepo(
                 DownloadPath,
                 Url,
                 onProgress: pct =>
@@ -46,6 +46,7 @@ public class GammaLargeFilesRepo(
         }
 
         Downloaded = true;
+        return Task.CompletedTask;
     }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)

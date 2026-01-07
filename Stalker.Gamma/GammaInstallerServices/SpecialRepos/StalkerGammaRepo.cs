@@ -20,11 +20,11 @@ public class StalkerGammaRepo(
     private string GammaModsDir => Path.Join(gammaDir, "mods");
     private string AnomalyDir => anomalyDir;
 
-    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         if (Directory.Exists(DownloadPath))
         {
-            await gitUtility.PullGitRepo(
+            gitUtility.PullGitRepo(
                 DownloadPath,
                 onProgress: pct =>
                     gammaProgress.OnProgressChanged(
@@ -35,7 +35,7 @@ public class StalkerGammaRepo(
         }
         else
         {
-            await gitUtility.CloneGitRepo(
+            gitUtility.CloneGitRepo(
                 DownloadPath,
                 Url,
                 onProgress: pct =>
@@ -47,6 +47,7 @@ public class StalkerGammaRepo(
             );
         }
         Downloaded = true;
+        return Task.CompletedTask;
     }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)

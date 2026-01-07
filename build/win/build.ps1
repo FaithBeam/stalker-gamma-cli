@@ -45,20 +45,6 @@ $cacertSplat = @{
 Invoke-WebRequest @cacertSplat
 #endregion
 
-#region git
-$gitDir = Join-Path $buildDir "git"
-$gitDlPath = Join-Path $gitDir "MinGit-2.52.0-busybox-64-bit.zip"
-New-Item -Path $gitDir -ItemType Directory -Force
-$gitDlSplat = @{
-    Uri = "https://github.com/git-for-windows/git/releases/download/v2.52.0.windows.1/MinGit-2.52.0-busybox-64-bit.zip"
-    OutFile = $gitDlPath
-}
-Invoke-WebRequest @gitDlSplat
-$gitExtractDir = Join-Path $gitDir "git"
-New-Item -Path $gitExtractDir -ItemType Directory -Force
-tar -xzf $gitDlPath -C $gitExtractDir
-#endregion
-
 #region dotnet-install
 $dotnetInstallPath = Join-Path $buildDir "dotnet-install.ps1"
 Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile $dotnetInstallPath
@@ -80,7 +66,6 @@ dotnet publish -c Release $pathToProject -o $stalkerCliDir -p:AssemblyVersion=$V
 $stalkerCliResourceDir = Join-Path $stalkerCliDir "resources"
 New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
-Copy-Item -Path $gitExtractDir -Destination (Join-Path $stalkerCliResourceDir "git") -Recurse
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
 Copy-Item -Path (Join-Path (Join-Path $curlDir "bin") "curl.exe") -Destination (Join-Path $stalkerCliResourceDir "curl.exe")
