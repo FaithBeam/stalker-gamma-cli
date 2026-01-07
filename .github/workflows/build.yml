@@ -220,7 +220,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: build/win/stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+win.x64.zip
+          files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+win.x64.zip
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
