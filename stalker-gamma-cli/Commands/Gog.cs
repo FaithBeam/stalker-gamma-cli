@@ -27,10 +27,7 @@ public partial class Gog(
         }
 
         var mo2IniTxt = await File.ReadAllTextAsync(mo2IniPath);
-        var pathTxt = (await File.ReadAllTextAsync(pathTxtFilePath)).Replace(
-            '\\',
-            Path.DirectorySeparatorChar
-        );
+        var pathTxt = (await File.ReadAllTextAsync(pathTxtFilePath)).Replace("\\", @"\\");
         var pathIniTxt = await File.ReadAllTextAsync(pathIniPath);
         var badPath = PathIniPathRx().Match(pathIniTxt).Groups["path"].Value.Trim();
         mo2IniTxt = mo2IniTxt.Replace(badPath, pathTxt.Replace("/", @"\\"));
