@@ -61,9 +61,8 @@ jobs:
         if: github.ref_type == 'tag'
         with:
           files: stalker-gamma.AppImage
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
+      
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -122,11 +121,10 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
           files: stalker-gamma.AppImage
-        if: github.ref_type == 'tag'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
