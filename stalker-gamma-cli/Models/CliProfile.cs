@@ -17,6 +17,19 @@ public partial class CliProfile
     public string ModListUrl { get; set; } =
         "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt";
 
+    public override string ToString() =>
+        $"""
+            ProfileName: {ProfileName}
+            Anomaly: {Anomaly}
+            Gamma: {Gamma}
+            Cache: {Cache}
+            Mo2Profile: {Mo2Profile}
+            DownloadThreads: {DownloadThreads}
+            ModPackMakerUrl: {ModPackMakerUrl}
+            ModListUrl: {ModListUrl}
+            Active: {Active}
+            """;
+
     public async Task SetActiveAsync()
     {
         Active = true;

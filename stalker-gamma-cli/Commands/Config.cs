@@ -10,6 +10,32 @@ namespace stalker_gamma_cli.Commands;
 public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
 {
     /// <summary>
+    /// Print the currently active profile settings.
+    /// </summary>
+    public void Info()
+    {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.Active);
+        if (foundProfile is null)
+        {
+            _logger.Error("No active profile found");
+            return;
+        }
+
+        _logger.Information("{Profile}", foundProfile.ToString());
+    }
+
+    /// <summary>
     /// Create settings file
     /// </summary>
     /// <param name="name">The name of the profile to create</param>
