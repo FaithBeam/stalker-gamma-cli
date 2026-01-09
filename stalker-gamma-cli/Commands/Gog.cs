@@ -14,7 +14,7 @@ public partial class Gog(
     StalkerGammaSettings stalkerGammaSettings
 )
 {
-    public async Task FixSettings()
+    public async Task FixInstall()
     {
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var mo2IniPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "ModOrganizer.ini");
