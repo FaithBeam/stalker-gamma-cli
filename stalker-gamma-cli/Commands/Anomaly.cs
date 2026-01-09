@@ -174,6 +174,58 @@ public class AnomalyInstallCmd(
         }
     }
 
+    /// <summary>
+    /// Deletes all ReShade-related files from the Anomaly bin directory
+    /// </summary>
+    public void DeleteReshade()
+    {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        var anomalyBinDir = Path.Join(_cliSettings.ActiveProfile!.Anomaly, "bin");
+        List<string> reshadeFiles =
+        [
+            "d3d9.dll",
+            "dxgi.dll",
+            "dxgi.log",
+            "G.A.M.M.A.Reshade.ini",
+            "ReShade.ini",
+            "ReShade.log",
+        ];
+        if (Directory.Exists(anomalyBinDir))
+        {
+            var files = new DirectoryInfo(anomalyBinDir)
+                .EnumerateFiles()
+                .Where(x => reshadeFiles.Contains(x.Name, StringComparer.OrdinalIgnoreCase));
+            foreach (var fi in files)
+            {
+                fi.Delete();
+                _logger.Information("Deleted {File}", fi.FullName);
+            }
+
+            var reshadeShadersDir = Path.Join(anomalyBinDir, "reshade-shaders");
+            if (Directory.Exists(reshadeShadersDir))
+            {
+                Directory.Delete(reshadeShadersDir, true);
+                _logger.Information("Reshade shaders directory deleted");
+            }
+            _logger.Information("Reshade files deleted");
+        }
+        else
+        {
+            _logger.Error("Anomaly bin directory not found");
+        }
+    }
+
     private async Task ValidateChecksums(
         List<(string Md5, string Path)> checksums,
         Dictionary<string, Task<string>> actual,
