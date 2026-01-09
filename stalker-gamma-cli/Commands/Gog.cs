@@ -14,6 +14,9 @@ public partial class Gog(
     StalkerGammaSettings stalkerGammaSettings
 )
 {
+    /// <summary>
+    /// Fix the GOG installation that creates the ModOrganizer.ini with bad paths.
+    /// </summary>
     public async Task FixInstall()
     {
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
@@ -41,7 +44,7 @@ public partial class Gog(
         _logger.Information("ModOrganizer.ini updated");
     }
 
-    [GeneratedRegex(@"^path=(?<path>.+)$", RegexOptions.Multiline)]
+    [GeneratedRegex("^path=(?<path>.+)$", RegexOptions.Multiline)]
     private partial Regex PathIniPathRx();
 
     private readonly ILogger _logger = logger;

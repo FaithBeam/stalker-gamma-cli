@@ -3,7 +3,7 @@
 _stalker-gamma-cli_ is a cli to install Stalker Anomaly and the GAMMA mod pack.
 
 ```bash
-❯ ./stalker-gamma
+❯ stalker-gamma
 Usage: [command] [-h|--help] [--version]
 
 Commands:
@@ -45,7 +45,7 @@ Commands:
 3. Open a terminal in the extracted folder
 4. Create a config
     ```bash
-   ./stalker-gamma config create \
+   stalker-gamma config create \
    --anomaly gamma/anomaly \
    --gamma gamma/gamma \
    --cache gamma/cache \
@@ -53,7 +53,7 @@ Commands:
     ```
 5. Full Install
     ```bash
-    ./stalker-gamma full-install
+    stalker-gamma full-install
     ```
 6. (Linux/MacOS) `winetricks d3dcompiler_43 d3dcompiler_47 d3dx10 d3dx11_43 d3dx9 vcrun2022`
 7. Run gamma/ModOrganizer.exe
@@ -65,13 +65,13 @@ After you've performed a full-install, you can update your installation.
 Check for updates:
 
 ```bash
-./stalker-gamma update check
+stalker-gamma update check
 ```
 
 Apply updates:
 
 ```bash
-./stalker-gamma update apply
+stalker-gamma update apply
 ```
 
 ## Homebrew

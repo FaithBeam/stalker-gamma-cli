@@ -7,6 +7,7 @@ using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -137,6 +138,40 @@ public class AnomalyInstallCmd(
         var actual = await GetActualHashes(cancellationToken, anomaly);
         var longestPath = checksums.MaxBy(x => x.Path.Length).Path.Length + 5;
         await ValidateChecksums(checksums, actual, longestPath);
+    }
+
+    /// <summary>
+    /// Deletes the shader cache directory for the active Anomaly profile
+    /// </summary>
+    public void PurgeShaderCache()
+    {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        var anomalyAppDataShadersDir = Path.Join(
+            _cliSettings.ActiveProfile!.Anomaly,
+            "appdata",
+            "shaders_cache"
+        );
+        if (Directory.Exists(anomalyAppDataShadersDir))
+        {
+            DirUtils.NormalizePermissions(anomalyAppDataShadersDir);
+            Directory.Delete(anomalyAppDataShadersDir, true);
+            _logger.Information("Shader cache deleted");
+        }
+        else
+        {
+            _logger.Information("Shader cache not found");
+        }
     }
 
     private async Task ValidateChecksums(

@@ -9,7 +9,7 @@ namespace stalker_gamma_cli.Commands;
 public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
 {
     /// <summary>
-    /// For debugging broken installations only. Hashes installation folders and creates a compressed archive containing the computed hashes.
+    /// Hashes installation folders and creates a compressed archive containing the computed hashes.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <param name="hashType">The type of hash algorithm to use. [Blake3|Sha256]</param>
