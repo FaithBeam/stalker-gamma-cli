@@ -55,6 +55,7 @@ jobs:
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
+          chmod +x stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -118,6 +119,7 @@ jobs:
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
+          chmod +x stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
