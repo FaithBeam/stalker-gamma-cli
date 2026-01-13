@@ -41,7 +41,7 @@ Commands:
 ### Install
 
 1. Download your operating system's archive from the [Releases](https://github.com/FaithBeam/stalker-gamma-cli/releases) page
-2. Extract archive
+2. Extract archive if the release is not an AppImage
 3. Open a terminal in the extracted folder
 4. Create a config
     ```bash
