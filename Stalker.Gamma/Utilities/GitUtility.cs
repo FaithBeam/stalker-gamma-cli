@@ -3,7 +3,7 @@ using LibGit2Sharp;
 
 namespace Stalker.Gamma.Utilities;
 
-public partial class GitUtility()
+public partial class GitUtility
 {
     public void CloneGitRepo(
         string outputDir,

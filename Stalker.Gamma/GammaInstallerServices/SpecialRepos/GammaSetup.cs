@@ -20,32 +20,58 @@ public class GammaSetupRepo(
 
     public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
-        if (Directory.Exists(DownloadPath))
+        try
         {
-            gitUtility.PullGitRepo(
-                DownloadPath,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
-                    ),
-                ct: cancellationToken
+            if (Directory.Exists(DownloadPath))
+            {
+                gitUtility.PullGitRepo(
+                    DownloadPath,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        ),
+                    ct: cancellationToken
+                );
+            }
+            else
+            {
+                gitUtility.CloneGitRepo(
+                    DownloadPath,
+                    Url,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        ),
+                    ct: cancellationToken,
+                    extraArgs: new List<string> { "--depth", "1" }
+                );
+            }
+            Downloaded = true;
+            return Task.CompletedTask;
+        }
+        catch (Exception e)
+        {
+            throw new SpecialRepoException(
+                $"""
+                Error downloading from Gamma Setup Repo
+                Url: {Url}
+                Download Path: {DownloadPath}
+                Destination Dir: {GammaModsDir}
+                {e}
+                """,
+                e
             );
         }
-        else
-        {
-            gitUtility.CloneGitRepo(
-                DownloadPath,
-                Url,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
-                    ),
-                ct: cancellationToken,
-                extraArgs: new List<string> { "--depth", "1" }
-            );
-        }
-        Downloaded = true;
-        return Task.CompletedTask;
     }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)

@@ -20,33 +20,59 @@ public class TeivazAnomalyGunslingerRepo(
 
     public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
-        if (Directory.Exists(DownloadPath))
+        try
         {
-            gitUtility.PullGitRepo(
-                DownloadPath,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
-                    ),
-                ct: cancellationToken
-            );
-        }
-        else
-        {
-            gitUtility.CloneGitRepo(
-                DownloadPath,
-                Url,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
-                    ),
-                ct: cancellationToken,
-                extraArgs: new List<string> { "--depth", "1" }
-            );
-        }
+            if (Directory.Exists(DownloadPath))
+            {
+                gitUtility.PullGitRepo(
+                    DownloadPath,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        ),
+                    ct: cancellationToken
+                );
+            }
+            else
+            {
+                gitUtility.CloneGitRepo(
+                    DownloadPath,
+                    Url,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        ),
+                    ct: cancellationToken,
+                    extraArgs: new List<string> { "--depth", "1" }
+                );
+            }
 
-        Downloaded = true;
-        return Task.CompletedTask;
+            Downloaded = true;
+            return Task.CompletedTask;
+        }
+        catch (Exception e)
+        {
+            throw new SpecialRepoException(
+                $"""
+                Error downloading from Teivaz Anomaly Gunslinger Repo
+                Url: {Url}
+                Download Path: {DownloadPath}
+                Destination Dir: {GammaModsDir}
+                {e}
+                """,
+                e
+            );
+        }
     }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
