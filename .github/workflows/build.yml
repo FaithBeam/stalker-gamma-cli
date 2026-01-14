@@ -58,7 +58,7 @@ jobs:
           chmod +x stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
           files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
@@ -122,7 +122,7 @@ jobs:
           chmod +x stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
           files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
@@ -174,7 +174,7 @@ jobs:
           make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
           files: build/mac/stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+mac.arm64.tar.gz
@@ -219,7 +219,7 @@ jobs:
         run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }}
         
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
           files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+win.x64.zip
