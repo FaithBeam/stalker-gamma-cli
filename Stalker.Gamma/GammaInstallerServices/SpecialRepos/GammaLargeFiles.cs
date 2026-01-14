@@ -1,4 +1,5 @@
-﻿using Stalker.Gamma.Models;
+﻿using LibGit2Sharp;
+using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
@@ -24,19 +25,28 @@ public class GammaLargeFilesRepo(
         {
             if (Directory.Exists(DownloadPath))
             {
-                gitUtility.PullGitRepo(
-                    DownloadPath,
-                    onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Download",
-                                pct,
-                                Url
-                            )
-                        ),
-                    ct
-                );
+                try
+                {
+                    gitUtility.PullGitRepo(
+                        DownloadPath,
+                        onProgress: pct =>
+                            gammaProgress.OnProgressChanged(
+                                new GammaProgress.GammaInstallProgressEventArgs(
+                                    Name,
+                                    "Download",
+                                    pct,
+                                    Url
+                                )
+                            ),
+                        ct
+                    );
+                }
+                catch (LibGit2SharpException e) when (e.Message.Contains("no tracking information"))
+                {
+                    DirUtils.NormalizePermissions(DownloadPath);
+                    Directory.Delete(DownloadPath, true);
+                    return DownloadAsync(ct);
+                }
             }
             else
             {
