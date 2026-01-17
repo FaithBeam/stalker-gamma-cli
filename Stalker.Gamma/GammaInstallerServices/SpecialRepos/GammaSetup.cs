@@ -1,5 +1,4 @@
-﻿using LibGit2Sharp;
-using Stalker.Gamma.Models;
+﻿using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
@@ -16,37 +15,29 @@ public class GammaSetupRepo(
     public string Name { get; } = "gamma_setup";
     public string ArchiveName { get; } = "";
     protected string Url = url;
-    public string DownloadPath => Path.Join(gammaDir, "downloads", Name);
+    public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
+    public string TempDir => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
 
-    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             if (Directory.Exists(DownloadPath))
             {
-                try
-                {
-                    gitUtility.PullGitRepo(
-                        DownloadPath,
-                        onProgress: pct =>
-                            gammaProgress.OnProgressChanged(
-                                new GammaProgress.GammaInstallProgressEventArgs(
-                                    Name,
-                                    "Download",
-                                    pct,
-                                    Url
-                                )
-                            ),
-                        ct: cancellationToken
-                    );
-                }
-                catch (LibGit2SharpException e) when (e.Message.Contains("no tracking information"))
-                {
-                    DirUtils.NormalizePermissions(DownloadPath);
-                    Directory.Delete(DownloadPath, true);
-                    return DownloadAsync(cancellationToken);
-                }
+                gitUtility.FetchGitRepo(
+                    DownloadPath,
+                    ct: cancellationToken,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        )
+                );
             }
             else
             {
@@ -63,11 +54,19 @@ public class GammaSetupRepo(
                             )
                         ),
                     ct: cancellationToken,
-                    extraArgs: new List<string> { "--depth", "1" }
+                    bare: true
                 );
             }
             Downloaded = true;
-            return Task.CompletedTask;
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                ct: cancellationToken,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    )
+            );
         }
         catch (Exception e)
         {
@@ -87,7 +86,7 @@ public class GammaSetupRepo(
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
         DirUtils.CopyDirectory(
-            Path.Join(DownloadPath, "modpack_addons"),
+            Path.Join(TempDir, "modpack_addons"),
             GammaModsDir,
             onProgress: pct =>
                 gammaProgress.OnProgressChanged(

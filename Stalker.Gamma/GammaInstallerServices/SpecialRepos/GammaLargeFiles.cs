@@ -15,46 +15,41 @@ public class GammaLargeFilesRepo(
 {
     public string Name { get; } = "gamma_large_files_v2";
     public string ArchiveName { get; } = "";
-    public string DownloadPath => Path.Join(gammaDir, "downloads", Name);
+    public string DownloadPath => Path.Join(_gammaDir, "downloads", $"{Name}.git");
+    public string TempDir => Path.Join(_gammaDir, "downloads", Name);
     protected string Url = url;
-    private string DestinationDir => Path.Join(gammaDir, "mods");
+    private readonly GammaProgress _gammaProgress = gammaProgress;
+    private readonly string _gammaDir = gammaDir;
+    private readonly GitUtility _gitUtility = gitUtility;
+    private string DestinationDir => Path.Join(_gammaDir, "mods");
 
-    public virtual Task DownloadAsync(CancellationToken ct = default)
+    public virtual async Task DownloadAsync(CancellationToken ct = default)
     {
         try
         {
             if (Directory.Exists(DownloadPath))
             {
-                try
-                {
-                    gitUtility.PullGitRepo(
-                        DownloadPath,
-                        onProgress: pct =>
-                            gammaProgress.OnProgressChanged(
-                                new GammaProgress.GammaInstallProgressEventArgs(
-                                    Name,
-                                    "Download",
-                                    pct,
-                                    Url
-                                )
-                            ),
-                        ct
-                    );
-                }
-                catch (LibGit2SharpException e) when (e.Message.Contains("no tracking information"))
-                {
-                    DirUtils.NormalizePermissions(DownloadPath);
-                    Directory.Delete(DownloadPath, true);
-                    return DownloadAsync(ct);
-                }
+                _gitUtility.FetchGitRepo(
+                    DownloadPath,
+                    ct: ct,
+                    onProgress: pct =>
+                        _gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        )
+                );
             }
             else
             {
-                gitUtility.CloneGitRepo(
+                _gitUtility.CloneGitRepo(
                     DownloadPath,
                     Url,
                     onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
+                        _gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
                                 "Download",
@@ -63,12 +58,20 @@ public class GammaLargeFilesRepo(
                             )
                         ),
                     ct: ct,
-                    extraArgs: new List<string> { "--depth", "1" }
+                    bare: true
                 );
             }
 
             Downloaded = true;
-            return Task.CompletedTask;
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                ct: ct,
+                onProgress: pct =>
+                    _gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    )
+            );
         }
         catch (Exception e)
         {
@@ -88,14 +91,14 @@ public class GammaLargeFilesRepo(
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
         DirUtils.CopyDirectory(
-            DownloadPath,
+            TempDir,
             DestinationDir,
             onProgress: pct =>
-                gammaProgress.OnProgressChanged(
+                _gammaProgress.OnProgressChanged(
                     new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
                 )
         );
-        gammaProgress.IncrementCompletedMods();
+        _gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }
 
