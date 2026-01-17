@@ -77,17 +77,6 @@ Apply updates:
 stalker-gamma update apply
 ```
 
-## Homebrew
-
-macos users should prefer to use homebrew to install `stalker-gamma` cli.
-
-After installing homebrew:
-
-```bash
-brew tap FaithBeam/stalker-gamma
-brew install --cask stalker-gamma
-```
-
 ## Build
 
 **Linux**
