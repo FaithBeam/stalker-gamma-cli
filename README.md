@@ -55,9 +55,12 @@ Commands:
     ```bash
     stalker-gamma full-install
     ```
-6. (Linux/MacOS) `winetricks d3dcompiler_43 d3dcompiler_47 d3dx10 d3dx11_43 d3dx9 vcrun2022`
-7. Run gamma/ModOrganizer.exe
-   
+6. Run gamma/ModOrganizer.exe
+
+#### MacOS Instructions
+
+[MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)
+
 ### Update
 
 After you've performed a full-install, you can update your installation.
