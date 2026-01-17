@@ -73,4 +73,4 @@ Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalk
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
 
-& (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r stalker-gamma.$($Version)+win.x64.zip (Join-Path $stalkerCliDir "*")
+& (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r stalker-gamma+win.x64.zip (Join-Path $stalkerCliDir "*")

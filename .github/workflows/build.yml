@@ -54,20 +54,20 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
-          chmod +x stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
+          chmod +x stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
-          files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
+          files: stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
       
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}
+          name: stalker-gamma+linux.${{ env.ARCHITECTURE }}
           path: build/linux/build/stalker-gamma-cli
           compression-level: 9
   
@@ -118,20 +118,20 @@ jobs:
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
-          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
-          chmod +x stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
+          ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
+          chmod +x stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
-          files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}.AppImage
+          files: stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+linux.${{ env.ARCHITECTURE }}
+          name: stalker-gamma+linux.${{ env.ARCHITECTURE }}
           path: build/linux/build/stalker-gamma-cli
           compression-level: 9
 
@@ -177,13 +177,13 @@ jobs:
         uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
-          files: build/mac/stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+mac.arm64.tar.gz
+          files: build/mac/stalker-gamma+mac.arm64.tar.gz
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+mac.arm64
+          name: stalker-gamma+mac.arm64
           path: build/mac/build/stalker-gamma
           compression-level: 9
 
@@ -222,12 +222,12 @@ jobs:
         uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
-          files: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+win.x64.zip
+          files: stalker-gamma+win.x64.zip
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: stalker-gamma.${{ steps.gitversion.outputs.SemVer }}+win.x64
+          name: stalker-gamma+win.x64
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
