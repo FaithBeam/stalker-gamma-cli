@@ -1,7 +1,6 @@
 using System.Text;
 using CliWrap;
 using CliWrap.Builders;
-using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
