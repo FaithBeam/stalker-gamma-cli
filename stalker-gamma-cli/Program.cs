@@ -34,8 +34,6 @@ public static class Program
                     .AddSingleton<ILogger>(log)
                     .AddScoped<UtilitiesReady>()
                     .AddScoped<SetupUtilitiesService>()
-                    .AddScoped<EnableLongPathsOnWindowsService>()
-                    .AddScoped<AddFoldersToWinDefenderExclusionService>()
                     .RegisterCoreGammaServices();
             });
 

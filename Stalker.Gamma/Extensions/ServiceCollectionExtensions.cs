@@ -5,6 +5,7 @@ using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Extensions;
@@ -48,6 +49,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<ITeivazAnomalyGunslingerRepo, TeivazAnomalyGunslingerRepo>()
             .AddScoped<GammaInstaller>()
             .AddScoped<IAnomalyInstaller, AnomalyInstaller>()
-            .AddScoped<DownloadAndInstallCustomModlist>();
+            .AddScoped<DownloadAndInstallCustomModlist>()
+            .AddScoped<PowerShellCmdBuilder>();
     }
 }

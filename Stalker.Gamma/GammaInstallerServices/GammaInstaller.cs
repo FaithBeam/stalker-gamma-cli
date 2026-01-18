@@ -5,6 +5,7 @@ using Stalker.Gamma.Factories;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices;
@@ -39,7 +40,8 @@ public class GammaInstaller(
     IDownloadableRecordFactory downloadableRecordFactory,
     IModListRecordFactory modListRecordFactory,
     ISeparatorsFactory separatorsFactory,
-    IHttpClientFactory hcf
+    IHttpClientFactory hcf,
+    PowerShellCmdBuilder powerShellCmdBuilder
 )
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -61,7 +63,11 @@ public class GammaInstaller(
         Directory.CreateDirectory(args.Gamma);
         Directory.CreateDirectory(args.Cache);
         Directory.CreateDirectory(gammaModsPath);
-        CreateSymbolicLinkUtility.Create(gammaDownloadsPath, args.Cache);
+        CreateSymbolicLinkUtility.Create(gammaDownloadsPath, args.Cache, powerShellCmdBuilder);
+        if (OperatingSystem.IsWindows())
+        {
+            await powerShellCmdBuilder.Build().ExecuteAsync();
+        }
 
         var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync();
         var modpackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
@@ -252,7 +258,11 @@ public class GammaInstaller(
         Directory.CreateDirectory(args.Gamma);
         Directory.CreateDirectory(args.Cache);
         Directory.CreateDirectory(gammaModsPath);
-        CreateSymbolicLinkUtility.Create(gammaDownloadsPath, args.Cache);
+        CreateSymbolicLinkUtility.Create(gammaDownloadsPath, args.Cache, powerShellCmdBuilder);
+        if (OperatingSystem.IsWindows())
+        {
+            await powerShellCmdBuilder.Build().ExecuteAsync();
+        }
 
         var onlineModPackMakerRecords = modListRecordFactory.Create(
             await getStalkerModsFromApi.GetModsAsync()

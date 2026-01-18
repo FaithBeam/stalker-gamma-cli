@@ -5,6 +5,17 @@ namespace Stalker.Gamma.Utilities;
 
 public partial class GitUtility
 {
+    public void SetConfig<TValue>(
+        string pathToRepo,
+        string key,
+        TValue? value,
+        ConfigurationLevel configurationLevel = ConfigurationLevel.Local
+    )
+    {
+        using var repo = new Repository(pathToRepo);
+        repo.Config.Set(key, value, configurationLevel);
+    }
+
     public void CloneGitRepo(
         string outputDir,
         string repoUrl,
