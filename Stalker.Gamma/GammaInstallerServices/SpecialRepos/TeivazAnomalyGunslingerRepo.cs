@@ -1,5 +1,4 @@
-﻿using LibGit2Sharp;
-using Stalker.Gamma.Models;
+﻿using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
@@ -16,37 +15,29 @@ public class TeivazAnomalyGunslingerRepo(
     public string Name { get; } = "teivaz_anomaly_gunslinger";
     public string ArchiveName { get; } = "";
     protected string Url = url;
-    public string DownloadPath => Path.Join(gammaDir, "downloads", Name);
+    public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
+    public string TempDir => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
 
-    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             if (Directory.Exists(DownloadPath))
             {
-                try
-                {
-                    gitUtility.PullGitRepo(
-                        DownloadPath,
-                        onProgress: pct =>
-                            gammaProgress.OnProgressChanged(
-                                new GammaProgress.GammaInstallProgressEventArgs(
-                                    Name,
-                                    "Download",
-                                    pct,
-                                    Url
-                                )
-                            ),
-                        ct: cancellationToken
-                    );
-                }
-                catch (LibGit2SharpException e) when (e.Message.Contains("no tracking information"))
-                {
-                    DirUtils.NormalizePermissions(DownloadPath);
-                    Directory.Delete(DownloadPath, true);
-                    return DownloadAsync(cancellationToken);
-                }
+                gitUtility.FetchGitRepo(
+                    DownloadPath,
+                    ct: cancellationToken,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        )
+                );
             }
             else
             {
@@ -63,12 +54,12 @@ public class TeivazAnomalyGunslingerRepo(
                             )
                         ),
                     ct: cancellationToken,
-                    extraArgs: new List<string> { "--depth", "1" }
+                    bare: true
                 );
             }
 
             Downloaded = true;
-            return Task.CompletedTask;
+            await GitUtility.ExtractAsync(DownloadPath, TempDir, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -87,57 +78,39 @@ public class TeivazAnomalyGunslingerRepo(
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        gammaProgress.OnDebugProgressChanged(
-            new GammaProgress.GammaInstallDebugProgressEventArgs { Text = "START COPY TEIVAZ" }
-        );
-        var dirs = Directory.GetDirectories(DownloadPath, "gamedata", SearchOption.AllDirectories);
+        var dirs = Directory.GetDirectories(TempDir, "gamedata", SearchOption.AllDirectories);
         var ordered = dirs.Order().ToList();
-        gammaProgress.OnDebugProgressChanged(
-            new GammaProgress.GammaInstallDebugProgressEventArgs
-            {
-                Text = $"""
-                UNORDERED:
-                {string.Join(Environment.NewLine, dirs)}
-                """,
-            }
-        );
-        gammaProgress.OnDebugProgressChanged(
-            new GammaProgress.GammaInstallDebugProgressEventArgs
-            {
-                Text = $"""
-                ORDERED:
-                {string.Join(Environment.NewLine, ordered)}
-                """,
-            }
-        );
 
-        foreach (var gameDataDir in ordered)
+        try
         {
-            gammaProgress.OnDebugProgressChanged(
-                new GammaProgress.GammaInstallDebugProgressEventArgs { Text = gameDataDir }
-            );
-            DirUtils.CopyDirectory(
-                gameDataDir,
-                Path.Join(
-                    GammaModsDir,
-                    "312- Gunslinger Guns for Anomaly - Teivazcz & Gunslinger Team",
-                    "gamedata"
-                ),
-                overwrite: true,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+            foreach (var gameDataDir in ordered)
+            {
+                DirUtils.CopyDirectory(
+                    gameDataDir,
+                    Path.Join(
+                        GammaModsDir,
+                        "312- Gunslinger Guns for Anomaly - Teivazcz & Gunslinger Team",
+                        "gamedata"
                     ),
-                txtProgress: txt =>
-                    gammaProgress.OnDebugProgressChanged(
-                        new GammaProgress.GammaInstallDebugProgressEventArgs { Text = txt }
-                    )
-            );
+                    overwrite: true,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Extract",
+                                pct,
+                                Url
+                            )
+                        ),
+                    moveFile: true
+                );
+            }
         }
-        gammaProgress.OnDebugProgressChanged(
-            new GammaProgress.GammaInstallDebugProgressEventArgs { Text = "END COPY TEIVAZ" }
-        );
-
+        finally
+        {
+            DirUtils.NormalizePermissions(TempDir);
+            Directory.Delete(TempDir, true);
+        }
         gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }

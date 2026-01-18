@@ -17,38 +17,30 @@ public class StalkerGammaRepo(
     public string Name { get; } = "Stalker_GAMMA";
     protected string Url = url;
     public string ArchiveName { get; } = "";
-    public string DownloadPath => Path.Join(gammaDir, "downloads", Name);
+    public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
+    public string TempDir => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
     private string AnomalyDir => anomalyDir;
 
-    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             if (Directory.Exists(DownloadPath))
             {
-                try
-                {
-                    gitUtility.PullGitRepo(
-                        DownloadPath,
-                        onProgress: pct =>
-                            gammaProgress.OnProgressChanged(
-                                new GammaProgress.GammaInstallProgressEventArgs(
-                                    Name,
-                                    "Download",
-                                    pct,
-                                    Url
-                                )
-                            ),
-                        ct: cancellationToken
-                    );
-                }
-                catch (LibGit2SharpException e) when (e.Message.Contains("no tracking information"))
-                {
-                    DirUtils.NormalizePermissions(DownloadPath);
-                    Directory.Delete(DownloadPath, true);
-                    return DownloadAsync(cancellationToken);
-                }
+                gitUtility.FetchGitRepo(
+                    DownloadPath,
+                    ct: cancellationToken,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Download",
+                                pct,
+                                Url
+                            )
+                        )
+                );
             }
             else
             {
@@ -65,11 +57,19 @@ public class StalkerGammaRepo(
                             )
                         ),
                     ct: cancellationToken,
-                    extraArgs: new List<string> { "--depth", "1" }
+                    bare: true
                 );
             }
             Downloaded = true;
-            return Task.CompletedTask;
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                ct: cancellationToken,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    )
+            );
         }
         catch (Exception e)
         {
@@ -89,27 +89,38 @@ public class StalkerGammaRepo(
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        DirUtils.CopyDirectory(
-            Path.Join(DownloadPath, "G.A.M.M.A", "modpack_addons"),
-            GammaModsDir,
-            onProgress: pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
-        );
-        DirUtils.CopyDirectory(
-            Path.Join(DownloadPath, "G.A.M.M.A", "modpack_patches"),
-            AnomalyDir,
-            onProgress: pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
-        );
-        File.Copy(
-            Path.Join(DownloadPath, "G.A.M.M.A_definition_version.txt"),
-            Path.Join(GammaModsDir, "..", "version.txt"),
-            true
-        );
+        try
+        {
+            DirUtils.CopyDirectory(
+                Path.Join(TempDir, "G.A.M.M.A", "modpack_addons"),
+                GammaModsDir,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                moveFile: true
+            );
+            DirUtils.CopyDirectory(
+                Path.Join(TempDir, "G.A.M.M.A", "modpack_patches"),
+                AnomalyDir,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                moveFile: true
+            );
+            File.Copy(
+                Path.Join(TempDir, "G.A.M.M.A_definition_version.txt"),
+                Path.Join(GammaModsDir, "..", "version.txt"),
+                true
+            );
+        }
+        finally
+        {
+            DirUtils.NormalizePermissions(TempDir);
+            Directory.Delete(TempDir, true);
+        }
+
         gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }
