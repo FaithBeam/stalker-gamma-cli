@@ -59,11 +59,7 @@ public class TeivazAnomalyGunslingerRepo(
             }
 
             Downloaded = true;
-            await GitUtility.ExtractAsync(
-                DownloadPath,
-                TempDir,
-                ct: cancellationToken
-            );
+            await GitUtility.ExtractAsync(DownloadPath, TempDir, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -84,22 +80,36 @@ public class TeivazAnomalyGunslingerRepo(
     {
         var dirs = Directory.GetDirectories(TempDir, "gamedata", SearchOption.AllDirectories);
         var ordered = dirs.Order().ToList();
-        
-        foreach (var gameDataDir in ordered)
+
+        try
         {
-            DirUtils.CopyDirectory(
-                gameDataDir,
-                Path.Join(
-                    GammaModsDir,
-                    "312- Gunslinger Guns for Anomaly - Teivazcz & Gunslinger Team",
-                    "gamedata"
-                ),
-                overwrite: true,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    )
-            );
+            foreach (var gameDataDir in ordered)
+            {
+                DirUtils.CopyDirectory(
+                    gameDataDir,
+                    Path.Join(
+                        GammaModsDir,
+                        "312- Gunslinger Guns for Anomaly - Teivazcz & Gunslinger Team",
+                        "gamedata"
+                    ),
+                    overwrite: true,
+                    onProgress: pct =>
+                        gammaProgress.OnProgressChanged(
+                            new GammaProgress.GammaInstallProgressEventArgs(
+                                Name,
+                                "Extract",
+                                pct,
+                                Url
+                            )
+                        ),
+                    moveFile: true
+                );
+            }
+        }
+        finally
+        {
+            DirUtils.NormalizePermissions(TempDir);
+            Directory.Delete(TempDir, true);
         }
         gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;

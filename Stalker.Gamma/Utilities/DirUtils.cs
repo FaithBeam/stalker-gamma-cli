@@ -78,7 +78,8 @@ public static class DirUtils
         bool overwrite = true,
         string? fileFilter = null,
         Action<double>? onProgress = null,
-        Action<string>? txtProgress = null
+        Action<string>? txtProgress = null,
+        bool moveFile = false
     )
     {
         if (sourceDir.Contains(".git"))
@@ -87,8 +88,8 @@ public static class DirUtils
         }
 
         // Count total files first if progress callback is provided
-        int totalFiles = 0;
-        int copiedFiles = 0;
+        var totalFiles = 0;
+        var copiedFiles = 0;
 
         if (onProgress != null)
         {
@@ -103,7 +104,8 @@ public static class DirUtils
             onProgress,
             ref copiedFiles,
             totalFiles,
-            txtProgress
+            txtProgress,
+            moveFile
         );
     }
 
@@ -145,7 +147,8 @@ public static class DirUtils
         Action<double>? onProgress,
         ref int copiedFiles,
         int totalFiles,
-        Action<string>? txtProgress = null
+        Action<string>? txtProgress = null,
+        bool moveFile = false
     )
     {
         txtProgress?.Invoke(
@@ -176,7 +179,7 @@ public static class DirUtils
                 using var stream = File.OpenRead(file.FullName);
                 var hashBytes = SHA256.HashData(stream);
                 var hash = Convert.ToHexString(hashBytes);
-                txtProgress?.Invoke($"Copying {file.FullName}, SHA256 = {hash}");
+                txtProgress.Invoke($"Copying {file.FullName}, SHA256 = {hash}");
             }
             if (!string.IsNullOrWhiteSpace(fileFilter) && file.Name == fileFilter)
             {
@@ -190,7 +193,14 @@ public static class DirUtils
                 if (overwrite)
                 {
                     txtProgress?.Invoke($"Overwriting {Path.Combine(destDir, file.Name)}");
-                    file.CopyTo(Path.Combine(destDir, file.Name), overwrite);
+                    if (moveFile)
+                    {
+                        file.MoveTo(Path.Combine(destDir, file.Name), overwrite);
+                    }
+                    else
+                    {
+                        file.CopyTo(Path.Combine(destDir, file.Name), overwrite);
+                    }
                     copiedFiles++;
                     onProgress?.Invoke((double)copiedFiles / totalFiles);
                 }
@@ -200,7 +210,14 @@ public static class DirUtils
                 txtProgress?.Invoke(
                     $"Copying {file.FullName} to {Path.Combine(destDir, file.Name)}"
                 );
-                file.CopyTo(Path.Combine(destDir, file.Name), overwrite);
+                if (moveFile)
+                {
+                    file.MoveTo(Path.Combine(destDir, file.Name), overwrite);
+                }
+                else
+                {
+                    file.CopyTo(Path.Combine(destDir, file.Name), overwrite);
+                }
                 copiedFiles++;
                 onProgress?.Invoke((double)copiedFiles / totalFiles);
             }
@@ -220,7 +237,8 @@ public static class DirUtils
                     onProgress,
                     ref copiedFiles,
                     totalFiles,
-                    txtProgress
+                    txtProgress,
+                    moveFile
                 );
             }
         }

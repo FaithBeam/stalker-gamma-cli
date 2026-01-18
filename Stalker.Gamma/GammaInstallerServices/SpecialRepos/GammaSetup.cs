@@ -85,14 +85,24 @@ public class GammaSetupRepo(
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        DirUtils.CopyDirectory(
-            Path.Join(TempDir, "modpack_addons"),
-            GammaModsDir,
-            onProgress: pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
-        );
+        try
+        {
+            DirUtils.CopyDirectory(
+                Path.Join(TempDir, "modpack_addons"),
+                GammaModsDir,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                moveFile: true
+            );
+        }
+        finally
+        {
+            DirUtils.NormalizePermissions(TempDir);
+            Directory.Delete(TempDir, true);
+        }
+
         gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }

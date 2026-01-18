@@ -89,27 +89,38 @@ public class StalkerGammaRepo(
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        DirUtils.CopyDirectory(
-            Path.Join(TempDir, "G.A.M.M.A", "modpack_addons"),
-            GammaModsDir,
-            onProgress: pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
-        );
-        DirUtils.CopyDirectory(
-            Path.Join(TempDir, "G.A.M.M.A", "modpack_patches"),
-            AnomalyDir,
-            onProgress: pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
-        );
-        File.Copy(
-            Path.Join(TempDir, "G.A.M.M.A_definition_version.txt"),
-            Path.Join(GammaModsDir, "..", "version.txt"),
-            true
-        );
+        try
+        {
+            DirUtils.CopyDirectory(
+                Path.Join(TempDir, "G.A.M.M.A", "modpack_addons"),
+                GammaModsDir,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                moveFile: true
+            );
+            DirUtils.CopyDirectory(
+                Path.Join(TempDir, "G.A.M.M.A", "modpack_patches"),
+                AnomalyDir,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                moveFile: true
+            );
+            File.Copy(
+                Path.Join(TempDir, "G.A.M.M.A_definition_version.txt"),
+                Path.Join(GammaModsDir, "..", "version.txt"),
+                true
+            );
+        }
+        finally
+        {
+            DirUtils.NormalizePermissions(TempDir);
+            Directory.Delete(TempDir, true);
+        }
+
         gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }

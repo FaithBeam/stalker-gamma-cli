@@ -63,6 +63,8 @@ public partial class GitUtility
             },
         };
         Repository.Clone(repoUrl, outputDir, options);
+        using var repo = new Repository(outputDir);
+        repo.Config.Set("core.longpaths", true);
     }
 
     public void PullGitRepo(
@@ -105,12 +107,7 @@ public partial class GitUtility
     {
         using var repo = new Repository(pathToRepo);
         var commit = repo.Lookup<Commit>($"refs/remotes/origin/{branch}");
-        await ExtractTreeAsync(
-            commit.Tree,
-            outputDir,
-            ct: ct,
-            onProgress: onProgress
-        );
+        await ExtractTreeAsync(commit.Tree, outputDir, ct: ct, onProgress: onProgress);
     }
 
     public static async Task<int> ExtractTreeAsync(

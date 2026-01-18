@@ -90,14 +90,24 @@ public class GammaLargeFilesRepo(
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        DirUtils.CopyDirectory(
-            TempDir,
-            DestinationDir,
-            onProgress: pct =>
-                _gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
-        );
+        try
+        {
+            DirUtils.CopyDirectory(
+                TempDir,
+                DestinationDir,
+                onProgress: pct =>
+                    _gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                moveFile: true
+            );
+        }
+        finally
+        {
+            DirUtils.NormalizePermissions(TempDir);
+            Directory.Delete(TempDir, true);
+        }
+
         _gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }
