@@ -2,10 +2,10 @@
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
-using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -15,8 +15,7 @@ public class FullInstallCmd(
     CliSettings cliSettings,
     StalkerGammaSettings stalkerGammaSettings,
     GammaInstaller gammaInstaller,
-    AddFoldersToWinDefenderExclusionService addFoldersToWinDefenderExclusionService,
-    EnableLongPathsOnWindowsService enableLongPathsOnWindowsService,
+    PowerShellCmdBuilder powerShellCmdBuilder,
     UtilitiesReady utilitiesReady
 )
 {
@@ -92,11 +91,15 @@ public class FullInstallCmd(
         {
             if (addFoldersToWinDefenderExclusion)
             {
-                addFoldersToWinDefenderExclusionService.Execute(gamma, anomaly, cache);
+                powerShellCmdBuilder.WithWindowsDefenderExclusions(
+                    Path.GetFullPath(gamma),
+                    Path.GetFullPath(anomaly),
+                    Path.GetFullPath(cache)
+                );
             }
             if (enableLongPaths)
             {
-                enableLongPathsOnWindowsService.Execute();
+                powerShellCmdBuilder.WithEnableLongPaths();
             }
         }
 
