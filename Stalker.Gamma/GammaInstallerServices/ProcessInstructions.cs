@@ -10,7 +10,7 @@ internal static class ProcessInstructions
         {
             if (Path.Exists(Path.Join(extractPath, i, "gamedata")))
             {
-                DirUtils.CopyDirectory(Path.Join(extractPath, i), extractPath);
+                DirUtils.CopyDirectory(Path.Join(extractPath, i), extractPath, moveFile: true);
             }
             else
             {
@@ -19,7 +19,8 @@ internal static class ProcessInstructions
                 {
                     DirUtils.CopyDirectory(
                         Path.Join(extractPath, i),
-                        Path.Join(extractPath, "gamedata")
+                        Path.Join(extractPath, "gamedata"),
+                        moveFile: true
                     );
                 }
             }
