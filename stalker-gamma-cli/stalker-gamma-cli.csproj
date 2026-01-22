@@ -16,7 +16,6 @@
     <NoWarn>1701;1702;IL2121;IL2104;IL2121</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Blake3" Version="2.2.0" />
     <PackageReference Include="ConsoleAppFramework" Version="5.7.13">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

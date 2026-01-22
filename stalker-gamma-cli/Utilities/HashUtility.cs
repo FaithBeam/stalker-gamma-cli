@@ -2,13 +2,11 @@
 using System.IO.Compression;
 using System.IO.Enumeration;
 using System.Security.Cryptography;
-using Blake3;
 
 namespace stalker_gamma_cli.Utilities;
 
 public enum HashType
 {
-    Blake3,
     Sha256,
     Md5,
 }
@@ -20,7 +18,7 @@ public static class HashUtility
         string anomaly,
         string cache,
         string gamma,
-        HashType hashType = HashType.Blake3,
+        HashType hashType = HashType.Sha256,
         Action<double>? onProgress = null,
         CancellationToken cancellationToken = default
     )
@@ -73,7 +71,6 @@ public static class HashUtility
             .Select(async x => new KeyValuePair<string, string>(
                 hashType switch
                 {
-                    HashType.Blake3 => await Blake3HashFile(x, cancellationToken),
                     HashType.Sha256 => await Sha256HashFile(x, cancellationToken),
                     HashType.Md5 => await Md5HashFile(x, cancellationToken),
                     _ => throw new ArgumentOutOfRangeException(nameof(hashType), hashType, null),
@@ -124,30 +121,6 @@ public static class HashUtility
 
             md5.TransformFinalBlock([], 0, 0);
             return Convert.ToHexStringLower(md5.Hash!);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    public static async Task<string> Blake3HashFile(
-        string path,
-        CancellationToken cancellationToken = default
-    )
-    {
-        using var blake3 = Hasher.New();
-        await using var stream = File.OpenRead(path);
-        var buffer = ArrayPool<byte>.Shared.Rent(BufferLen);
-        try
-        {
-            int bytesRead;
-            while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
-            {
-                blake3.Update(buffer.AsSpan(0, bytesRead));
-            }
-
-            return Convert.ToHexStringLower(blake3.Finalize().AsSpan());
         }
         finally
         {
