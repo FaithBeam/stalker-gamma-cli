@@ -13,9 +13,7 @@ public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utili
     /// </summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns></returns>
-    public async Task HashInstall(
-        CancellationToken cancellationToken
-    )
+    public async Task HashInstall(CancellationToken cancellationToken)
     {
         if (!utilitiesReady.IsReady)
         {
