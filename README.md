@@ -2,7 +2,7 @@
 
 _stalker-gamma-cli_ is a cli to install Stalker Anomaly and the GAMMA mod pack.
 
-```bash
+```
 ❯ stalker-gamma
 Usage: [command] [-h|--help] [--version]
 
