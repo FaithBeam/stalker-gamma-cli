@@ -60,6 +60,7 @@ Commands:
 #### Chocolatey (Windows)
 
 You can use [chocolatey](https://chocolatey.org) to install stalker-gamma:
+
     ```powershell
     choco install stalker-gamma
     ```
