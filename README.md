@@ -57,6 +57,13 @@ Commands:
     ```
 6. Run gamma/ModOrganizer.exe
 
+#### Chocolatey (Windows)
+
+You can use [chocolatey](https://chocolatey.org) to install stalker-gamma:
+    ```powershell
+    choco install stalker-gamma
+    ```
+
 #### MacOS Instructions
 
 [MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)
