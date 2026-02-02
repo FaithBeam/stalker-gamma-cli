@@ -61,9 +61,9 @@ Commands:
 
 You can use [chocolatey](https://chocolatey.org) to install stalker-gamma:
 
-    ```powershell
-    choco install stalker-gamma
-    ```
+```powershell
+choco install stalker-gamma
+```
 
 #### MacOS Instructions
 
