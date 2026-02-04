@@ -16,8 +16,8 @@ public static class HashUtility
     public static async Task Hash(
         string destinationArchive,
         string anomaly,
-        string cache,
         string gamma,
+        string cache,
         HashType hashType = HashType.Sha256,
         Action<double>? onProgress = null,
         CancellationToken cancellationToken = default
