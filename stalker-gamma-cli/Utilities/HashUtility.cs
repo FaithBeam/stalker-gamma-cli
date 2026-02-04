@@ -37,48 +37,60 @@ public static class HashUtility
         );
         await using var entryStream = await entry.OpenAsync(cancellationToken);
         await using var fs = new StreamWriter(entryStream);
-        var files = GetFiles(anomaly).Concat(GetFiles(cache)).Concat(GetFiles(gamma)).ToList();
+        var files = GetFiles(anomaly, nameof(anomaly))
+            .Concat(GetFiles(cache, nameof(cache)))
+            .Concat(GetFiles(gamma, nameof(gamma)))
+            .ToList();
         var total = files.Count;
         var kvpHash = GenerateFileHashesAsync(files, hashType, cancellationToken);
         var completed = 0;
         await foreach (var kvp in kvpHash)
         {
             (await kvp).Deconstruct(out var hash, out var path);
-            await fs.WriteLineAsync($"{hash} {path}");
+            await fs.WriteLineAsync($"{hash}\t{path}");
             onProgress?.Invoke(++completed / (double)total);
         }
     }
 
-    private static IEnumerable<FileSystemInfo> GetFiles(string path) =>
+    private static IEnumerable<(
+        FileSystemInfo fsi,
+        string folderPath,
+        string folderPathReplacement
+    )> GetFiles(string path, string folderPathReplacement) =>
         new FileSystemEnumerable<FileSystemInfo>(
             path,
             transform: (ref entry) => entry.ToFileSystemInfo(),
             new EnumerationOptions { RecurseSubdirectories = true }
-        ).Where(x =>
-            string.IsNullOrWhiteSpace(x.LinkTarget)
-            && !x.Attributes.HasFlag(FileAttributes.Directory)
-        );
+        )
+            .Where(x =>
+                string.IsNullOrWhiteSpace(x.LinkTarget)
+                && !x.Attributes.HasFlag(FileAttributes.Directory)
+            )
+            .Select(x => (x, folderName: path, folderPathReplacement));
 
-    public static IAsyncEnumerable<Task<KeyValuePair<string, string>>> GenerateFileHashesAsync(
-        IEnumerable<FileSystemInfo> paths,
+    private static IAsyncEnumerable<Task<KeyValuePair<string, string>>> GenerateFileHashesAsync(
+        IEnumerable<(FileSystemInfo fsi, string folderPath, string folderPathReplacement)> paths,
         HashType hashType,
         CancellationToken cancellationToken
     ) =>
         paths
-            .Select(x => x.FullName)
-            .Order()
             .ToAsyncEnumerable()
             .Select(async x => new KeyValuePair<string, string>(
                 hashType switch
                 {
-                    HashType.Sha256 => await Sha256HashFile(x, cancellationToken),
-                    HashType.Md5 => await Md5HashFile(x, cancellationToken),
+                    HashType.Sha256 => await Sha256HashFile(x.fsi.FullName, cancellationToken),
+                    HashType.Md5 => await Md5HashFile(x.fsi.FullName, cancellationToken),
                     _ => throw new ArgumentOutOfRangeException(nameof(hashType), hashType, null),
                 },
-                x
+                x.fsi.FullName.Replace(
+                        x.folderPath,
+                        x.folderPathReplacement,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                    .Replace("\\", "/")
             ));
 
-    public static async Task<string> Sha256HashFile(
+    private static async Task<string> Sha256HashFile(
         string path,
         CancellationToken cancellationToken = default
     )
