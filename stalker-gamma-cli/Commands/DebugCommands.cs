@@ -1,4 +1,5 @@
-﻿using ConsoleAppFramework;
+﻿using System.Reflection;
+using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
 using stalker_gamma_cli.Utilities;
@@ -32,9 +33,15 @@ public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utili
         var gamma = cliSettings.ActiveProfile!.Gamma;
         var cache = cliSettings.ActiveProfile!.Cache;
 
-        var hashType = HashType.Sha256;
+        const HashType hashType = HashType.Sha256;
 
-        var destinationArchive = $"stalker-gamma-cli-hashes-{Environment.UserName}.zip";
+        var entry = Assembly.GetEntryAssembly();
+        var infoVersion =
+            entry?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? "unknown";
+        infoVersion = infoVersion[..infoVersion.IndexOf('+')];
+        var destinationArchive =
+            $"stalker-gamma-cli-hashes-{Environment.UserName}.{infoVersion}.zip";
         _logger.Information("Hashing install folders, this will take a while...");
         _logger.Information("Hash Type: {HashType}", hashType);
         await HashUtility.Hash(
