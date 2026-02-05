@@ -135,5 +135,5 @@ public static class HashUtility
         }
     }
 
-    private const int BufferLen = 1024 * 1024 * 1024;
+    private const int BufferLen = 1024 * 1024;
 }
