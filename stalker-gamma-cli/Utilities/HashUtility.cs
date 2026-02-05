@@ -40,6 +40,7 @@ public static class HashUtility
         var files = GetFiles(anomaly, nameof(anomaly))
             .Concat(GetFiles(cache, nameof(cache)))
             .Concat(GetFiles(gamma, nameof(gamma)))
+            .OrderBy(x => x.folderPath)
             .ToList();
         var total = files.Count;
         var kvpHash = GenerateFileHashesAsync(files, hashType, cancellationToken);
@@ -52,11 +53,10 @@ public static class HashUtility
         }
     }
 
-    private static IEnumerable<(
-        FileSystemInfo fsi,
-        string folderPath,
+    private static IEnumerable<(FileSystemInfo fsi, string folderPath)> GetFiles(
+        string path,
         string folderPathReplacement
-    )> GetFiles(string path, string folderPathReplacement) =>
+    ) =>
         new FileSystemEnumerable<FileSystemInfo>(
             path,
             transform: (ref entry) => entry.ToFileSystemInfo(),
@@ -66,10 +66,10 @@ public static class HashUtility
                 string.IsNullOrWhiteSpace(x.LinkTarget)
                 && !x.Attributes.HasFlag(FileAttributes.Directory)
             )
-            .Select(x => (x, folderName: path, folderPathReplacement));
+            .Select(x => (x, folderName: x.FullName.Replace(path, folderPathReplacement)));
 
     private static IAsyncEnumerable<Task<KeyValuePair<string, string>>> GenerateFileHashesAsync(
-        IEnumerable<(FileSystemInfo fsi, string folderPath, string folderPathReplacement)> paths,
+        IEnumerable<(FileSystemInfo fsi, string folderPath)> paths,
         HashType hashType,
         CancellationToken cancellationToken
     ) =>
@@ -82,12 +82,7 @@ public static class HashUtility
                     HashType.Md5 => await Md5HashFile(x.fsi.FullName, cancellationToken),
                     _ => throw new ArgumentOutOfRangeException(nameof(hashType), hashType, null),
                 },
-                x.fsi.FullName.Replace(
-                        x.folderPath,
-                        x.folderPathReplacement,
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                    .Replace("\\", "/")
+                x.folderPath
             ));
 
     private static async Task<string> Sha256HashFile(
@@ -140,5 +135,5 @@ public static class HashUtility
         }
     }
 
-    private const int BufferLen = 1024 * 1024;
+    private const int BufferLen = 1024 * 1024 * 1024;
 }
