@@ -65,6 +65,18 @@ You can use [chocolatey](https://chocolatey.org) to install stalker-gamma:
 choco install stalker-gamma
 ```
 
+#### AUR (Arch Linux)
+
+[stalker-gamma-cli-bin](https://aur.archlinux.org/packages/stalker-gamma-cli-bin)
+
+```bash
+yay -S stalker-gamma-cli-bin
+```
+
+**Note**
+
+This AUR package is not maintained by me. I may or may not be able to help with broken installs using this method.
+
 #### MacOS Instructions
 
 [MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)
