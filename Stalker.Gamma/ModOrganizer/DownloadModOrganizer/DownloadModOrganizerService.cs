@@ -79,7 +79,7 @@ public class DownloadModOrganizerService(
                         ) != settings.ModOrganizer244Md5
                     )
                     {
-                        await DownloadFileQuickUtility.DownloadAsync(
+                        await DownloadFileFast.DownloadAsync(
                             hc,
                             dlUrl,
                             mo2ArchivePath,
@@ -115,7 +115,7 @@ public class DownloadModOrganizerService(
                         ) != settings.ModOrganizer252Md5
                     )
                     {
-                        await DownloadFileQuickUtility.DownloadAsync(
+                        await DownloadFileFast.DownloadAsync(
                             hc,
                             dlUrl,
                             mo2ArchivePath,
@@ -136,7 +136,7 @@ public class DownloadModOrganizerService(
         }
         else
         {
-            await DownloadFileQuickUtility.DownloadAsync(
+            await DownloadFileFast.DownloadAsync(
                 hc,
                 dlUrl,
                 mo2ArchivePath,

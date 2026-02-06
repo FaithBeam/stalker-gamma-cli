@@ -1,4 +1,3 @@
-using System.Buffers;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Utilities;
 
@@ -31,74 +30,26 @@ public class GithubRecord(
 
     public async Task DownloadAsync(CancellationToken cancellationToken)
     {
-        const int bufferSize = 1024 * 1024;
-
         if (!Download && File.Exists(DownloadPath))
         {
             return;
         }
 
-        var buffer = ArrayPool<byte>.Shared.Rent(81920);
-        try
-        {
-            using var response = await _hc.GetAsync(
-                Url,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken
-            );
-            response.EnsureSuccessStatusCode();
+        await DownloadFileFast.DownloadAsync(
+            _hc,
+            Url,
+            DownloadPath,
+            onProgress: pct =>
+                gammaProgress.OnProgressChanged(
+                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
+                ),
+            cancellationToken: cancellationToken
+        );
 
-            var totalBytes = response.Content.Headers.ContentLength;
-
-            await using var fs = new FileStream(
-                DownloadPath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: bufferSize
-            );
-            await using var contentStream = await response.Content.ReadAsStreamAsync(
-                cancellationToken
-            );
-
-            long totalBytesRead = 0;
-            int bytesRead;
-
-            while (
-                (
-                    bytesRead = await contentStream.ReadAsync(
-                        buffer.AsMemory(0, buffer.Length),
-                        cancellationToken
-                    )
-                ) > 0
-            )
-            {
-                await fs.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                totalBytesRead += bytesRead;
-
-                if (totalBytes.HasValue)
-                {
-                    var progressPercentage = (double)totalBytesRead / totalBytes.Value;
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(
-                            Name,
-                            "Download",
-                            progressPercentage,
-                            Url
-                        )
-                    );
-                }
-            }
-
-            gammaProgress.OnProgressChanged(
-                new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", 1, Url)
-            );
-            Downloaded = true;
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
+        gammaProgress.OnProgressChanged(
+            new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", 1, Url)
+        );
+        Downloaded = true;
     }
 
     public async Task ExtractAsync(CancellationToken cancellationToken)
