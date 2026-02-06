@@ -67,6 +67,8 @@ choco install stalker-gamma
 
 #### AUR (Arch Linux)
 
+[stalker-gamma-cli-bin](https://aur.archlinux.org/packages/stalker-gamma-cli-bin)
+
 ```bash
 yay -S stalker-gamma-cli-bin
 ```
