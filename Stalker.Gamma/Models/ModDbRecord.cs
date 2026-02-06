@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Utilities;
 
@@ -31,8 +32,9 @@ public class ModDbRecord(
         if (
             Path.Exists(DownloadPath)
                 && !string.IsNullOrWhiteSpace(Md5)
-                && await Md5Utility.CalculateFileMd5Async(
+                && await HashUtils.HashFile(
                     DownloadPath,
+                    HashAlgorithmName.MD5,
                     pct =>
                         gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(

@@ -1,5 +1,6 @@
 using System.IO.Enumeration;
 using System.Reactive.Linq;
+using System.Security.Cryptography;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
@@ -275,7 +276,12 @@ public class AnomalyInstallCmd(
             .Select(x => x.FullName)
             .ToDictionaryAsync(
                 x => x,
-                async x => await HashUtility.Md5HashFile(x, cancellationToken),
+                async x =>
+                    await HashUtils.HashFile(
+                        x,
+                        HashAlgorithmName.MD5,
+                        cancellationToken: cancellationToken
+                    ),
                 cancellationToken: cancellationToken
             );
         return actual;

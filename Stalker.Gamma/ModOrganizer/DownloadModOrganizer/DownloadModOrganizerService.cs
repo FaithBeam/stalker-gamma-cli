@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
@@ -62,8 +63,9 @@ public class DownloadModOrganizerService(
             {
                 case "v2.4.4":
                     if (
-                        await Md5Utility.CalculateFileMd5Async(
+                        await HashUtils.HashFile(
                             mo2ArchivePath,
+                            HashAlgorithmName.MD5,
                             pct =>
                                 gammaProgress.OnProgressChanged(
                                     new GammaProgress.GammaInstallProgressEventArgs(
@@ -97,8 +99,9 @@ public class DownloadModOrganizerService(
                     break;
                 case "v2.5.2":
                     if (
-                        await Md5Utility.CalculateFileMd5Async(
+                        await HashUtils.HashFile(
                             mo2ArchivePath,
+                            HashAlgorithmName.MD5,
                             pct =>
                                 gammaProgress.OnProgressChanged(
                                     new GammaProgress.GammaInstallProgressEventArgs(

@@ -1,4 +1,5 @@
-﻿using Stalker.Gamma.Models;
+﻿using System.Security.Cryptography;
+using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices;
@@ -30,8 +31,9 @@ public class AnomalyInstaller(
             !File.Exists(DownloadPath)
             || (
                 File.Exists(DownloadPath)
-                && await Md5Utility.CalculateFileMd5Async(
+                && await HashUtils.HashFile(
                     DownloadPath,
+                    HashAlgorithmName.MD5,
                     pct =>
                         progress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(

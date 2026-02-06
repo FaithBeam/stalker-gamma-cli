@@ -1,7 +1,7 @@
-﻿using System.Buffers;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.IO.Enumeration;
 using System.Security.Cryptography;
+using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Utilities;
 
@@ -78,62 +78,18 @@ public static class HashUtility
             .Select(async x => new KeyValuePair<string, string>(
                 hashType switch
                 {
-                    HashType.Sha256 => await Sha256HashFile(x.fsi.FullName, cancellationToken),
-                    HashType.Md5 => await Md5HashFile(x.fsi.FullName, cancellationToken),
+                    HashType.Sha256 => await HashUtils.HashFile(
+                        x.fsi.FullName,
+                        HashAlgorithmName.SHA256,
+                        cancellationToken: cancellationToken
+                    ),
+                    HashType.Md5 => await HashUtils.HashFile(
+                        x.fsi.FullName,
+                        HashAlgorithmName.MD5,
+                        cancellationToken: cancellationToken
+                    ),
                     _ => throw new ArgumentOutOfRangeException(nameof(hashType), hashType, null),
                 },
                 x.folderPath
             ));
-
-    private static async Task<string> Sha256HashFile(
-        string path,
-        CancellationToken cancellationToken = default
-    )
-    {
-        using var sha256 = SHA256.Create();
-        await using var stream = File.OpenRead(path);
-        var buffer = ArrayPool<byte>.Shared.Rent(BufferLen);
-        try
-        {
-            int bytesRead;
-            while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
-            {
-                sha256.TransformBlock(buffer, 0, bytesRead, null, 0);
-            }
-
-            sha256.TransformFinalBlock([], 0, 0);
-            return Convert.ToHexStringLower(sha256.Hash!);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    public static async Task<string> Md5HashFile(
-        string path,
-        CancellationToken cancellationToken = default
-    )
-    {
-        using var md5 = MD5.Create();
-        await using var stream = File.OpenRead(path);
-        var buffer = ArrayPool<byte>.Shared.Rent(BufferLen);
-        try
-        {
-            int bytesRead;
-            while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
-            {
-                md5.TransformBlock(buffer, 0, bytesRead, null, 0);
-            }
-
-            md5.TransformFinalBlock([], 0, 0);
-            return Convert.ToHexStringLower(md5.Hash!);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    private const int BufferLen = 1024 * 1024;
 }
