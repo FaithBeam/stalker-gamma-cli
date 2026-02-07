@@ -18,7 +18,7 @@ public partial class GitUtility
     )
     {
         using var repo = new Repository(pathToRepo);
-        var remote = repo.Network.Remotes["origin"];
+        var remote = repo.Network.Remotes["origin"] ?? repo.Network.Remotes["Grokitach"];
         var options = new FetchOptions
         {
             OnTransferProgress = progress =>
@@ -118,7 +118,9 @@ public partial class GitUtility
     )
     {
         using var repo = new Repository(pathToRepo);
-        var commit = repo.Lookup<Commit>($"refs/remotes/origin/{branch}");
+        var commit =
+            repo.Lookup<Commit>($"refs/remotes/origin/{branch}")
+            ?? repo.Lookup<Commit>($"refs/remotes/Grokitach/{branch}");
         await ExtractTreeAsync(commit.Tree, outputDir, ct: ct, onProgress: onProgress);
     }
 
