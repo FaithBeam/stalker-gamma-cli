@@ -39,7 +39,7 @@ public static class HashUtility
         await using var fs = new StreamWriter(entryStream);
         var anomalyFilters = new List<string>
         {
-            "anomaly/appdata/shaders",
+            "anomaly/gamedata/shaders",
             "anomaly/appdata/savedgames",
             "anomaly/appdata/logs",
         }.AsReadOnly();
