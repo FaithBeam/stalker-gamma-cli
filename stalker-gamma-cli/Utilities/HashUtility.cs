@@ -39,9 +39,12 @@ public static class HashUtility
         await using var fs = new StreamWriter(entryStream);
         var files = GetFiles(anomaly, nameof(anomaly))
             .Where(x => !x.folderPath.Contains("shaders"))
-            .Concat(GetFiles(gamma, nameof(gamma)))
-            .Where(x =>
-                !x.folderPath.Contains("basic_games") && !x.folderPath.Contains("__pycache__")
+            .Concat(
+                GetFiles(gamma, nameof(gamma))
+                    .Where(x =>
+                        !x.folderPath.Contains("basic_games")
+                        && !x.folderPath.Contains("__pycache__")
+                    )
             )
             .OrderBy(x => x.folderPath)
             .ToList();
