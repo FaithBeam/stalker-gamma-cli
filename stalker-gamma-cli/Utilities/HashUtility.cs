@@ -38,7 +38,7 @@ public static class HashUtility
         await using var entryStream = await entry.OpenAsync(cancellationToken);
         await using var fs = new StreamWriter(entryStream);
         var files = GetFiles(anomaly, nameof(anomaly))
-            .Where(x => !x.folderPath.Contains("shaders"))
+            .Where(x => !x.folderPath.Contains("shaders") && !x.folderPath.Contains("savedgames"))
             .Concat(
                 GetFiles(gamma, nameof(gamma))
                     .Where(x =>
