@@ -15,7 +15,7 @@ public static class HashUtils
         await using var stream = File.OpenRead(path);
         var fileSize = stream.Length;
 
-        return await StreamChunkFast.ChunkAsync(
+        await StreamChunkFast.ChunkAsync(
             stream,
             chunkFunc: (buffer, bytesRead, totalBytesRead) =>
             {
@@ -23,8 +23,9 @@ public static class HashUtils
                 onProgress?.Invoke((double)totalBytesRead / fileSize);
                 return Task.CompletedTask;
             },
-            onCompleted: () => Convert.ToHexStringLower(hasher.GetHashAndReset()),
             cancellationToken: cancellationToken
         );
+
+        return Convert.ToHexStringLower(hasher.GetHashAndReset());
     }
 }

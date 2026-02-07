@@ -38,8 +38,11 @@ public static class HashUtility
         await using var entryStream = await entry.OpenAsync(cancellationToken);
         await using var fs = new StreamWriter(entryStream);
         var files = GetFiles(anomaly, nameof(anomaly))
-            .Concat(GetFiles(cache, nameof(cache)))
+            .Where(x => !x.folderPath.Contains("shaders"))
             .Concat(GetFiles(gamma, nameof(gamma)))
+            .Where(x =>
+                !x.folderPath.Contains("basic_games") && !x.folderPath.Contains("__pycache__")
+            )
             .OrderBy(x => x.folderPath)
             .ToList();
         var total = files.Count;

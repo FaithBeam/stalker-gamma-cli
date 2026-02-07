@@ -38,7 +38,6 @@ public static class DownloadFileFast
                 var progressPercentage = (double)totalBytesRead / totalBytes!.Value;
                 onProgress?.Invoke(progressPercentage);
             },
-            onCompleted: () => Task.CompletedTask,
             cancellationToken: cancellationToken
         );
     }
