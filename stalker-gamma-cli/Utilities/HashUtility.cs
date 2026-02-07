@@ -37,14 +37,26 @@ public static class HashUtility
         );
         await using var entryStream = await entry.OpenAsync(cancellationToken);
         await using var fs = new StreamWriter(entryStream);
+        var anomalyFilters = new List<string>
+        {
+            "anomaly/appdata/shaders",
+            "anomaly/appdata/savedgames",
+            "anomaly/appdata/logs",
+        }.AsReadOnly();
+        var gammaFilters = new List<string>
+        {
+            "gamma/crashDumps",
+            "gamma/logs",
+            "gamma/webcache",
+            "gamma/pythoncore",
+            "gamma/overwrite",
+            "basic_games",
+            "__pycache__",
+        }.AsReadOnly();
         var files = GetFiles(anomaly, nameof(anomaly))
-            .Where(x => !x.folderPath.Contains("shaders") && !x.folderPath.Contains("savedgames"))
+            .Where(x => !anomalyFilters.Any(x.folderPath.Contains))
             .Concat(
-                GetFiles(gamma, nameof(gamma))
-                    .Where(x =>
-                        !x.folderPath.Contains("basic_games")
-                        && !x.folderPath.Contains("__pycache__")
-                    )
+                GetFiles(gamma, nameof(gamma)).Where(x => !gammaFilters.Any(x.folderPath.Contains))
             )
             .OrderBy(x => x.folderPath)
             .ToList();
