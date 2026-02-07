@@ -33,6 +33,7 @@ public static class Program
                 services
                     .AddSingleton<ILogger>(log)
                     .AddScoped<UtilitiesReady>()
+                    .AddScoped<GetRemoteGitRepoCommit>()
                     .AddScoped<SetupUtilitiesService>()
                     .RegisterCoreGammaServices();
             });

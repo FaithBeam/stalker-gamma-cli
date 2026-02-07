@@ -5,6 +5,12 @@ namespace Stalker.Gamma.Utilities;
 
 public partial class GitUtility
 {
+    public string GetLatestCommitHash(string pathToRepo)
+    {
+        using var repo = new Repository(pathToRepo);
+        return repo.Head.Tip.Sha;
+    }
+
     public void FetchGitRepo(
         string pathToRepo,
         Action<double>? onProgress = null,
@@ -28,7 +34,13 @@ public partial class GitUtility
                 return true;
             },
         };
-        Commands.Fetch(repo, remote.Name, [], options, "Fetch updates");
+        Commands.Fetch(
+            repo,
+            remote.Name,
+            ["+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
+            options,
+            "Fetch updates"
+        );
     }
 
     public void CloneGitRepo(
@@ -77,7 +89,7 @@ public partial class GitUtility
         Commands.Pull(repo, _signature, null);
     }
 
-    public static int CountBlobs(Tree tree)
+    private static int CountBlobs(Tree tree)
     {
         var count = 0;
 
@@ -110,7 +122,7 @@ public partial class GitUtility
         await ExtractTreeAsync(commit.Tree, outputDir, ct: ct, onProgress: onProgress);
     }
 
-    public static async Task<int> ExtractTreeAsync(
+    private static async Task<int> ExtractTreeAsync(
         Tree tree,
         string basePath,
         Action<double>? onProgress = null,

@@ -3,11 +3,13 @@ using System.Text.Json;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
+using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -19,14 +21,16 @@ public class UpdateCmds(
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IModListRecordFactory modListRecordFactory,
     GammaInstaller gammaInstaller,
-    UtilitiesReady utilitiesReady
+    GitUtility gitUtility,
+    UtilitiesReady utilitiesReady,
+    GetRemoteGitRepoCommit getRemoteGitRepoCommit
 )
 {
     /// <summary>
     /// Check for updates
     /// </summary>
     [Command("check")]
-    public async Task CheckUpdates()
+    public async Task CheckUpdates(CancellationToken cancellationToken = default)
     {
         if (!utilitiesReady.IsReady)
         {
@@ -42,6 +46,56 @@ public class UpdateCmds(
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 
+        var gammaDownloadsPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "downloads");
+        List<string> repos =
+        [
+            "gamma_setup",
+            "gamma_large_files_v2",
+            "Stalker_GAMMA",
+            "teivaz_anomaly_gunslinger",
+        ];
+        const string repoOwner = "Grokitach";
+
+        var localRepos = repos
+            .Select(x => new { Name = x, Path = Path.Join(gammaDownloadsPath, $"{x}.git") })
+            .Where(repoDir => Directory.Exists(repoDir.Path))
+            .ToList();
+        var localRepoModPackMakerRecs = localRepos
+            .Select(repoDir =>
+            {
+                var sha = gitUtility.GetLatestCommitHash(repoDir.Path);
+                return new ModPackMakerRecord
+                {
+                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
+                    AddonName = repoDir.Name,
+                    Md5ModDb = sha,
+                    ZipName = sha[..7],
+                };
+            })
+            .ToList();
+        var remoteRepoModPackMakerRecs = localRepos
+            .ToAsyncEnumerable()
+            .Select(async repoDir =>
+            {
+                var sha =
+                    await getRemoteGitRepoCommit.ExecuteAsync(
+                        repoOwner,
+                        repoDir.Name,
+                        cancellationToken
+                    ) ?? "N/A";
+                return new ModPackMakerRecord
+                {
+                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
+                    AddonName = repoDir.Name,
+                    Md5ModDb = sha,
+                    ZipName = sha[..7],
+                };
+            })
+            .WithCancellation(cancellationToken);
+        var localGitRepoDiffs = await localRepoModPackMakerRecs.DiffAsync(
+            remoteRepoModPackMakerRecs
+        );
+
         var localModPackMakerPath = Path.Join(
             _cliSettings.ActiveProfile!.Gamma,
             "profiles",
@@ -51,13 +105,13 @@ public class UpdateCmds(
 
         var localRecords = File.Exists(localModPackMakerPath)
             ? JsonSerializer.Deserialize(
-                await File.ReadAllTextAsync(localModPackMakerPath),
+                await File.ReadAllTextAsync(localModPackMakerPath, cancellationToken),
                 jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
             ) ?? []
             : [];
         var onlineRecordsTxt = await _getStalkerModsFromApi.GetModsAsync();
         var onlineRecords = _modListRecordFactory.Create(onlineRecordsTxt);
-        var diffs = localRecords.Diff(onlineRecords);
+        var diffs = localRecords.Diff(onlineRecords).Concat(localGitRepoDiffs).ToList();
         if (diffs.Count > 0)
         {
             var olds = diffs

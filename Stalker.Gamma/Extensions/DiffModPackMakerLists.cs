@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Stalker.Gamma.Models;
 
@@ -54,6 +55,48 @@ public static partial class DiffModPackMakerLists
 
     [GeneratedRegex(@"^-\s+(?<author>.+)")]
     private static partial Regex PatchRx();
+
+    public static async Task<List<ModPackMakerRecordDiff>> DiffAsync(
+        this List<ModPackMakerRecord> oldRecs,
+        ConfiguredCancelableAsyncEnumerable<Task<ModPackMakerRecord>> remoteRepoModPackMakerRecs
+    )
+    {
+        List<ModPackMakerRecordDiff> diffs = [];
+
+        List<ModPackMakerRecord> remoteRecs = [];
+
+        await foreach (var rec in remoteRepoModPackMakerRecs)
+        {
+            remoteRecs.Add(await rec);
+        }
+
+        // find removed and modified
+        foreach (var old in oldRecs)
+        {
+            var matchingNewRec = remoteRecs.FirstOrDefault(x =>
+                x.AddonName == old.AddonName && x.DlLink == old.DlLink
+            );
+            if (matchingNewRec is null)
+            {
+                diffs.Add(new ModPackMakerRecordDiff(DiffType.Removed, old, null));
+            }
+            else if (
+                !string.Equals(
+                    matchingNewRec.Md5ModDb,
+                    old.Md5ModDb,
+                    StringComparison.OrdinalIgnoreCase
+                )
+                || matchingNewRec.Instructions != old.Instructions
+                || PatchRx().Match(matchingNewRec.Patch ?? "").Groups["author"].Value
+                    != PatchRx().Match(old.Patch ?? "").Groups["author"].Value
+            )
+            {
+                diffs.Add(new ModPackMakerRecordDiff(DiffType.Modified, old, matchingNewRec));
+            }
+        }
+
+        return diffs;
+    }
 }
 
 public class DiffModPackMakerListsException(string msg) : Exception(msg);
