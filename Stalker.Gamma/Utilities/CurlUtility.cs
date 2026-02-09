@@ -105,7 +105,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         File.Exists(PathToCurlImpersonate)
         || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate");
 
-    [GeneratedRegex(@"(\d+(\.\d+)?)\s*%", RegexOptions.Compiled)]
+    [GeneratedRegex(@"(\d+([\.,]\d+)?)\s*%", RegexOptions.Compiled)]
     private partial Regex ProgressRx();
 }
 
