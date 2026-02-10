@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
@@ -62,11 +63,13 @@ public partial class CurlUtility(StalkerGammaSettings settings)
                         PipeTarget.ToDelegate(line =>
                         {
                             txtProgress?.Invoke(line);
+                            var match = ProgressRx().Match(line);
                             if (
                                 onProgress is not null
-                                && ProgressRx().IsMatch(line)
+                                && match.Success
                                 && double.TryParse(
                                     ProgressRx().Match(line).Groups[1].Value,
+                                    provider: CultureInfo.InvariantCulture,
                                     out var parsed
                                 )
                             )
@@ -105,7 +108,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         File.Exists(PathToCurlImpersonate)
         || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate");
 
-    [GeneratedRegex(@"(\d+(\.\d+)?)\s*%", RegexOptions.Compiled)]
+    [GeneratedRegex(@"(\d+([\.,]\d+)?)\s*%", RegexOptions.Compiled)]
     private partial Regex ProgressRx();
 }
 
