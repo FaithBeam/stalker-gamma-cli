@@ -1,4 +1,5 @@
 VERSION ?= 1.0.0
+ARCH ?= arm64
 
 CUR_DIR = $(realpath .)
 ROOT = $(realpath ../../)
@@ -9,9 +10,16 @@ DOTNET_INSTALL_URL = https://dot.net/v1/dotnet-install.sh
 DOTNET_INSTALL_SCRIPT_PATH = $(BUILD_DIR)/dotnet-install.sh
 DOTNET_INSTALL_PATH = $(BUILD_DIR)/.dotnet
 
-CURL_IMPERSONATE_VERSION = v1.2.5
+CURL_IMPERSONATE_VERSION = v1.4.4
+ifeq ($(ARCH),x64)
+    CURL_ARCH := x86_64
+else ifeq ($(ARCH),arm64)
+    CURL_ARCH := arm64
+else
+    CURL_ARCH := unknown
+endif
 CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
-CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).arm64-macos.tar.gz
+CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-macos.tar.gz
 CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).arm64-macos.tar.gz
 
 7Z_VERSION = 2501
@@ -59,7 +67,7 @@ build:
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:
-	tar -czvf stalker-gamma+mac.arm64.tar.gz --directory=$(STALKER_GAMMA_BUILD_DIR) .
+	tar -czvf stalker-gamma+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_BUILD_DIR) .
 
 clean:
 	rm -rf $(BUILD_DIR)

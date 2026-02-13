@@ -143,6 +143,7 @@ jobs:
       PROJECT_FOLDER: stalker-gamma-cli
       PROJECT_NAME: stalker-gamma-cli.csproj
       CONFIGURATION: Release
+      ARCHITECTURE: arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -170,8 +171,8 @@ jobs:
 
       - name: Make Build
         run: |
-          make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }}
-          make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac
+          make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
+          make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac ARCH=${{ env.ARCHITECTURE }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
@@ -195,6 +196,7 @@ jobs:
       PROJECT_FOLDER: stalker-gamma-cli
       PROJECT_NAME: stalker-gamma-cli.csproj
       CONFIGURATION: Release
+      ARCHITECTURE: x64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -222,8 +224,8 @@ jobs:
 
       - name: Make Build
         run: |
-          make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }}
-          make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac
+          make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
+          make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac ARCH=${{ env.ARCHITECTURE }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2

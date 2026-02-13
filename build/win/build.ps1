@@ -30,10 +30,11 @@ tar -xzf $7zDlPath -C $7zDir
 
 #region curl-impersonate
 $curlDir = Join-Path $buildDir "curl-impersonate"
-$curlArchivePath = Join-Path $curlDir "libcurl-impersonate-v1.2.5.x86_64-win32.tar.gz"
+$curlVersion = "v1.4.4"
+$curlArchivePath = Join-Path $curlDir "libcurl-impersonate-$($curlVersion).x86_64-win32.tar.gz"
 New-Item -Path "$curlDir" -Type Directory -Force
 $curlImpersonateSplat = @{
-    Uri = "https://github.com/lexiforest/curl-impersonate/releases/download/v1.2.5/libcurl-impersonate-v1.2.5.x86_64-win32.tar.gz"
+    Uri = "https://github.com/lexiforest/curl-impersonate/releases/download/$($curlVersion)/libcurl-impersonate-$($curlVersion).x86_64-win32.tar.gz"
     OutFile = $curlArchivePath
 }
 Invoke-WebRequest @curlImpersonateSplat

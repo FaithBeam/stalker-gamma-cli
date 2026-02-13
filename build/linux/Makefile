@@ -10,7 +10,7 @@ DOTNET_INSTALL_URL = https://dot.net/v1/dotnet-install.sh
 DOTNET_INSTALL_SCRIPT_PATH = $(BUILD_DIR)/dotnet-install.sh
 DOTNET_INSTALL_PATH = $(BUILD_DIR)/.dotnet
 
-CURL_IMPERSONATE_VERSION = v1.2.5
+CURL_IMPERSONATE_VERSION = v1.4.4
 ifeq ($(ARCH),x64)
     CURL_ARCH := x86_64
 else ifeq ($(ARCH),arm64)
