@@ -189,7 +189,7 @@ jobs:
           
   cli-macos-x64:
     name: cli-macos
-    runs-on: macos-latest-large
+    runs-on: macos-15-intel
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
