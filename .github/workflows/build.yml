@@ -136,7 +136,7 @@ jobs:
           compression-level: 9
 
   cli-macos-arm64:
-    name: cli-macos
+    name: cli-macos-arm64
     runs-on: macos-latest
     env:
       APP_NAME: stalker-gamma-gui
