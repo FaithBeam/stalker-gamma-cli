@@ -135,7 +135,7 @@ jobs:
           path: build/linux/build/stalker-gamma-cli
           compression-level: 9
 
-  cli-macos:
+  cli-macos-arm64:
     name: cli-macos
     runs-on: macos-latest
     env:
@@ -184,6 +184,58 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: stalker-gamma+mac.arm64
+          path: build/mac/build/stalker-gamma
+          compression-level: 9
+          
+  cli-macos-x64:
+    name: cli-macos
+    runs-on: macos-latest-large
+    env:
+      APP_NAME: stalker-gamma-gui
+      PROJECT_FOLDER: stalker-gamma-cli
+      PROJECT_NAME: stalker-gamma-cli.csproj
+      CONFIGURATION: Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Run Csharpier
+        run: |
+          dotnet tool restore
+          dotnet csharpier check .
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0
+        with:
+          versionSpec: "5.x"
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+
+      - name: Make Build
+        run: |
+          make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }}
+          make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.4.2
+        if: github.ref_type == 'tag'
+        with:
+          files: build/mac/stalker-gamma+mac.x64.tar.gz
+          token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: stalker-gamma+mac.x64
           path: build/mac/build/stalker-gamma
           compression-level: 9
 
