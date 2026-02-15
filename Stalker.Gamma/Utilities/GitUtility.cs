@@ -79,16 +79,6 @@ public partial class GitUtility
         repo.Config.Set("core.longpaths", true);
     }
 
-    public void PullGitRepo(
-        string pathToRepo,
-        Action<double>? onProgress = null,
-        CancellationToken ct = default
-    )
-    {
-        using var repo = new Repository(pathToRepo);
-        Commands.Pull(repo, _signature, null);
-    }
-
     private static int CountBlobs(Tree tree)
     {
         var count = 0;

@@ -1,3 +1,5 @@
+using Stalker.Gamma.Utilities;
+
 namespace Stalker.Gamma.Models;
 
 public interface IDownloadableRecord
@@ -8,4 +10,17 @@ public interface IDownloadableRecord
     public Task DownloadAsync(CancellationToken cancellationToken);
     public Task ExtractAsync(CancellationToken cancellationToken);
     public bool Downloaded { get; }
+
+    public void DeleteArchive()
+    {
+        if (File.Exists(DownloadPath))
+        {
+            File.Delete(DownloadPath);
+        }
+        else if (Directory.Exists(DownloadPath))
+        {
+            DirUtils.NormalizePermissions(DownloadPath);
+            Directory.Delete(DownloadPath, true);
+        }
+    }
 }

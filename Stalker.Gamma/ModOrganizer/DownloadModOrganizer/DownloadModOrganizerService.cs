@@ -2,8 +2,8 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.ModOrganizer.DownloadModOrganizer.Models.Github;
 using Stalker.Gamma.Utilities;
+using GetReleaseByTagCtx = Stalker.Gamma.ModOrganizer.DownloadModOrganizer.Entities.Github.GetReleaseByTagCtx;
 
 namespace Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 
@@ -15,6 +15,8 @@ public interface IDownloadModOrganizerService
         string? extractPath = null,
         CancellationToken cancellationToken = default
     );
+
+    void DeleteArchive(string cachePath = "");
 }
 
 public class DownloadModOrganizerService(
@@ -40,11 +42,12 @@ public class DownloadModOrganizerService(
             $"https://api.github.com/repos/ModOrganizer2/modorganizer/releases/tags/{version}",
             cancellationToken
         );
-        var getReleaseByTag = await JsonSerializer.DeserializeAsync<GetReleaseByTag>(
-            await getReleaseByTagResponse.Content.ReadAsStreamAsync(cancellationToken),
-            jsonTypeInfo: GetReleaseByTagCtx.Default.GetReleaseByTag,
-            cancellationToken
-        );
+        var getReleaseByTag =
+            await JsonSerializer.DeserializeAsync<Entities.Github.GetReleaseByTag>(
+                await getReleaseByTagResponse.Content.ReadAsStreamAsync(cancellationToken),
+                jsonTypeInfo: GetReleaseByTagCtx.Default.GetReleaseByTag,
+                cancellationToken
+            );
         var dlUrl = getReleaseByTag
             ?.Assets?.FirstOrDefault(x =>
                 x.Name == $"Mod.Organizer-{(version.StartsWith('v') ? version[1..] : version)}.7z"
@@ -197,6 +200,19 @@ public class DownloadModOrganizerService(
                 ),
             ct: cancellationToken
         );
+    }
+
+    public void DeleteArchive(string cachePath = "")
+    {
+        List<string> versions = ["v2.5.2", "v2.4.4"];
+        foreach (var version in versions)
+        {
+            var mo2ArchivePath = Path.Join(cachePath, $"ModOrganizer.{version}.7z");
+            if (File.Exists(mo2ArchivePath))
+            {
+                File.Delete(mo2ArchivePath);
+            }
+        }
     }
 
     private readonly IReadOnlyList<string> _foldersToDelete =
