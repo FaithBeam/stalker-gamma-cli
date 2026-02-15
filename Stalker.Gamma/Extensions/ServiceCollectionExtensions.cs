@@ -49,7 +49,6 @@ public static class ServiceCollectionExtensions
             .AddScoped<ITeivazAnomalyGunslingerRepo, TeivazAnomalyGunslingerRepo>()
             .AddScoped<GammaInstaller>()
             .AddScoped<IAnomalyInstaller, AnomalyInstaller>()
-            .AddScoped<DownloadAndInstallCustomModlist>()
             .AddScoped<PowerShellCmdBuilder>();
     }
 }
