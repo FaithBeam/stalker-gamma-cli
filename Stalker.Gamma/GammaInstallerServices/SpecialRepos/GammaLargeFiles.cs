@@ -1,5 +1,4 @@
-﻿using LibGit2Sharp;
-using Stalker.Gamma.Models;
+﻿using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;

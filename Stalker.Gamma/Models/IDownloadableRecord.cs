@@ -1,3 +1,5 @@
+using Stalker.Gamma.Utilities;
+
 namespace Stalker.Gamma.Models;
 
 public interface IDownloadableRecord
@@ -14,6 +16,11 @@ public interface IDownloadableRecord
         if (File.Exists(DownloadPath))
         {
             File.Delete(DownloadPath);
+        }
+        else if (Directory.Exists(DownloadPath))
+        {
+            DirUtils.NormalizePermissions(DownloadPath);
+            Directory.Delete(DownloadPath, true);
         }
     }
 }

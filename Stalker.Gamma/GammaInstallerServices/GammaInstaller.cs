@@ -31,6 +31,7 @@ public class InstallUpdatesArgs
     public string? Mo2Version { get; set; }
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
+    public bool Minimal { get; set; }
 }
 
 public class GammaInstaller(
@@ -155,8 +156,7 @@ public class GammaInstaller(
                     [anomalyRecord, .. groupedAddonRecords],
                     brokenAddons,
                     args.Minimal,
-                    cancellationToken:
-                    args.CancellationToken
+                    cancellationToken: args.CancellationToken
                 ),
             args.CancellationToken
         );
@@ -195,6 +195,13 @@ public class GammaInstaller(
         await stalkerGammaRecord.ExtractAsync(args.CancellationToken);
         await gammaLargeFilesRecord.ExtractAsync(args.CancellationToken);
         await teivazAnomalyGunslingerRecord.ExtractAsync(args.CancellationToken);
+        if (args.Minimal)
+        {
+            gammaSetupRecord.DeleteArchive();
+            stalkerGammaRecord.DeleteArchive();
+            gammaLargeFilesRecord.DeleteArchive();
+            teivazAnomalyGunslingerRecord.DeleteArchive();
+        }
 
         DeleteReshadeDlls.Delete(anomalyBinPath);
         DeleteShaderCache.Delete(args.Anomaly);
@@ -206,6 +213,10 @@ public class GammaInstaller(
             version: args.Mo2Version,
             cancellationToken: args.CancellationToken
         );
+        if (args.Minimal)
+        {
+            downloadModOrganizerService.DeleteArchive(args.Cache);
+        }
 
         await InstallModOrganizerGammaProfile.InstallAsync(
             Path.Join(gammaDownloadsPath, stalkerGammaRecord.Name),
@@ -322,7 +333,12 @@ public class GammaInstaller(
 
         var mainBatch = Task.Run(
             async () =>
-                await ProcessAddonsAsync(groupedAddonRecords, brokenAddons, cancellationToken: args.CancellationToken),
+                await ProcessAddonsAsync(
+                    groupedAddonRecords,
+                    brokenAddons,
+                    args.Minimal,
+                    cancellationToken: args.CancellationToken
+                ),
             args.CancellationToken
         );
         var teivazDlTask = Task.Run(
@@ -365,6 +381,13 @@ public class GammaInstaller(
         await stalkerGammaRecord.ExtractAsync(args.CancellationToken);
         await gammaLargeFilesRecord.ExtractAsync(args.CancellationToken);
         await teivazAnomalyGunslingerRecord.ExtractAsync(args.CancellationToken);
+        if (args.Minimal)
+        {
+            gammaSetupRecord.DeleteArchive();
+            stalkerGammaRecord.DeleteArchive();
+            gammaLargeFilesRecord.DeleteArchive();
+            teivazAnomalyGunslingerRecord.DeleteArchive();
+        }
 
         DeleteReshadeDlls.Delete(anomalyBinPath);
         DeleteShaderCache.Delete(args.Anomaly);
@@ -376,6 +399,10 @@ public class GammaInstaller(
             version: args.Mo2Version,
             cancellationToken: args.CancellationToken
         );
+        if (args.Minimal)
+        {
+            downloadModOrganizerService.DeleteArchive(args.Cache);
+        }
 
         await InstallModOrganizerGammaProfile.InstallAsync(
             Path.Join(gammaDownloadsPath, stalkerGammaRecord.Name),

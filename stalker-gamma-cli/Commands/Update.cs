@@ -187,6 +187,7 @@ public class UpdateCmds(
     public async Task Apply(
         CancellationToken cancellationToken,
         bool verbose = false,
+        bool minimal = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
@@ -235,6 +236,7 @@ public class UpdateCmds(
                     CancellationToken = cancellationToken,
                     Mo2Profile = mo2Profile,
                     Mo2Version = mo2Version,
+                    Minimal = minimal,
                 }
             );
             _logger.Information("Update finished");
