@@ -20,6 +20,7 @@ public class GammaInstallerArgs
     public bool SkipExtractOnHashMatch { get; set; }
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
+    public bool Minimal { get; set; }
 }
 
 public class InstallUpdatesArgs
@@ -153,6 +154,8 @@ public class GammaInstaller(
                 await ProcessAddonsAsync(
                     [anomalyRecord, .. groupedAddonRecords],
                     brokenAddons,
+                    args.Minimal,
+                    cancellationToken:
                     args.CancellationToken
                 ),
             args.CancellationToken
@@ -319,7 +322,7 @@ public class GammaInstaller(
 
         var mainBatch = Task.Run(
             async () =>
-                await ProcessAddonsAsync(groupedAddonRecords, brokenAddons, args.CancellationToken),
+                await ProcessAddonsAsync(groupedAddonRecords, brokenAddons, cancellationToken: args.CancellationToken),
             args.CancellationToken
         );
         var teivazDlTask = Task.Run(
@@ -414,6 +417,7 @@ public class GammaInstaller(
     private async Task ProcessAddonsAsync(
         IList<IDownloadableRecord> addons,
         ConcurrentBag<IDownloadableRecord> brokenAddons,
+        bool minimal = false,
         CancellationToken cancellationToken = default
     ) =>
         await Parallel.ForEachAsync(
@@ -425,6 +429,10 @@ public class GammaInstaller(
                 {
                     await grs.DownloadAsync(cancellationToken);
                     await grs.ExtractAsync(cancellationToken);
+                    if (minimal)
+                    {
+                        grs.DeleteArchive();
+                    }
                 }
                 catch (Exception)
                 {

@@ -27,6 +27,7 @@ public class FullInstallCmd(
     /// <param name="addFoldersToWinDefenderExclusion">(Windows) Add the anomaly, gamma, and cache folders to the Windows Defender Exclusion list</param>
     /// <param name="enableLongPaths">(Windows) Enable long paths</param>
     /// <param name="verbose">More verbose logging</param>
+    /// <param name="minimal">Delete cache files after extracting</param>
     /// <param name="debug"></param>
     /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
@@ -44,6 +45,7 @@ public class FullInstallCmd(
         bool addFoldersToWinDefenderExclusion = false,
         bool enableLongPaths = false,
         bool verbose = false,
+        bool minimal = false,
         [Hidden] bool debug = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250,
@@ -137,6 +139,7 @@ public class FullInstallCmd(
                     DownloadGithubArchives = !skipGithubDownloads,
                     SkipExtractOnHashMatch = skipExtractOnHashMatch,
                     Mo2Profile = mo2Profile,
+                    Minimal = minimal
                 }
             );
             _logger.Information("Install finished");
