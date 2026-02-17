@@ -81,7 +81,7 @@ public class ModDbRecord(
             ct: cancellationToken
         );
 
-        ProcessInstructions.Process(ExtractPath, Instructions);
+        ProcessInstructions.Process(ExtractPath, Instructions, cancellationToken);
 
         CleanExtractPath.Clean(ExtractPath);
 

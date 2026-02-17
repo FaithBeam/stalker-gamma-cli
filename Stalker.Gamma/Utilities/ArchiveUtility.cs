@@ -1,5 +1,3 @@
-using System.Collections.Frozen;
-
 namespace Stalker.Gamma.Utilities;
 
 public class ArchiveUtility(
@@ -32,7 +30,9 @@ public class ArchiveUtility(
             {
                 try
                 {
-                    await extractFunc.Invoke(archivePath, destinationDir, pct, ct);
+                    await extractFunc.Invoke(
+                        new ArchiveMappingArgs(archivePath, destinationDir, pct, ct)
+                    );
                 }
                 finally
                 {
@@ -52,49 +52,60 @@ public class ArchiveUtility(
         }
     }
 
-    private readonly FrozenDictionary<
-        int,
-        Func<string, string, Action<double>, CancellationToken, Task>
-    > _archiveMappings = new Dictionary<
-        int,
-        Func<string, string, Action<double>, CancellationToken, Task>
-    >
+    private record ArchiveMappingArgs(
+        string ArchivePath,
+        string DestinationDir,
+        Action<double> Pct,
+        CancellationToken Ct = default
+    );
+
+    private readonly Dictionary<int, Func<ArchiveMappingArgs, Task>> _archiveMappings = new()
     {
         {
             0x37,
-            async (archivePath, destinationDir, pct, ct) =>
+            async args =>
                 await sevenZipUtility.ExtractAsync(
-                    archivePath,
-                    destinationDir,
-                    pct,
-                    cancellationToken: ct
+                    args.ArchivePath,
+                    args.DestinationDir,
+                    args.Pct,
+                    cancellationToken: args.Ct
                 )
         },
         {
             0x50,
-            async (archivePath, destinationDir, pct, ct) =>
+            async args =>
             {
                 if (OperatingSystem.IsLinux())
                 {
-                    await unzipUtility.ExtractAsync(archivePath, destinationDir, pct, ct);
+                    await unzipUtility.ExtractAsync(
+                        args.ArchivePath,
+                        args.DestinationDir,
+                        args.Pct,
+                        args.Ct
+                    );
                 }
                 else
                 {
-                    await tarUtility.ExtractAsync(archivePath, destinationDir, pct, ct);
+                    await tarUtility.ExtractAsync(
+                        args.ArchivePath,
+                        args.DestinationDir,
+                        args.Pct,
+                        args.Ct
+                    );
                 }
             }
         },
         {
             0x52,
-            async (archivePath, destinationDir, pct, ct) =>
+            async args =>
                 await sevenZipUtility.ExtractAsync(
-                    archivePath,
-                    destinationDir,
-                    pct,
-                    cancellationToken: ct
+                    args.ArchivePath,
+                    args.DestinationDir,
+                    args.Pct,
+                    cancellationToken: args.Ct
                 )
         },
-    }.ToFrozenDictionary();
+    };
 }
 
 public class ArchiveUtilityException(string message) : Exception(message);

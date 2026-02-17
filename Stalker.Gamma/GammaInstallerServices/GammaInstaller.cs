@@ -68,10 +68,10 @@ public class GammaInstaller(
         CreateSymbolicLinkUtility.Create(gammaDownloadsPath, args.Cache, powerShellCmdBuilder);
         if (OperatingSystem.IsWindows())
         {
-            await powerShellCmdBuilder.Build().ExecuteAsync();
+            await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync();
+        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
         var modpackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
         var separators = separatorsFactory.Create(modpackMakerRecords);
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
@@ -275,11 +275,11 @@ public class GammaInstaller(
         CreateSymbolicLinkUtility.Create(gammaDownloadsPath, args.Cache, powerShellCmdBuilder);
         if (OperatingSystem.IsWindows())
         {
-            await powerShellCmdBuilder.Build().ExecuteAsync();
+            await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
         var onlineModPackMakerRecords = modListRecordFactory.Create(
-            await getStalkerModsFromApi.GetModsAsync()
+            await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
         );
         var localRecords =
             JsonSerializer.Deserialize<List<ModPackMakerRecord>>(

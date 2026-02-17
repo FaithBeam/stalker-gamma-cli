@@ -14,7 +14,7 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         Action<double>? onProgress = null,
         Action<string>? txtProgress = null,
         string? workingDirectory = null,
-        CancellationToken? cancellationToken = null
+        CancellationToken cancellationToken = default
     )
     {
         if (!Directory.Exists(destinationFolder))
@@ -51,7 +51,7 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         string[]? exclusions = null,
         string? workDirectory = null,
         Action<string>? txtProgress = null,
-        CancellationToken? cancellationToken = null
+        CancellationToken cancellationToken = default
     )
     {
         var args = new[]
@@ -83,7 +83,7 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         Action<double>? onProgress = null,
         Action<string>? txtProgress = null,
         string? workingDirectory = null,
-        CancellationToken? cancellationToken = null
+        CancellationToken cancellationToken = default
     )
     {
         var stdOut = new StringBuilder();
@@ -141,7 +141,7 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
                     )
                 )
                 .WithWorkingDirectory(workingDirectory ?? "")
-                .ExecuteAsync(cancellationToken ?? CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
         }
         catch (Exception e)
         {

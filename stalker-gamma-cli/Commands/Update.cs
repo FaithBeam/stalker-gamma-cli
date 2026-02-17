@@ -109,7 +109,7 @@ public class UpdateCmds(
                 jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
             ) ?? []
             : [];
-        var onlineRecordsTxt = await _getStalkerModsFromApi.GetModsAsync();
+        var onlineRecordsTxt = await _getStalkerModsFromApi.GetModsAsync(cancellationToken);
         var onlineRecords = _modListRecordFactory.Create(onlineRecordsTxt);
         var diffs = localRecords.Diff(onlineRecords).Concat(localGitRepoDiffs).ToList();
         if (diffs.Count > 0)

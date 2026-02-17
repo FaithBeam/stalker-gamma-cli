@@ -6,7 +6,7 @@ public class PowerShellCmd
 {
     public readonly List<string> Cmds = [];
 
-    public async Task ExecuteAsync(CancellationToken ct = default)
+    public async Task ExecuteAsync(CancellationToken ct)
     {
         if (Cmds.Count > 0)
         {

@@ -13,7 +13,7 @@ public class UnzipUtility(StalkerGammaSettings settings)
         Action<double>? onProgress,
         CancellationToken ct
     ) =>
-        await ExecuteSevenZipCmdAsync(
+        await ExecuteUnzipCmdAsync(
             ["-o", archivePath, "-d", extractDirectory],
             onProgress: onProgress,
             cancellationToken: ct
@@ -23,11 +23,11 @@ public class UnzipUtility(StalkerGammaSettings settings)
         File.Exists(settings.PathToUnzip)
         || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "unzip.exe" : "unzip");
 
-    private async Task<StdOutStdErrOutput> ExecuteSevenZipCmdAsync(
+    private async Task<StdOutStdErrOutput> ExecuteUnzipCmdAsync(
         string[] args,
         string? workingDirectory = null,
-        CancellationToken? cancellationToken = null,
-        Action<double>? onProgress = null
+        Action<double>? onProgress = null,
+        CancellationToken cancellationToken = default
     )
     {
         var stdOut = new StringBuilder();
@@ -40,7 +40,7 @@ public class UnzipUtility(StalkerGammaSettings settings)
                 .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr))
                 .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
                 .WithWorkingDirectory(workingDirectory ?? "")
-                .ExecuteAsync(cancellationToken ?? CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
         }
         catch (Exception e)
         {

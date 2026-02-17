@@ -29,8 +29,8 @@ public class TarUtility(StalkerGammaSettings settings)
     private async Task<StdOutStdErrOutput> ExecuteTarCmdAsync(
         string[] args,
         string? workingDirectory = null,
-        CancellationToken? cancellationToken = null,
-        Action<double>? onProgress = null
+        Action<double>? onProgress = null,
+        CancellationToken cancellationToken = default
     )
     {
         var stdOut = new StringBuilder();
@@ -43,7 +43,7 @@ public class TarUtility(StalkerGammaSettings settings)
                 .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr))
                 .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
                 .WithWorkingDirectory(workingDirectory ?? "")
-                .ExecuteAsync(cancellationToken ?? CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
         }
         catch (Exception e)
         {

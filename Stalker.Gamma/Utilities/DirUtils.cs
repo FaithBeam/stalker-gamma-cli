@@ -79,7 +79,8 @@ public static class DirUtils
         string? fileFilter = null,
         Action<double>? onProgress = null,
         Action<string>? txtProgress = null,
-        bool moveFile = false
+        bool moveFile = false,
+        CancellationToken cancellationToken = default
     )
     {
         if (sourceDir.Contains(".git"))
@@ -105,7 +106,8 @@ public static class DirUtils
             ref copiedFiles,
             totalFiles,
             txtProgress,
-            moveFile
+            moveFile,
+            cancellationToken
         );
     }
 
@@ -148,9 +150,14 @@ public static class DirUtils
         ref int copiedFiles,
         int totalFiles,
         Action<string>? txtProgress = null,
-        bool moveFile = false
+        bool moveFile = false,
+        CancellationToken cancellationToken = default
     )
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
         txtProgress?.Invoke(
             $"""
             sourceDir = {sourceDir}
@@ -173,6 +180,10 @@ public static class DirUtils
         var sourceDirInfo = new DirectoryInfo(sourceDir);
         foreach (var file in sourceDirInfo.GetFiles())
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
             if (txtProgress is not null)
             {
                 using var sha = SHA256.Create();
@@ -225,6 +236,10 @@ public static class DirUtils
 
         foreach (var subDir in sourceDirInfo.GetDirectories())
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
             txtProgress?.Invoke($"Copying {subDir.FullName}");
             // only copy directories if they're not empty
             if (subDir.EnumerateFiles("*.*", SearchOption.AllDirectories).Any())
