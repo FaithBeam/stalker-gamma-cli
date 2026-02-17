@@ -11,9 +11,9 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
         string url,
         string output,
         Action<double> onProgress,
-        CancellationToken? cancellationToken = null,
         bool invalidateMirrorCache = false,
         int retryCount = 0,
+        CancellationToken cancellationToken = default,
         params string[]? excludeMirrors
     )
     {
@@ -28,7 +28,6 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
             );
         }
 
-        cancellationToken ??= CancellationToken.None;
         try
         {
             var mirrorTask = Task.Run(
@@ -36,13 +35,14 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
                     mirrorUtility.GetMirrorAsync(
                         $"{url}/all",
                         invalidateMirrorCache,
-                        excludeMirrors: excludeMirrors ?? []
+                        excludeMirrors: excludeMirrors ?? [],
+                        cancellationToken: cancellationToken
                     ),
-                (CancellationToken)cancellationToken
+                cancellationToken
             );
             var getContentTask = Task.Run(
                 () => curlUtility.GetStringAsync(url, cancellationToken),
-                (CancellationToken)cancellationToken
+                cancellationToken
             );
             var results = await Task.WhenAll(mirrorTask, getContentTask);
 
@@ -63,19 +63,20 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
                 downloadLink,
                 parentPath?.FullName ?? "./",
                 Path.GetFileName(output),
-                onProgress
+                onProgress,
+                cancellationToken: cancellationToken
             );
 
-            if (await IsBadMirrorAsync(output))
+            if (await IsBadMirrorAsync(output, cancellationToken))
             {
                 // retry download with a different mirror
                 await GetModDbLinkCurl(
                     url,
                     output,
                     onProgress,
-                    cancellationToken,
                     invalidateMirrorCache,
                     retryCount + 1,
+                    cancellationToken,
                     excludeMirrors: [.. excludeMirrors ?? [], mirror]
                 );
             }
@@ -92,8 +93,12 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
     /// Read the first byte of the file to determine if it's a bad mirror
     /// </summary>
     /// <param name="pathToArchive"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static async Task<bool> IsBadMirrorAsync(string pathToArchive)
+    private static async Task<bool> IsBadMirrorAsync(
+        string pathToArchive,
+        CancellationToken cancellationToken = default
+    )
     {
         // hex for character <
         // <!DOCTYPE html>
@@ -111,7 +116,7 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
         {
             fs.Seek(0, SeekOrigin.Begin);
             using var sr = new StreamReader(fs);
-            var contents = await sr.ReadToEndAsync();
+            var contents = await sr.ReadToEndAsync(cancellationToken);
             if (contents.Contains("An error has occurred loading the file mirror"))
             {
                 return true;

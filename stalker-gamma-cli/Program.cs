@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using CliWrap;
 using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -7,7 +6,6 @@ using stalker_gamma_cli.Models;
 using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Extensions;
-using Stalker.Gamma.Models;
 
 namespace stalker_gamma_cli;
 

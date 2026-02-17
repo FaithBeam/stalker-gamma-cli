@@ -61,7 +61,7 @@ public class ModDbRecord(
                             NiceUrl
                         )
                     ),
-                cancellationToken
+                cancellationToken: cancellationToken
             );
             Downloaded = true;
         }

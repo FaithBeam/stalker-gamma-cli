@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
 
@@ -12,15 +11,16 @@ public partial class MirrorUtility(CurlUtility curlUtility)
     public async Task<string> GetMirrorAsync(
         string mirrorUrl,
         bool invalidateCache = false,
+        CancellationToken cancellationToken = default,
         params string[] excludeMirrors
     )
     {
-        await Lock.WaitAsync();
+        await Lock.WaitAsync(cancellationToken);
         try
         {
             _mirrors =
                 _mirrors is null || _mirrors.Count == 0 || invalidateCache
-                    ? await GetMirrorsAsync(mirrorUrl)
+                    ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
                     : _mirrors;
         }
         finally
@@ -33,9 +33,12 @@ public partial class MirrorUtility(CurlUtility curlUtility)
             .First();
     }
 
-    private async Task<FrozenSet<string>> GetMirrorsAsync(string mirrorUrl)
+    private async Task<FrozenSet<string>> GetMirrorsAsync(
+        string mirrorUrl,
+        CancellationToken cancellationToken = default
+    )
     {
-        var mirrorsHtml = await curlUtility.GetStringAsync(mirrorUrl);
+        var mirrorsHtml = await curlUtility.GetStringAsync(mirrorUrl, cancellationToken);
         var matches = HrefRx().Matches(mirrorsHtml);
         return matches
             .Select(m =>

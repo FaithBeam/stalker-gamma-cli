@@ -60,7 +60,7 @@ public class AnomalyInstaller(
                             NiceUrl
                         )
                     ),
-                cancellationToken
+                cancellationToken: cancellationToken
             );
             Downloaded = true;
         }

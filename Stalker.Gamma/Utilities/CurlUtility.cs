@@ -15,7 +15,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         string fileName,
         Action<double>? onProgress = null,
         string? workingDir = null,
-        CancellationToken? cancellationToken = null
+        CancellationToken cancellationToken = default
     ) =>
         await ExecuteCurlCmdAsync(
             ["--progress-bar", "--clobber", "-Lo", Path.Join(pathToDownloads, fileName), url],
@@ -26,7 +26,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
 
     public async Task<string> GetStringAsync(
         string url,
-        CancellationToken? cancellationToken = null
+        CancellationToken cancellationToken = default
     ) =>
         (
             await ExecuteCurlCmdAsync(
@@ -40,7 +40,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         Action<double>? onProgress = null,
         Action<string>? txtProgress = null,
         string? workingDir = null,
-        CancellationToken? cancellationToken = null
+        CancellationToken cancellationToken = default
     )
     {
         var stdOut = new StringBuilder();
@@ -80,7 +80,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
                     )
                 )
                 .WithWorkingDirectory(workingDir ?? "")
-                .ExecuteAsync(cancellationToken ?? CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
         }
         catch (Exception e)
         {
