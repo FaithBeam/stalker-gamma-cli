@@ -4,9 +4,11 @@ namespace Stalker.Gamma.Utilities;
 
 public static class StreamChunkFast
 {
+    public record ChunkFuncArgs(byte[] Buffer, int BytesRead, long TotalBytesRead);
+
     public static async Task ChunkAsync(
         Stream stream,
-        Func<byte[], int, long, Task> chunkFunc,
+        Func<ChunkFuncArgs, Task> chunkFunc,
         CancellationToken cancellationToken = default
     )
     {
@@ -17,7 +19,7 @@ public static class StreamChunkFast
             long totalBytesRead = 0;
             while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
             {
-                await chunkFunc(buffer, bytesRead, totalBytesRead += bytesRead);
+                await chunkFunc(new ChunkFuncArgs(buffer, bytesRead, totalBytesRead += bytesRead));
             }
         }
         finally

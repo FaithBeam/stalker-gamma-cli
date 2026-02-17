@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using LibGit2Sharp;
 
 namespace Stalker.Gamma.Utilities;
@@ -47,9 +46,8 @@ public partial class GitUtility
         string outputDir,
         string repoUrl,
         Action<double>? onProgress = null,
-        CancellationToken ct = default,
-        IList<string>? extraArgs = null,
-        bool bare = false
+        bool bare = false,
+        CancellationToken ct = default
     )
     {
         var options = new CloneOptions
@@ -77,6 +75,8 @@ public partial class GitUtility
         Repository.Clone(repoUrl, outputDir, options);
         using var repo = new Repository(outputDir);
         repo.Config.Set("core.longpaths", true);
+        repo.Config.Set("http.postBuffer", "524288000");
+        repo.Config.Set("http.maxRequestBuffer", "524288000");
     }
 
     private static int CountBlobs(Tree tree)
@@ -167,16 +167,7 @@ public partial class GitUtility
         return current;
     }
 
-    public bool Ready => true;
-
-    private readonly Signature _signature = new(
-        "Stalker_GAMMA",
-        "stalker@gamma.com",
-        DateTimeOffset.Now
-    );
-
-    [GeneratedRegex(@"Receiving objects:\s*(\d+)%")]
-    private partial Regex ProgressRegex();
+    public static bool Ready => true;
 }
 
 public class GitUtilityException(string msg, Exception innerException)

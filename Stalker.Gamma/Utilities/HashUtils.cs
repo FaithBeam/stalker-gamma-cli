@@ -17,10 +17,10 @@ public static class HashUtils
 
         await StreamChunkFast.ChunkAsync(
             stream,
-            chunkFunc: (buffer, bytesRead, totalBytesRead) =>
+            chunkFunc: args =>
             {
-                hasher.AppendData(buffer, 0, bytesRead);
-                onProgress?.Invoke((double)totalBytesRead / fileSize);
+                hasher.AppendData(args.Buffer, 0, args.BytesRead);
+                onProgress?.Invoke((double)args.TotalBytesRead / fileSize);
                 return Task.CompletedTask;
             },
             cancellationToken: cancellationToken

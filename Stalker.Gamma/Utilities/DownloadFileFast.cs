@@ -32,10 +32,10 @@ public static class DownloadFileFast
 
         await StreamChunkFast.ChunkAsync(
             contentStream,
-            chunkFunc: async (buffer, bytesRead, totalBytesRead) =>
+            chunkFunc: async args =>
             {
-                await fs.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                var progressPercentage = (double)totalBytesRead / totalBytes!.Value;
+                await fs.WriteAsync(args.Buffer.AsMemory(0, args.BytesRead), cancellationToken);
+                var progressPercentage = (double)args.TotalBytesRead / totalBytes!.Value;
                 onProgress?.Invoke(progressPercentage);
             },
             cancellationToken: cancellationToken
