@@ -20,6 +20,11 @@
 # Mono auto generated files
 mono_crash.*
 
+build/win/build/
+build/win/chocolatey
+build/linux/build/
+build/mac/build/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
