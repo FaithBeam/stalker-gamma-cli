@@ -270,6 +270,11 @@ jobs:
         uses: gittools/actions/gitversion/execute@v0
 
       - name: Build CLI
+        if: github.ref_type != 'tag'
+        run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }}
+        
+      - name: Build CLI and Push Chocolatey
+        if: github.ref_type == 'tag'
         run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }} ${{ secrets.CHOCOLATEY_API_KEY }}
         
       - name: Create Release
