@@ -3,8 +3,11 @@
     [string]$ChocolateyApiKey
 )
 
+Import-Module Microsoft.PowerShell.Utility -Function Get-FileHash
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+
+$PSVersionTable
 
 $scriptDir = $PSScriptRoot
 
