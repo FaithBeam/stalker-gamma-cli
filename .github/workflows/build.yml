@@ -270,12 +270,7 @@ jobs:
         uses: gittools/actions/gitversion/execute@v0
 
       - name: Build CLI
-        if: github.ref_type != 'tag'
         run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }}
-        
-      - name: Build CLI and Push Chocolatey
-        if: github.ref_type == 'tag'
-        run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }} ${{ secrets.CHOCOLATEY_API_KEY }}
         
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
@@ -283,6 +278,10 @@ jobs:
         with:
           files: stalker-gamma+win.x64.zip
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
+
+      - name: Create and Push Chocolatey Package
+        if: github.ref_type == 'tag'
+        run: build/win/chocolatey.bat ${{ steps.gitversion.outputs.SemVer }} ${{ secrets.CHOCOLATEY_API_KEY }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
