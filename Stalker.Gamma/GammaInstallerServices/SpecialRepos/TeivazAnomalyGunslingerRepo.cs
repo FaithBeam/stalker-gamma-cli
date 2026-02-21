@@ -18,6 +18,7 @@ public class TeivazAnomalyGunslingerRepo(
     public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
     public string TempDir => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
+    private readonly GammaProgress _gammaProgress = gammaProgress;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
@@ -29,7 +30,7 @@ public class TeivazAnomalyGunslingerRepo(
                     DownloadPath,
                     ct: cancellationToken,
                     onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
+                        _gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
                                 "Download",
@@ -45,7 +46,7 @@ public class TeivazAnomalyGunslingerRepo(
                     DownloadPath,
                     Url,
                     onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
+                        _gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
                                 "Download",
@@ -59,7 +60,6 @@ public class TeivazAnomalyGunslingerRepo(
             }
 
             Downloaded = true;
-            await GitUtility.ExtractAsync(DownloadPath, TempDir, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -75,6 +75,17 @@ public class TeivazAnomalyGunslingerRepo(
             );
         }
     }
+
+    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
+        await GitUtility.ExtractAsync(
+            DownloadPath,
+            TempDir,
+            ct: ct,
+            onProgress: pct =>
+                _gammaProgress.OnProgressChanged(
+                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                )
+        );
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
@@ -94,7 +105,7 @@ public class TeivazAnomalyGunslingerRepo(
                     ),
                     overwrite: true,
                     onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
+                        _gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
                                 "Extract",
@@ -102,7 +113,8 @@ public class TeivazAnomalyGunslingerRepo(
                                 Url
                             )
                         ),
-                    moveFile: true
+                    moveFile: true,
+                    cancellationToken: cancellationToken
                 );
             }
         }
@@ -111,7 +123,7 @@ public class TeivazAnomalyGunslingerRepo(
             DirUtils.NormalizePermissions(TempDir);
             Directory.Delete(TempDir, true);
         }
-        gammaProgress.IncrementCompletedMods();
+        _gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }
 

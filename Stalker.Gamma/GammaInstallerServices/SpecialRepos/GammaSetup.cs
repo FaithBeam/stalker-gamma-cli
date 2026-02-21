@@ -18,6 +18,7 @@ public class GammaSetupRepo(
     public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
     public string TempDir => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
+    private readonly GammaProgress _gammaProgress = gammaProgress;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
@@ -29,7 +30,7 @@ public class GammaSetupRepo(
                     DownloadPath,
                     ct: cancellationToken,
                     onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
+                        _gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
                                 "Download",
@@ -45,7 +46,7 @@ public class GammaSetupRepo(
                     DownloadPath,
                     Url,
                     onProgress: pct =>
-                        gammaProgress.OnProgressChanged(
+                        _gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
                                 "Download",
@@ -58,15 +59,6 @@ public class GammaSetupRepo(
                 );
             }
             Downloaded = true;
-            await GitUtility.ExtractAsync(
-                DownloadPath,
-                TempDir,
-                ct: cancellationToken,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    )
-            );
         }
         catch (Exception e)
         {
@@ -83,6 +75,17 @@ public class GammaSetupRepo(
         }
     }
 
+    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
+        await GitUtility.ExtractAsync(
+            DownloadPath,
+            TempDir,
+            ct: ct,
+            onProgress: pct =>
+                _gammaProgress.OnProgressChanged(
+                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                )
+        );
+
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -91,10 +94,11 @@ public class GammaSetupRepo(
                 Path.Join(TempDir, "modpack_addons"),
                 GammaModsDir,
                 onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
+                    _gammaProgress.OnProgressChanged(
                         new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
                     ),
-                moveFile: true
+                moveFile: true,
+                cancellationToken: cancellationToken
             );
         }
         finally
@@ -103,7 +107,7 @@ public class GammaSetupRepo(
             Directory.Delete(TempDir, true);
         }
 
-        gammaProgress.IncrementCompletedMods();
+        _gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }
 
