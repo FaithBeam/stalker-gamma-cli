@@ -75,8 +75,6 @@ public partial class GitUtility
         Repository.Clone(repoUrl, outputDir, options);
         using var repo = new Repository(outputDir);
         repo.Config.Set("core.longpaths", true);
-        repo.Config.Set("http.postBuffer", "524288000");
-        repo.Config.Set("http.maxRequestBuffer", "524288000");
     }
 
     private static int CountBlobs(Tree tree)
