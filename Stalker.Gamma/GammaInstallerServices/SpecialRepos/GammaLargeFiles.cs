@@ -62,15 +62,6 @@ public class GammaLargeFilesRepo(
             }
 
             Downloaded = true;
-            await GitUtility.ExtractAsync(
-                DownloadPath,
-                TempDir,
-                ct: ct,
-                onProgress: pct =>
-                    _gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    )
-            );
         }
         catch (Exception e)
         {
@@ -87,6 +78,17 @@ public class GammaLargeFilesRepo(
         }
     }
 
+    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
+        await GitUtility.ExtractAsync(
+            DownloadPath,
+            TempDir,
+            ct: ct,
+            onProgress: pct =>
+                _gammaProgress.OnProgressChanged(
+                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                )
+        );
+
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -98,7 +100,8 @@ public class GammaLargeFilesRepo(
                     _gammaProgress.OnProgressChanged(
                         new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
                     ),
-                moveFile: true
+                moveFile: true,
+                cancellationToken: cancellationToken
             );
         }
         finally

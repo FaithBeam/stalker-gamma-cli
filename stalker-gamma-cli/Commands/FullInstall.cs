@@ -28,6 +28,7 @@ public class FullInstallCmd(
     /// <param name="enableLongPaths">(Windows) Enable long paths</param>
     /// <param name="verbose">More verbose logging</param>
     /// <param name="minimal">Delete cache files after extracting. Could be useful for space constrained devices but increases the chance of installation failure and will make updates much slower. This will take about ~100GB.</param>
+    /// <param name="noDownload">This will not download any addon even if it is missing from the mod pack maker. Useful for reinstalling from cache.</param>
     /// <param name="debug"></param>
     /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
@@ -46,6 +47,7 @@ public class FullInstallCmd(
         bool enableLongPaths = false,
         bool verbose = false,
         bool minimal = false,
+        bool noDownload = false,
         [Hidden] bool debug = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250,
@@ -140,6 +142,7 @@ public class FullInstallCmd(
                     SkipExtractOnHashMatch = skipExtractOnHashMatch,
                     Mo2Profile = mo2Profile,
                     Minimal = minimal,
+                    NoDownload = noDownload,
                 }
             );
             _logger.Information("Install finished");

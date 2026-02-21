@@ -11,6 +11,8 @@ public interface IDownloadableRecord
     public Task ExtractAsync(CancellationToken cancellationToken);
     public bool Downloaded { get; }
 
+    public bool ArchiveExists() => File.Exists(DownloadPath) || Directory.Exists(DownloadPath);
+
     public void DeleteArchive()
     {
         if (File.Exists(DownloadPath))

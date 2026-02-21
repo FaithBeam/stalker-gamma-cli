@@ -7,6 +7,8 @@ Import-Module $PSHOME\Modules\Microsoft.PowerShell.Utility -Function Get-FileHas
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
+$scriptDir = $PSScriptRoot
+
 $archiveSha256 = (Get-FileHash stalker-gamma+win.x64.zip).Hash.ToLower()
 
 #region chocolatey
