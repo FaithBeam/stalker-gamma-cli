@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -84,7 +84,7 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -138,6 +138,9 @@ jobs:
   cli-macos-arm64:
     name: cli-macos-arm64
     runs-on: macos-latest
+    outputs:
+      macos_arm64_sha256: ${{ steps.build.outputs.macos_arm64_sha256 }}
+      version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -146,7 +149,7 @@ jobs:
       ARCHITECTURE: arm64
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -170,9 +173,12 @@ jobs:
         uses: gittools/actions/gitversion/execute@v0
 
       - name: Make Build
+        id: build
         run: |
           make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
           make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac ARCH=${{ env.ARCHITECTURE }}
+          hash=$(sha256sum --quiet build/mac/stalker-gamma+mac.arm64.tar.gz)
+          echo "macos_arm64_sha256=$hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
@@ -188,9 +194,13 @@ jobs:
           path: build/mac/build/stalker-gamma
           compression-level: 9
           
+  
   cli-macos-x64:
     name: cli-macos-x64
     runs-on: macos-15-intel
+    outputs:
+      macos_x64_sha256: ${{ steps.build.outputs.macos_x64_sha256 }}
+      version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -199,7 +209,7 @@ jobs:
       ARCHITECTURE: x64
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -223,9 +233,12 @@ jobs:
         uses: gittools/actions/gitversion/execute@v0
 
       - name: Make Build
+        id: build
         run: |
           make build -C build/mac VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
           make archive VERSION=${{ steps.gitversion.outputs.SemVer }} -C build/mac ARCH=${{ env.ARCHITECTURE }}
+          hash=$(sha256sum --quiet build/mac/stalker-gamma+mac.x64.tar.gz)
+          echo "macos_x64_sha256=$hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
@@ -251,7 +264,7 @@ jobs:
       CONFIGURATION: Release
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -289,3 +302,30 @@ jobs:
           name: stalker-gamma+win.x64
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
+
+  update-homebrew:
+    name: update-homebrew
+    runs-on: ubuntu-latest
+    needs: [cli-macos-x64, cli-macos-arm64]
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v6
+        
+      - name: Checkout target repo
+        uses: actions/checkout@v6
+        with:
+          repository: FaithBeam/homebrew-stalker-gamma
+          token: ${{ secrets.HOMEBREW_REPO_TOKEN }}
+          path: homebrew-stalker-gamma
+          
+      - name: Update Homebrew Cask
+        run: |
+          PATH_TO_CASK="homebrew-stalker-gamma/Casks/stalker-gamma.rb"
+          chmod +x "./build/update-cask.sh"
+          ./build/update-cask.sh "${{ needs.cli-macos-arm64.outputs.version }}" "${{ needs.cli-macos-arm64.outputs.macos_arm64_sha256 }}" "${{ needs.cli-macos-x64.outputs.macos_x64_sha256 }}" "$PATH_TO_CASK"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$PATH_TO_CASK"
+          git commit -m "Update $PATH_TO_CASK"
+          git push
