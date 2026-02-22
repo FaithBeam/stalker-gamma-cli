@@ -227,8 +227,6 @@ public class DownloadModOrganizerService(
                 cancellationToken
             );
         }
-
-        await ExtractAsync(version, cachePath, extractPath, dlUrl, cancellationToken);
     }
 
     public void DeleteArchive(string cachePath = "")

@@ -315,9 +315,12 @@ public class GammaInstaller(
             await File.WriteAllTextAsync(Path.Join(mo2ProfilePath, "modlist.txt"), modList);
         }
 
-        var mo2ProfileModListPath = Path.Join(mo2ProfilePath, "modpack_maker_list.json");
         await File.WriteAllTextAsync(
-            mo2ProfileModListPath,
+            Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
+            modpackMakerTxt
+        );
+        await File.WriteAllTextAsync(
+            Path.Join(mo2ProfilePath, "modpack_maker_list.json"),
             JsonSerializer.Serialize(
                 modpackMakerRecords,
                 jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
@@ -350,9 +353,8 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var onlineModPackMakerRecords = modListRecordFactory.Create(
-            await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
-        );
+        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
+        var onlineModPackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
         var localRecords =
             JsonSerializer.Deserialize<List<ModPackMakerRecord>>(
                 await File.ReadAllTextAsync(
@@ -471,6 +473,12 @@ public class GammaInstaller(
             version: args.Mo2Version,
             cancellationToken: args.CancellationToken
         );
+        await downloadModOrganizerService.ExtractAsync(
+            cachePath: args.Cache,
+            extractPath: args.Gamma,
+            version: args.Mo2Version,
+            cancellationToken: args.CancellationToken
+        );
         if (args.Minimal)
         {
             downloadModOrganizerService.DeleteArchive(args.Cache);
@@ -509,6 +517,17 @@ public class GammaInstaller(
                 jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
             )
         );
+        await File.WriteAllTextAsync(
+            Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
+            modpackMakerTxt
+        );
+        await File.WriteAllTextAsync(
+            Path.Join(mo2ProfilePath, "modpack_maker_list.json"),
+            JsonSerializer.Serialize(
+                onlineModPackMakerRecords,
+                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
+            )
+        );
 
         internalProgress.Reset();
     }
@@ -517,7 +536,7 @@ public class GammaInstaller(
         IList<IDownloadableRecord> addons,
         ConcurrentBag<IDownloadableRecord> brokenAddons,
         bool minimal = false,
-        bool noDownload = false,
+        bool offline = false,
         CancellationToken cancellationToken = default
     ) =>
         await Parallel.ForEachAsync(
@@ -527,7 +546,7 @@ public class GammaInstaller(
             {
                 try
                 {
-                    if (noDownload)
+                    if (offline)
                     {
                         if (grs.ArchiveExists())
                         {

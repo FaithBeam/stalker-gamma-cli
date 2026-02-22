@@ -20,7 +20,7 @@ public class TeivazAnomalyGunslingerRepo(
     private string GammaModsDir => Path.Join(gammaDir, "mods");
     private readonly GammaProgress _gammaProgress = gammaProgress;
 
-    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -74,6 +74,7 @@ public class TeivazAnomalyGunslingerRepo(
                 e
             );
         }
+        return Task.CompletedTask;
     }
 
     public async Task ExpandFilesAsync(CancellationToken ct = default) =>

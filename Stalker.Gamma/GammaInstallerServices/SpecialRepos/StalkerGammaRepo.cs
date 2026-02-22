@@ -22,7 +22,7 @@ public class StalkerGammaRepo(
     private string AnomalyDir => anomalyDir;
     private readonly GammaProgress _gammaProgress = gammaProgress;
 
-    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
+    public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -76,6 +76,7 @@ public class StalkerGammaRepo(
                 e
             );
         }
+        return Task.CompletedTask;
     }
 
     public async Task ExpandFilesAsync(CancellationToken ct = default) =>

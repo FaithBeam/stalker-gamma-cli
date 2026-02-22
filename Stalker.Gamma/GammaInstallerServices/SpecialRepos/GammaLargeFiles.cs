@@ -22,7 +22,7 @@ public class GammaLargeFilesRepo(
     private readonly GitUtility _gitUtility = gitUtility;
     private string DestinationDir => Path.Join(_gammaDir, "mods");
 
-    public virtual async Task DownloadAsync(CancellationToken ct = default)
+    public virtual Task DownloadAsync(CancellationToken ct = default)
     {
         try
         {
@@ -76,6 +76,7 @@ public class GammaLargeFilesRepo(
                 e
             );
         }
+        return Task.CompletedTask;
     }
 
     public async Task ExpandFilesAsync(CancellationToken ct = default) =>

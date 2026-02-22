@@ -75,6 +75,10 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             profile.Active = false;
         }
 
+        cache = Path.GetFullPath(cache);
+        anomaly = Path.GetFullPath(anomaly);
+        gamma = Path.GetFullPath(gamma);
+
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {
