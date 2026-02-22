@@ -46,9 +46,9 @@ Commands:
 4. Create a config
     ```bash
    stalker-gamma config create \
-   --anomaly gamma/anomaly \
-   --gamma gamma/gamma \
-   --cache gamma/cache \
+   --anomaly ~/gamma/anomaly \
+   --gamma ~/gamma/gamma \
+   --cache ~/gamma/cache \
    --download-threads 2
     ```
 5. Full Install
