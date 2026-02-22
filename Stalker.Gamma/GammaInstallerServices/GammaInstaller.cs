@@ -22,7 +22,9 @@ public class GammaInstallerArgs
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
     public bool Minimal { get; set; }
-    public bool NoDownload { get; set; }
+    public bool Offline { get; set; }
+    public string? ModPackMakerPath { get; set; }
+    public string? ModListPath { get; set; }
 }
 
 public class InstallUpdatesArgs
@@ -73,7 +75,14 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
+        var modpackMakerTxt =
+            string.IsNullOrWhiteSpace(args.ModPackMakerPath)
+                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
+            : File.Exists(args.ModPackMakerPath)
+                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
+            : throw new FileNotFoundException(
+                $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
+            );
         var modpackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
         var separators = separatorsFactory.Create(modpackMakerRecords);
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
@@ -158,7 +167,7 @@ public class GammaInstaller(
                     [anomalyRecord, .. groupedAddonRecords],
                     brokenAddons,
                     args.Minimal,
-                    args.NoDownload,
+                    args.Offline,
                     cancellationToken: args.CancellationToken
                 ),
             args.CancellationToken
@@ -166,7 +175,7 @@ public class GammaInstaller(
         var teivazDlTask = Task.Run(
             async () =>
             {
-                if (!args.NoDownload)
+                if (!args.Offline)
                 {
                     await teivazAnomalyGunslingerRecord.DownloadAsync(args.CancellationToken);
                 }
@@ -180,7 +189,7 @@ public class GammaInstaller(
         var gammaLargeFilesDlTask = Task.Run(
             async () =>
             {
-                if (!args.NoDownload)
+                if (!args.Offline)
                 {
                     await gammaLargeFilesRecord.DownloadAsync(args.CancellationToken);
                 }
@@ -194,7 +203,7 @@ public class GammaInstaller(
         var gammaSetupDownloadTask = Task.Run(
             async () =>
             {
-                if (!args.NoDownload)
+                if (!args.Offline)
                 {
                     await gammaSetupRecord.DownloadAsync(args.CancellationToken);
                 }
@@ -205,7 +214,7 @@ public class GammaInstaller(
         var stalkerGammaDownloadTask = Task.Run(
             async () =>
             {
-                if (!args.NoDownload)
+                if (!args.Offline)
                 {
                     await stalkerGammaRecord.DownloadAsync(args.CancellationToken);
                 }
@@ -226,7 +235,7 @@ public class GammaInstaller(
 
         foreach (var brokenAddon in brokenAddons)
         {
-            if (!args.NoDownload)
+            if (!args.Offline)
             {
                 await brokenAddon.DownloadAsync(args.CancellationToken);
             }
@@ -278,11 +287,22 @@ public class GammaInstaller(
 
         var mo2ProfilePath = Path.Join(args.Gamma, "profiles", args.Mo2Profile);
         Directory.CreateDirectory(mo2ProfilePath);
-        if (!string.IsNullOrWhiteSpace(settings.ModListUrl))
+        if (
+            !string.IsNullOrWhiteSpace(args.ModListPath)
+            || !string.IsNullOrWhiteSpace(settings.ModListUrl)
+        )
         {
-            var modlist = await _hc.GetStringAsync(settings.ModListUrl);
+            var modList =
+                !string.IsNullOrWhiteSpace(args.ModListPath)
+                    ? await File.ReadAllTextAsync(
+                        args.ModListPath,
+                        cancellationToken: args.CancellationToken
+                    )
+                : !string.IsNullOrWhiteSpace(settings.ModListUrl)
+                    ? await _hc.GetStringAsync(settings.ModListUrl)
+                : throw new InvalidOperationException("Mod list path or url is empty");
             Directory.CreateDirectory(mo2ProfilePath);
-            await File.WriteAllTextAsync(Path.Join(mo2ProfilePath, "modlist.txt"), modlist);
+            await File.WriteAllTextAsync(Path.Join(mo2ProfilePath, "modlist.txt"), modList);
         }
 
         var mo2ProfileModListPath = Path.Join(mo2ProfilePath, "modpack_maker_list.json");

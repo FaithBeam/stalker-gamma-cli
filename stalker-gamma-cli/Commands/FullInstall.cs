@@ -1,4 +1,5 @@
-﻿using System.Reactive.Linq;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Reactive.Linq;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
@@ -28,7 +29,10 @@ public class FullInstallCmd(
     /// <param name="enableLongPaths">(Windows) Enable long paths</param>
     /// <param name="verbose">More verbose logging</param>
     /// <param name="minimal">Delete cache files after extracting. Could be useful for space constrained devices but increases the chance of installation failure and will make updates much slower. This will take about ~100GB.</param>
-    /// <param name="noDownload">This will not download any addon even if it is missing from the mod pack maker. Useful for reinstalling from cache.</param>
+    /// <param name="offline">Perform an offline install from cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
+    /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
+    /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
+    /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="debug"></param>
     /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
@@ -47,7 +51,10 @@ public class FullInstallCmd(
         bool enableLongPaths = false,
         bool verbose = false,
         bool minimal = false,
-        bool noDownload = false,
+        bool offline = false,
+        string? modPackMakerPath = null,
+        string? modListPath = null,
+        [Range(1, 6)] int? downloadThreads = null,
         [Hidden] bool debug = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250,
@@ -75,13 +82,28 @@ public class FullInstallCmd(
         }
 
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
+
+        if (
+            offline
+            && (
+                string.IsNullOrWhiteSpace(modPackMakerPath)
+                || string.IsNullOrWhiteSpace(modListPath)
+            )
+        )
+        {
+            throw new ArgumentException(
+                "--offline requires --mod-pack-maker-path and --mod-list-path"
+            );
+        }
+
         var anomaly = cliSettings.ActiveProfile!.Anomaly;
         var gamma = cliSettings.ActiveProfile!.Gamma;
         var cache = cliSettings.ActiveProfile!.Cache;
         var mo2Profile = cliSettings.ActiveProfile!.Mo2Profile;
         var modpackMakerUrl = cliSettings.ActiveProfile!.ModPackMakerUrl;
         var modListUrl = cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads = cliSettings.ActiveProfile!.DownloadThreads;
+        stalkerGammaSettings.DownloadThreads =
+            downloadThreads ?? cliSettings.ActiveProfile!.DownloadThreads;
         stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
         stalkerGammaSettings.ModListUrl = modListUrl;
         stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
@@ -142,7 +164,9 @@ public class FullInstallCmd(
                     SkipExtractOnHashMatch = skipExtractOnHashMatch,
                     Mo2Profile = mo2Profile,
                     Minimal = minimal,
-                    NoDownload = noDownload,
+                    Offline = offline,
+                    ModPackMakerPath = modPackMakerPath,
+                    ModListPath = modListPath,
                 }
             );
             _logger.Information("Install finished");
