@@ -52,11 +52,13 @@ build:
 	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
 	
 	# dotnet-install
-	curl $(DOTNET_INSTALL_URL) -Lo $(DOTNET_INSTALL_SCRIPT_PATH)
-	chmod +x $(DOTNET_INSTALL_SCRIPT_PATH)
-	$(DOTNET_INSTALL_SCRIPT_PATH) -Channel 10.0 -InstallDir $(DOTNET_INSTALL_PATH)
-	export PATH=$(DOTNET_INSTALL_PATH):$PATH
-	export DOTNET_ROOT=$(DOTNET_INSTALL_PATH)
+	if ! command -v dotnet &> /dev/null; then \
+    	    curl $(DOTNET_INSTALL_URL) -Lo $(DOTNET_INSTALL_SCRIPT_PATH); \
+    	    chmod +x $(DOTNET_INSTALL_SCRIPT_PATH); \
+    	    $(DOTNET_INSTALL_SCRIPT_PATH) -Channel 10.0 -InstallDir $(DOTNET_INSTALL_PATH); \
+    	    export PATH=$(DOTNET_INSTALL_PATH):$$PATH; \
+    	    export DOTNET_ROOT=$(DOTNET_INSTALL_PATH); \
+    	fi
 	
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
