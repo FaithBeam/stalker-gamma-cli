@@ -17,6 +17,14 @@ public interface IDownloadModOrganizerService
     );
 
     void DeleteArchive(string cachePath = "");
+
+    Task ExtractAsync(
+        string version = "v2.4.4",
+        string cachePath = "",
+        string? extractPath = null,
+        string dlUrl = "",
+        CancellationToken cancellationToken = default
+    );
 }
 
 public class DownloadModOrganizerService(
@@ -26,6 +34,70 @@ public class DownloadModOrganizerService(
     StalkerGammaSettings settings
 ) : IDownloadModOrganizerService
 {
+    public async Task ExtractAsync(
+        string version = "v2.4.4",
+        string cachePath = "",
+        string? extractPath = null,
+        string dlUrl = "",
+        CancellationToken cancellationToken = default
+    )
+    {
+        extractPath ??= Path.Join(Path.GetDirectoryName(AppContext.BaseDirectory), "..");
+        Directory.CreateDirectory(cachePath);
+        Directory.CreateDirectory(extractPath);
+
+        var mo2ArchivePath = Path.Join(cachePath, $"ModOrganizer.{version}.7z");
+        if (!File.Exists(mo2ArchivePath))
+        {
+            throw new DownloadModOrganizerException($"Archive {mo2ArchivePath} not found");
+        }
+
+        foreach (var folder in _foldersToDelete)
+        {
+            var path = Path.Join(extractPath, folder);
+            if (!Directory.Exists(path))
+            {
+                continue;
+            }
+
+            new DirectoryInfo(path)
+                .GetDirectories("*", SearchOption.AllDirectories)
+                .ToList()
+                .ForEach(di =>
+                {
+                    di.Attributes &= ~FileAttributes.ReadOnly;
+                    di.GetFiles("*", SearchOption.TopDirectoryOnly)
+                        .ToList()
+                        .ForEach(fi => fi.IsReadOnly = false);
+                });
+            Directory.Delete(path, true);
+        }
+
+        foreach (var file in _filesToDelete)
+        {
+            var path = Path.Join(extractPath, file);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+
+        await archiveUtility.ExtractAsync(
+            mo2ArchivePath,
+            extractPath,
+            pct =>
+                gammaProgress.OnProgressChanged(
+                    new GammaProgress.GammaInstallProgressEventArgs(
+                        "ModOrganizer",
+                        "Extract",
+                        pct,
+                        dlUrl
+                    )
+                ),
+            ct: cancellationToken
+        );
+    }
+
     public async Task DownloadAsync(
         string version = "v2.4.4",
         string cachePath = "",
@@ -156,50 +228,7 @@ public class DownloadModOrganizerService(
             );
         }
 
-        foreach (var folder in _foldersToDelete)
-        {
-            var path = Path.Join(extractPath, folder);
-            if (!Directory.Exists(path))
-            {
-                continue;
-            }
-
-            new DirectoryInfo(path)
-                .GetDirectories("*", SearchOption.AllDirectories)
-                .ToList()
-                .ForEach(di =>
-                {
-                    di.Attributes &= ~FileAttributes.ReadOnly;
-                    di.GetFiles("*", SearchOption.TopDirectoryOnly)
-                        .ToList()
-                        .ForEach(fi => fi.IsReadOnly = false);
-                });
-            Directory.Delete(path, true);
-        }
-
-        foreach (var file in _filesToDelete)
-        {
-            var path = Path.Join(extractPath, file);
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-
-        await archiveUtility.ExtractAsync(
-            mo2ArchivePath,
-            extractPath,
-            pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(
-                        "ModOrganizer",
-                        "Extract",
-                        pct,
-                        dlUrl
-                    )
-                ),
-            ct: cancellationToken
-        );
+        await ExtractAsync(version, cachePath, extractPath, dlUrl, cancellationToken);
     }
 
     public void DeleteArchive(string cachePath = "")
@@ -253,4 +282,13 @@ public class DownloadModOrganizerService(
         "usvfs_x64.dll",
         "usvfs_x86.dll",
     ];
+}
+
+public class DownloadModOrganizerException : Exception
+{
+    public DownloadModOrganizerException(string msg)
+        : base(msg) { }
+
+    public DownloadModOrganizerException(string msg, Exception innerException)
+        : base(msg, innerException) { }
 }

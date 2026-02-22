@@ -258,12 +258,22 @@ public class GammaInstaller(
         DeleteShaderCache.Delete(args.Anomaly);
         await UserLtxForceBorderless.ForceBorderless(args.Anomaly);
 
-        await downloadModOrganizerService.DownloadAsync(
+        if (!args.Offline)
+        {
+            await downloadModOrganizerService.DownloadAsync(
+                cachePath: args.Cache,
+                extractPath: args.Gamma,
+                version: args.Mo2Version,
+                cancellationToken: args.CancellationToken
+            );
+        }
+        await downloadModOrganizerService.ExtractAsync(
+            version: args.Mo2Version,
             cachePath: args.Cache,
             extractPath: args.Gamma,
-            version: args.Mo2Version,
             cancellationToken: args.CancellationToken
         );
+
         if (args.Minimal)
         {
             downloadModOrganizerService.DeleteArchive(args.Cache);
