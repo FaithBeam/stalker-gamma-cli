@@ -324,8 +324,8 @@ jobs:
           PATH_TO_CASK="homebrew-stalker-gamma/Casks/stalker-gamma.rb"
           chmod +x "./build/update-cask.sh"
           ./build/update-cask.sh "${{ needs.cli-macos-arm64.outputs.version }}" "${{ needs.cli-macos-arm64.outputs.macos_arm64_sha256 }}" "${{ needs.cli-macos-x64.outputs.macos_x64_sha256 }}" "$PATH_TO_CASK"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$PATH_TO_CASK"
-          git commit -m "Update $PATH_TO_CASK"
-          git push
+          git -C homebrew-stalker-gamma config user.name "github-actions[bot]"
+          git -C homebrew-stalker-gamma config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C homebrew-stalker-gamma add .
+          git -C homebrew-stalker-gamma commit -m "Update $PATH_TO_CASK"
+          git -C homebrew-stalker-gamma push
