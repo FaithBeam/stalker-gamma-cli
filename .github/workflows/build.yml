@@ -9,7 +9,7 @@ on:
 jobs:
   cli-ubuntu-x64:
     name: cli-ubuntu
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     env:
       APP_NAME: stalker-gamma-gui
@@ -137,7 +137,7 @@ jobs:
 
   cli-macos-arm64:
     name: cli-macos-arm64
-    runs-on: macos-latest
+    runs-on: macos-15
     outputs:
       macos_arm64_sha256: ${{ steps.build.outputs.macos_arm64_sha256 }}
       version: ${{ steps.gitversion.outputs.SemVer }}
@@ -256,7 +256,7 @@ jobs:
 
   cli-windows:
     name: cli-windows
-    runs-on: windows-latest
+    runs-on: windows-2022
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -292,20 +292,37 @@ jobs:
           files: stalker-gamma+win.x64.zip
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
-      - name: Create and Push Chocolatey Package
-        if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ steps.gitversion.outputs.SemVer }} ${{ secrets.CHOCOLATEY_API_KEY }}
-
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: stalker-gamma+win.x64
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
+          
+  update-chocolatey:
+    name: update-chocolatey
+    runs-on: windows-2022
+    needs: cli-windows
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: stalker-gamma+win.x64
+          path: stalker-gamma+win.x64
+        
+      - name: Create and Push Chocolatey Package
+        if: github.ref_type == 'tag'
+        run: build/win/chocolatey.bat ${{ steps.gitversion.outputs.SemVer }} ${{ secrets.CHOCOLATEY_API_KEY }}
 
   update-homebrew:
     name: update-homebrew
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [cli-macos-x64, cli-macos-arm64]
     if: github.ref_type == 'tag'
     steps:
