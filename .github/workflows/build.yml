@@ -256,7 +256,7 @@ jobs:
 
   cli-windows:
     name: cli-windows
-    runs-on: windows-2022
+    runs-on: windows-latest
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -301,7 +301,7 @@ jobs:
           
   update-chocolatey:
     name: update-chocolatey
-    runs-on: windows-2022
+    runs-on: windows-latest
     needs: cli-windows
     if: github.ref_type == 'tag'
     steps:
