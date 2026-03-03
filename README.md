@@ -64,26 +64,11 @@ stalker-gamma update apply
 
 ## Build
 
-**Linux**
-
-```bash
-cd build/linux
-make build
-```
-
-**macOS**
-
-```bash
-cd build/mac
-make build
-```
-
-**Windows**
-
-```bash
-cd build/win
-build.bat
-```
+| Platform | Commands                       |
+|----------|--------------------------------|
+| Windows  | `cd build/win; build.bat`      |
+| Linux    | `cd build/linux && make build` |
+| macOS    | `cd build/mac && make build`   |
 
 Artifacts in the `build/stalker-gamma-cli` folder.
 
