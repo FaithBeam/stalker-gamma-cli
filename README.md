@@ -40,46 +40,11 @@ Commands:
 
 ### Install
 
-1. Download your operating system's archive from the [Releases](https://github.com/FaithBeam/stalker-gamma-cli/releases) page
-2. Extract archive if the release is not an AppImage
-3. Open a terminal in the extracted folder
-4. Create a config
-    ```bash
-   stalker-gamma config create \
-   --anomaly gamma/anomaly \
-   --gamma gamma/gamma \
-   --cache gamma/cache \
-   --download-threads 2
-    ```
-5. Full Install
-    ```bash
-    stalker-gamma full-install
-    ```
-6. Run gamma/ModOrganizer.exe
-
-#### Chocolatey (Windows)
-
-You can use [chocolatey](https://chocolatey.org) to install stalker-gamma:
-
-```powershell
-choco install stalker-gamma
-```
-
-#### AUR (Arch Linux)
-
-[stalker-gamma-cli-bin](https://aur.archlinux.org/packages/stalker-gamma-cli-bin)
-
-```bash
-yay -S stalker-gamma-cli-bin
-```
-
-**Note**
-
-This AUR package is not maintained by me. I may or may not be able to help with broken installs using this method.
-
-#### MacOS Instructions
-
-[MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)
+| Platform | Method                                                                                 |
+|----------|----------------------------------------------------------------------------------------|
+| Windows  | [Windows Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) |
+| Linux    | [Linux Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install)     |
+| macOS    | [MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)     |
 
 ### Update
 
