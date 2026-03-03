@@ -40,7 +40,7 @@ Commands:
 
 ### Install
 
-| Platform | Method                                                                                 |
+| OS | Method                                                                                 |
 |----------|----------------------------------------------------------------------------------------|
 | Windows  | [Windows Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) |
 | Linux    | [Linux Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install)     |
