@@ -50,15 +50,10 @@ Commands:
 
 After you've performed a full-install, you can update your installation.
 
-Check for updates:
+Check for updates and apply:
 
 ```bash
 stalker-gamma update check
-```
-
-Apply updates:
-
-```bash
 stalker-gamma update apply
 ```
 
