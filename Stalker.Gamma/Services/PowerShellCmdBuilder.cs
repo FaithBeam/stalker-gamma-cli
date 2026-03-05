@@ -34,7 +34,7 @@ public class PowerShellCmdBuilder
         )
         {
             _powerShellCmd.Cmds.Add(
-                $"New-Item -ItemType SymbolicLink -Path {path} -Value {pathToTarget}"
+                $"New-Item -ItemType SymbolicLink -Path '{path}' -Value '{pathToTarget}'"
             );
         }
         return this;

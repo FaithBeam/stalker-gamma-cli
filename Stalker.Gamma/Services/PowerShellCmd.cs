@@ -22,6 +22,17 @@ public class PowerShellCmd
             };
             process.Start();
             await process.WaitForExitAsync(ct);
+            if (process.ExitCode != 0)
+            {
+                throw new PowerShellCmdException(
+                    $"""
+                    PowerShell exited with code {process.ExitCode}
+                    Commands: {string.Join("\n", Cmds)}");"
+                    """
+                );
+            }
         }
     }
 }
+
+public class PowerShellCmdException(string message) : Exception(message);
