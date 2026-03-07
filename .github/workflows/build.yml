@@ -317,7 +317,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: stalker-gamma+win.x64
-          path: stalker-gamma+win.x64
+          path: stalker-gamma+win.x64.zip
         
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
