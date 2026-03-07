@@ -257,6 +257,8 @@ jobs:
   cli-windows:
     name: cli-windows
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -299,6 +301,7 @@ jobs:
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
           
+ 
   update-chocolatey:
     name: update-chocolatey
     runs-on: windows-latest
@@ -318,7 +321,7 @@ jobs:
         
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ steps.gitversion.outputs.SemVer }} ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
 
   update-homebrew:
     name: update-homebrew
