@@ -57,6 +57,10 @@ stalker-gamma update check
 stalker-gamma update apply
 ```
 
+## FPS / Steam Deck / Potato Mode Mod Lists
+
+[FPS / Steam Deck / Potato Mode Mod Lists](https://github.com/FaithBeam/stalker-gamma-cli/wiki/FPS-Config---Steam-Deck---Potato-Mode-Modlist)
+
 ## Build
 
 | Platform | Commands                       |
