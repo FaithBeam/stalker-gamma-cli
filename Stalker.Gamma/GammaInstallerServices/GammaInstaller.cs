@@ -416,19 +416,41 @@ public class GammaInstaller(
             args.CancellationToken
         );
         var teivazDlTask = Task.Run(
-            async () => await teivazAnomalyGunslingerRecord.DownloadAsync(args.CancellationToken),
+            async () =>
+            {
+                await teivazAnomalyGunslingerRecord.DownloadAsync(args.CancellationToken);
+                await ((TeivazAnomalyGunslingerRepo)teivazAnomalyGunslingerRecord).ExpandFilesAsync(
+                    args.CancellationToken
+                );
+            },
             args.CancellationToken
         );
         var gammaLargeFilesDlTask = Task.Run(
-            async () => await gammaLargeFilesRecord.DownloadAsync(args.CancellationToken),
+            async () =>
+            {
+                await gammaLargeFilesRecord.DownloadAsync(args.CancellationToken);
+                await ((GammaLargeFilesRepo)gammaLargeFilesRecord).ExpandFilesAsync(
+                    args.CancellationToken
+                );
+            },
             args.CancellationToken
         );
         var gammaSetupDownloadTask = Task.Run(
-            async () => await gammaSetupRecord.DownloadAsync(args.CancellationToken),
+            async () =>
+            {
+                await gammaSetupRecord.DownloadAsync(args.CancellationToken);
+                await ((GammaSetupRepo)gammaSetupRecord).ExpandFilesAsync(args.CancellationToken);
+            },
             args.CancellationToken
         );
         var stalkerGammaDownloadTask = Task.Run(
-            async () => await stalkerGammaRecord.DownloadAsync(args.CancellationToken),
+            async () =>
+            {
+                await stalkerGammaRecord.DownloadAsync(args.CancellationToken);
+                await ((StalkerGammaRepo)stalkerGammaRecord).ExpandFilesAsync(
+                    args.CancellationToken
+                );
+            },
             args.CancellationToken
         );
 

@@ -1,6 +1,7 @@
 param (
     [string]$Version = "1.0.0",
-    [string]$ChocolateyApiKey
+    [string]$ChocolateyApiKey,
+    [string]$PathToArchive
 )
 
 Import-Module $PSHOME\Modules\Microsoft.PowerShell.Utility -Function Get-FileHash
@@ -9,7 +10,8 @@ $ProgressPreference = 'SilentlyContinue'
 
 $scriptDir = $PSScriptRoot
 
-$archiveSha256 = (Get-FileHash stalker-gamma+win.x64.zip).Hash.ToLower()
+$archiveName = Split-Path $PathToArchive -Leaf
+$archiveSha256 = (Get-FileHash $PathToArchive).Hash.ToLower()
 
 #region chocolatey
 if (Get-Command choco) {
@@ -31,7 +33,7 @@ if (Get-Command choco) {
 "@
     $chocoInstall = @"
 `$packageName = 'stalker-gamma'
-`$url         = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/stalker-gamma+win.x64.zip'
+`$url         = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($archiveName)'
 `$checksum    = '$($archiveSha256)'
 
 `$packageArgs = @{
