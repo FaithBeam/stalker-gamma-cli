@@ -13,17 +13,19 @@ public interface IDownloadableRecordFactory
     IDownloadableRecord CreateStalkerGammaRecord(string gammaDir, string anomalyDir);
     IDownloadableRecord CreateTeivazAnomalyGunslingerRecord(string gammaDir);
 
-    bool TryCreate(
-        string gammaDir,
-        ModPackMakerRecord record,
-        out IDownloadableRecord? downloadableRecord
-    );
-
     List<IDownloadableRecord> CreateGroupedDownloadableRecords(IList<IDownloadableRecord> records);
 
     IDownloadableRecord CreateSkippedRecord(IDownloadableRecord record);
 
     IDownloadableRecord CreateSkipExtractWhenNotDownloadedRecord(IDownloadableRecord record);
+
+    bool TryCreateGithubRecord(
+        string gammaDir,
+        Github record,
+        out GithubRecord? downloadableRecord
+    );
+
+    bool TryCreateModDbRecord(string gammaDir, ModDb record, out ModDbRecord? downloadableRecord);
 }
 
 public class DownloadableRecordFactory(
@@ -100,114 +102,51 @@ public class DownloadableRecordFactory(
                 .Select(r => new GithubRecordGroup(gammaProgress, r.ToList())),
         ];
 
-    public bool TryCreate(
+    public bool TryCreateGithubRecord(
         string gammaDir,
-        ModPackMakerRecord record,
-        out IDownloadableRecord? downloadableRecord
-    )
-    {
-        downloadableRecord = null;
-
-        if (TryParseModDbRecord(gammaDir, record, out var modDbRecord))
-        {
-            downloadableRecord = modDbRecord;
-            return true;
-        }
-
-        if (TryParseGithubRecord(gammaDir, record, out var githubRecord))
-        {
-            downloadableRecord = githubRecord;
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryParseGithubRecord(
-        string gammaDir,
-        ModPackMakerRecord record,
+        Github record,
         out GithubRecord? downloadableRecord
     )
     {
-        downloadableRecord = null;
-
-        if (record.DlLink.Contains("github"))
-        {
-            if (
-                string.IsNullOrWhiteSpace(record.AddonName)
-                || string.IsNullOrWhiteSpace(record.Patch)
-            )
-            {
-                throw new DownloadableRecordFactoryException($"Invalid record: {record}");
-            }
-
-            var instructions = ProcessInstructions(record.Instructions);
-
-            var archiveName = $"{record.DlLink.Split('/')[4]}.zip";
-            var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
-            downloadableRecord = new GithubRecord(
-                gammaProgress,
-                record.AddonName,
-                record.DlLink,
-                record.ModDbUrl ?? record.DlLink,
-                archiveName,
-                record.Md5ModDb,
-                gammaDir,
-                outputDirName,
-                instructions,
-                httpClientFactory,
-                archiveUtility
-            );
-            return true;
-        }
-
-        return false;
+        var outputDirName = $"{record.Index}- {record.ArchiveName}";
+        downloadableRecord = new GithubRecord(
+            gammaProgress,
+            record.Name,
+            record.DownloadUrl,
+            record.NiceUrl ?? record.DownloadUrl,
+            record.ArchiveName!,
+            record.Md5,
+            gammaDir,
+            outputDirName,
+            record.Instructions,
+            httpClientFactory,
+            archiveUtility
+        );
+        return true;
     }
 
-    private bool TryParseModDbRecord(
+    public bool TryCreateModDbRecord(
         string gammaDir,
-        ModPackMakerRecord record,
+        ModDb record,
         out ModDbRecord? downloadableRecord
     )
     {
-        downloadableRecord = null;
-        if (record.DlLink.Contains("moddb"))
-        {
-            if (
-                string.IsNullOrWhiteSpace(record.AddonName)
-                || string.IsNullOrWhiteSpace(record.Patch)
-                || string.IsNullOrWhiteSpace(record.ZipName)
-            )
-            {
-                throw new DownloadableRecordFactoryException($"Invalid record: {record}");
-            }
-            var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
-            var instructions = ProcessInstructions(record.Instructions);
-            downloadableRecord = new ModDbRecord(
-                gammaProgress,
-                record.AddonName,
-                record.DlLink,
-                record.ModDbUrl ?? record.DlLink,
-                record.ZipName,
-                record.Md5ModDb,
-                gammaDir,
-                outputDirName,
-                instructions,
-                archiveUtility,
-                modDbUtility
-            );
-            return true;
-        }
-        return false;
+        var outputDirName = $"{record.Index}- {record.ArchiveName}";
+        downloadableRecord = new ModDbRecord(
+            gammaProgress,
+            record.Name!,
+            record.DownloadUrl,
+            record.NiceUrl ?? record.DownloadUrl,
+            record.ArchiveName!,
+            record.Md5,
+            gammaDir,
+            outputDirName,
+            record.Instructions,
+            archiveUtility,
+            modDbUtility
+        );
+        return true;
     }
-
-    private static List<string> ProcessInstructions(string? instructions) =>
-        string.IsNullOrWhiteSpace(instructions) || instructions == "0"
-            ? []
-            : instructions
-                .Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(y => y.TrimStart('\\').Replace('\\', Path.DirectorySeparatorChar))
-                .ToList();
 }
 
 public class DownloadableRecordFactoryException(string msg) : Exception(msg);

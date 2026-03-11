@@ -44,8 +44,6 @@ public class GammaInstaller(
     IDownloadModOrganizerService downloadModOrganizerService,
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IDownloadableRecordFactory downloadableRecordFactory,
-    IModListRecordFactory modListRecordFactory,
-    ISeparatorsFactory separatorsFactory,
     IHttpClientFactory hcf,
     PowerShellCmdBuilder powerShellCmdBuilder
 )
@@ -75,16 +73,9 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt =
-            string.IsNullOrWhiteSpace(args.ModPackMakerPath)
-                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
-            : File.Exists(args.ModPackMakerPath)
-                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
-            : throw new FileNotFoundException(
-                $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
-            );
-        var modpackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
-        var separators = separatorsFactory.Create(modpackMakerRecords);
+        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
+        var gitRepoRecords = modpackMakerTxt.GitRepos;
+        var separators = modpackMakerTxt.Separators;
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly
@@ -96,25 +87,25 @@ public class GammaInstaller(
             );
         }
 
-        var addonRecords = modpackMakerRecords
-            .Select(rec =>
-            {
-                if (!downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
-                {
-                    return null;
-                }
-
-                if (dlRec is GithubRecord ghr)
-                {
-                    ghr.Download = args.DownloadGithubArchives;
-                    return ghr;
-                }
-
-                return dlRec;
-            })
+        var addonRecords = modpackMakerTxt
+            .ModDb.Select(rec =>
+                downloadableRecordFactory.TryCreateModDbRecord(args.Gamma, rec, out var dlRec)
+                    ? dlRec as IDownloadableRecord
+                    : null
+            )
             .Where(x => x is not null)
-            .Select(x => x!)
+            .Cast<IDownloadableRecord>()
             .ToList();
+        addonRecords.AddRange(
+            modpackMakerTxt
+                .Github.Select(rec =>
+                    downloadableRecordFactory.TryCreateGithubRecord(args.Gamma, rec, out var dlRec)
+                        ? dlRec as IDownloadableRecord
+                        : null
+                )
+                .Where(x => x is not null)
+                .Cast<IDownloadableRecord>()
+        );
         var groupedAddonRecords = downloadableRecordFactory
             .CreateGroupedDownloadableRecords(addonRecords)
             .Select(dlRec =>

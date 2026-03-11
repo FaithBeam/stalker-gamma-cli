@@ -321,7 +321,7 @@ jobs:
         
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }} 
 
   update-homebrew:
     name: update-homebrew
