@@ -14,7 +14,25 @@ if (-not (Test-Path $PathToArchive)) {
     Write-Error "Archive not found at: $PathToArchive"
     exit 1
 }
-$archiveSha256 = (Get-FileHash $PathToArchive).Hash.ToLower()
+$acl = Get-Acl $PathToArchive
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "Read", "Allow")
+$acl.SetAccessRule($rule)
+Set-Acl $PathToArchive $acl
+
+$retries = 5
+for ($i = 0; $i -lt $retries; $i++) {
+    try {
+        $archiveSha256 = (Get-FileHash $PathToArchive -ErrorAction Stop).Hash.ToLower()
+        break
+    } catch {
+        Write-Warning "Attempt $($i+1) failed: $_"
+        Start-Sleep -Seconds 2
+    }
+}
+if (-not $archiveSha256) {
+    Write-Error "Could not hash file after $retries attempts"
+    exit 1
+}
 
 #region chocolatey
 if (Get-Command choco) {
