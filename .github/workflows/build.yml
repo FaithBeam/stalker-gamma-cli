@@ -321,7 +321,7 @@ jobs:
         
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }} ${{ github.workspace }}/stalker-gamma+win.x64.zip
 
   update-homebrew:
     name: update-homebrew
