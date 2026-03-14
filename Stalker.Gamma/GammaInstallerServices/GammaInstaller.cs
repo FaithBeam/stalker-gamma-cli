@@ -47,7 +47,8 @@ public class GammaInstaller(
     IModListRecordFactory modListRecordFactory,
     ISeparatorsFactory separatorsFactory,
     IHttpClientFactory hcf,
-    PowerShellCmdBuilder powerShellCmdBuilder
+    PowerShellCmdBuilder powerShellCmdBuilder,
+    IGetStalkerModsFromLocal getStalkerModsFromLocal
 )
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -355,13 +356,7 @@ public class GammaInstaller(
 
         var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
         var onlineModPackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
-        var localRecords =
-            JsonSerializer.Deserialize<List<ModPackMakerRecord>>(
-                await File.ReadAllTextAsync(
-                    Path.Join(args.Gamma, "profiles", args.Mo2Profile, "modpack_maker_list.json")
-                ),
-                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
-            ) ?? [];
+        var localRecords = await getStalkerModsFromLocal.GetMods(args.Gamma, args.Mo2Profile);
         var addedOrModifiedRecords = localRecords
             .Diff(onlineModPackMakerRecords)
             .Where(x => x.DiffType is DiffType.Added or DiffType.Modified)

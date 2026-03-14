@@ -182,6 +182,7 @@ public class UpdateCmds(
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <param name="verbose"></param>
+    /// <param name="minimal"></param>
     /// <param name="mo2Version"></param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task Apply(
