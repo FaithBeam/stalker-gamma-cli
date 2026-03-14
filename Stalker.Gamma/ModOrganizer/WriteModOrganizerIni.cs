@@ -144,7 +144,7 @@ public static class WriteModOrganizerIni
             MainWindow_modList_state=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\t\x1\0\0\0\0\0\0\0\0\0\0\0\vh\x5\0\0\0\x5\0\0\0\x3\0\0\0(\0\0\0\x5\0\0\0(\0\0\0\x6\0\0\0(\0\0\0\b\0\0\0(\0\0\0\n\0\0\0(\0\0\x5*\0\0\0\v\x1\x1\0\x1\0\0\0\0\0\0\0\0\x1\0\0\0(\xff\xff\xff\xff\0\0\0\x81\0\0\0\0\0\0\0\v\0\0\x1\x85\0\0\0\x1\0\0\0\0\0\0\0\x46\0\0\0\x1\0\0\0\0\0\0\0.\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0Y\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\x2\x99\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0?\0\0\0\x1\0\0\0\0\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\x3\xe8\x1\0\0\0?)
 
             [Widgets]
-            MainWindow_executablesListBox_index=2
+            MainWindow_executablesListBox_index=3
             MainWindow_tabWidget_index=0
             MainWindow_dataTabShowOnlyConflicts_checked=false
             MainWindow_dataTabShowFromArchives_checked=false

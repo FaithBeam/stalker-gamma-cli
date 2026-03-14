@@ -42,6 +42,36 @@ public partial class Gog(
         );
         await File.WriteAllTextAsync(mo2IniPath, mo2IniTxt);
         _logger.Information("ModOrganizer.ini updated");
+
+        List<string> gitReposToTransfer =
+        [
+            "gamma_large_files_v2",
+            "Stalker_GAMMA",
+            "teivaz_anomaly_gunslinger",
+        ];
+        foreach (var gitRepo in gitReposToTransfer)
+        {
+            var dstPath = Path.Join(
+                _cliSettings.ActiveProfile.Gamma,
+                "downloads",
+                $"{gitRepo}.git"
+            );
+            var srcPath = Path.Join(
+                _cliSettings.ActiveProfile.Gamma,
+                ".Grok's Modpack Installer",
+                "resources",
+                gitRepo,
+                ".git"
+            );
+            // skip if the directory already exists or the source doesn't exist
+            if (Directory.Exists(dstPath) || !Directory.Exists(srcPath))
+            {
+                continue;
+            }
+
+            Directory.Move(srcPath, dstPath);
+            _logger.Information("Moved {SrcPath} to {DstPath}", srcPath, dstPath);
+        }
     }
 
     [GeneratedRegex("^path=(?<path>.+)$", RegexOptions.Multiline)]
