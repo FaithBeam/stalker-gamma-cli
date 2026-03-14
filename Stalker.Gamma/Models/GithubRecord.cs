@@ -54,6 +54,13 @@ public class GithubRecord(
 
     public async Task ExtractAsync(CancellationToken cancellationToken)
     {
+        // Delete what was previously extracted
+        if (Directory.Exists(ExtractPath))
+        {
+            DirUtils.NormalizePermissions(ExtractPath);
+            DirUtils.RecursivelyDeleteDirectory(ExtractPath, doNotMatch: []);
+        }
+
         Directory.CreateDirectory(ExtractPath);
 
         await archiveUtility.ExtractAsync(
