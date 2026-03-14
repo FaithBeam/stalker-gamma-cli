@@ -1,7 +1,6 @@
 param (
     [string]$Version = "1.0.0",
-    [string]$ChocolateyApiKey,
-    [string]$PathToArchive
+    [string]$ChocolateyApiKey
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,22 +8,21 @@ $ProgressPreference = 'SilentlyContinue'
 
 $scriptDir = $PSScriptRoot
 
-$archiveName = Split-Path $PathToArchive -Leaf
-if (-not (Test-Path $PathToArchive)) {
-    Write-Error "Archive not found at: $PathToArchive"
-    exit 1
-}
-$sha256 = [System.Security.Cryptography.SHA256]::Create()
-$stream = [System.IO.FileStream]::new(
-    $PathToArchive,
-    [System.IO.FileMode]::Open,
-    [System.IO.FileAccess]::Read,
-    [System.IO.FileShare]::ReadWrite  # allows reading even if another process has it open
-)
-$hashBytes = $sha256.ComputeHash($stream)
-$stream.Close()
-$sha256.Dispose()
-$archiveSha256 = [System.BitConverter]::ToString($hashBytes).Replace("-", "").ToLower()
+Start-Sleep -Seconds 5
+
+$githubApi = "https://api.github.com"
+
+$getReleaseSplat = @{
+    Uri = "$($githubApi)/repos/FaithBeam/stalker-gamma-cli/releases/tags/$($Version)"
+    Headers = @{
+        'User-Agent' = 'stalker-gamma-gh-action/1.0'
+        'Accept' = 'application/json'
+    }
+    Method = 'GET'
+} 
+$releaseResponse = Invoke-RestMethod @getReleaseSplat
+$winAssetX64 = $releaseResponse.assets | Where-Object {$_.name -like '*+win.x64*'} | Select-Object -First 1
+$winAssetX64Sha256 = $winAssetX64.digest -replace 'sha256:', ''
 
 #region chocolatey
 if (Get-Command choco) {
@@ -46,8 +44,8 @@ if (Get-Command choco) {
 "@
     $chocoInstall = @"
 `$packageName = 'stalker-gamma'
-`$url         = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($archiveName)'
-`$checksum    = '$($archiveSha256)'
+`$url         = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetX64.name)'
+`$checksum    = '$($winAssetX64Sha256)'
 
 `$packageArgs = @{
   packageName   = `$packageName

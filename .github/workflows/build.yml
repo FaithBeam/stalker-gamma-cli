@@ -312,16 +312,10 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Download Windows Artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: stalker-gamma+win.x64
-          path: stalker-gamma+win.x64.zip
         
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }} ${{ github.workspace }}/stalker-gamma+win.x64.zip
+        run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
 
   update-homebrew:
     name: update-homebrew
