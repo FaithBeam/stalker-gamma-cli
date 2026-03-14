@@ -326,7 +326,7 @@ jobs:
   update-homebrew:
     name: update-homebrew
     runs-on: ubuntu-22.04
-    needs: [cli-macos-x64, cli-macos-arm64]
+    needs: [cli-macos-x64, cli-macos-arm64, update-chocolatey]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout source repo

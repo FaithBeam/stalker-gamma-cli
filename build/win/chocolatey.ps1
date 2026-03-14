@@ -4,13 +4,16 @@ param (
     [string]$PathToArchive
 )
 
-Import-Module $PSHOME\Modules\Microsoft.PowerShell.Utility -Function Get-FileHash
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $scriptDir = $PSScriptRoot
 
 $archiveName = Split-Path $PathToArchive -Leaf
+if (-not (Test-Path $PathToArchive)) {
+    Write-Error "Archive not found at: $PathToArchive"
+    exit 1
+}
 $archiveSha256 = (Get-FileHash $PathToArchive).Hash.ToLower()
 
 #region chocolatey
