@@ -61,6 +61,62 @@ public partial class CliProfile
         }
     }
 
+    public bool TrySet(string setting, string value, out string? error)
+    {
+        switch (setting.ToLowerInvariant())
+        {
+            case "profilename":
+                ProfileName = value;
+                error = null;
+                return true;
+
+            case "anomaly":
+                Anomaly = value;
+                error = null;
+                return true;
+
+            case "gamma":
+                Gamma = value;
+                error = null;
+                return true;
+
+            case "cache":
+                Cache = value;
+                error = null;
+                return true;
+
+            case "mo2profile":
+                Mo2Profile = value;
+                error = null;
+                return true;
+
+            case "modpackmakerurl":
+                ModPackMakerUrl = value;
+                error = null;
+                return true;
+
+            case "modlisturl":
+                ModListUrl = value;
+                error = null;
+                return true;
+
+            case "downloadthreads":
+                if (!int.TryParse(value, out var threads))
+                {
+                    error = "Value must be an integer.";
+                    return false;
+                }
+
+                DownloadThreads = threads;
+                error = null;
+                return true;
+
+            default:
+                error = $"Unknown setting '{setting}'.";
+                return false;
+        }
+    }
+
     [GeneratedRegex(@"selected_profile=@ByteArray\((?<profile>.+)\)")]
     private partial Regex SelectedProfileRx();
 }
