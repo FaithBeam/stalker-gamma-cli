@@ -108,7 +108,7 @@ public class DownloadableRecordFactory(
         out GithubRecord? downloadableRecord
     )
     {
-        var outputDirName = $"{record.Index}- {record.ArchiveName}";
+        var outputDirName = $"{record.Index}- {record.Name} {record.Author}";
         downloadableRecord = new GithubRecord(
             gammaProgress,
             record.Name,
@@ -131,10 +131,10 @@ public class DownloadableRecordFactory(
         out ModDbRecord? downloadableRecord
     )
     {
-        var outputDirName = $"{record.Index}- {record.ArchiveName}";
+        var outputDirName = $"{record.Index}- {record.Name} - {record.Author}";
         downloadableRecord = new ModDbRecord(
             gammaProgress,
-            record.Name!,
+            record.Name,
             record.DownloadUrl,
             record.NiceUrl ?? record.DownloadUrl,
             record.ArchiveName!,

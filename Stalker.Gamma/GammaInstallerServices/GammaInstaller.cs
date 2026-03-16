@@ -73,9 +73,15 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
-        var gitRepoRecords = modpackMakerTxt.GitRepos;
-        var separators = modpackMakerTxt.Separators;
+        var modpackMakerRecords = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
+        var gitRepoRecords = modpackMakerRecords.GitRepos;
+        var separators = modpackMakerRecords
+            .Separators.Select(x => new Models.Separator
+            {
+                Name = $"{x.Name} Separator",
+                FolderName = $"{x.Index}- {x.Name}_separator",
+            })
+            .ToList();
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly
@@ -87,7 +93,7 @@ public class GammaInstaller(
             );
         }
 
-        var addonRecords = modpackMakerTxt
+        var addonRecords = modpackMakerRecords
             .ModDb.Select(rec =>
                 downloadableRecordFactory.TryCreateModDbRecord(args.Gamma, rec, out var dlRec)
                     ? dlRec as IDownloadableRecord
@@ -97,7 +103,7 @@ public class GammaInstaller(
             .Cast<IDownloadableRecord>()
             .ToList();
         addonRecords.AddRange(
-            modpackMakerTxt
+            modpackMakerRecords
                 .Github.Select(rec =>
                     downloadableRecordFactory.TryCreateGithubRecord(args.Gamma, rec, out var dlRec)
                         ? dlRec as IDownloadableRecord
@@ -306,15 +312,15 @@ public class GammaInstaller(
             await File.WriteAllTextAsync(Path.Join(mo2ProfilePath, "modlist.txt"), modList);
         }
 
-        await File.WriteAllTextAsync(
-            Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
-            modpackMakerTxt
-        );
+        // await File.WriteAllTextAsync(
+        //     Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
+        //     modpackMakerTxt
+        // );
         await File.WriteAllTextAsync(
             Path.Join(mo2ProfilePath, "modpack_maker_list.json"),
             JsonSerializer.Serialize(
                 modpackMakerRecords,
-                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
+                jsonTypeInfo: ModsListCtx.Default.ModsList
             )
         );
 
@@ -344,30 +350,52 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
-        var onlineModPackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
+        var onlineModPackMakerRecords = await getStalkerModsFromApi.GetModsAsync(
+            args.CancellationToken
+        );
         var localRecords =
-            JsonSerializer.Deserialize<List<ModPackMakerRecord>>(
+            JsonSerializer.Deserialize<ModsList>(
                 await File.ReadAllTextAsync(
                     Path.Join(args.Gamma, "profiles", args.Mo2Profile, "modpack_maker_list.json")
                 ),
-                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
-            ) ?? [];
-        var addedOrModifiedRecords = localRecords
-            .Diff(onlineModPackMakerRecords)
+                jsonTypeInfo: ModsListCtx.Default.ModsList
+            ) ?? throw new InvalidOperationException("Local mods list is empty");
+        var addedOrModifiedModDbRecords = localRecords
+            .ModDb.Diff(onlineModPackMakerRecords.ModDb)
+            .Where(x => x.DiffType is DiffType.Added or DiffType.Modified)
+            .Select(x => x.NewListRecord!)
+            .ToList();
+        var addedOrModifiedGithubRecords = localRecords
+            .Github.Diff(onlineModPackMakerRecords.Github)
             .Where(x => x.DiffType is DiffType.Added or DiffType.Modified)
             .Select(x => x.NewListRecord!)
             .ToList();
 
-        var separators = separatorsFactory.Create(onlineModPackMakerRecords);
+        var separators = onlineModPackMakerRecords.Separators.Select(x => new Models.Separator
+        {
+            Name = $"{x.Name} Separator",
+            FolderName = $"{x.Index}- {x.Name}_separator",
+        });
 
-        var addonRecords = addedOrModifiedRecords
+        var addonRecords = addedOrModifiedModDbRecords
             .Select(rec =>
-                downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec) ? dlRec : null
+                downloadableRecordFactory.TryCreateModDbRecord(args.Gamma, rec, out var dlRec)
+                    ? dlRec
+                    : null
             )
             .Where(x => x is not null)
-            .Select(x => x!)
+            .Cast<IDownloadableRecord>()
             .ToList();
+        addonRecords.AddRange(
+            addedOrModifiedGithubRecords
+                .Select(rec =>
+                    downloadableRecordFactory.TryCreateGithubRecord(args.Gamma, rec, out var dlRec)
+                        ? dlRec
+                        : null
+                )
+                .Where(x => x is not null)
+                .Cast<IDownloadableRecord>()
+        );
         var groupedAddonRecords = downloadableRecordFactory
             .CreateGroupedDownloadableRecords(addonRecords)
             .ToList();
@@ -527,18 +555,18 @@ public class GammaInstaller(
             mo2ProfileModListPath,
             JsonSerializer.Serialize(
                 onlineModPackMakerRecords,
-                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
+                jsonTypeInfo: ModsListCtx.Default.ModsList
             )
         );
-        await File.WriteAllTextAsync(
-            Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
-            modpackMakerTxt
-        );
+        // await File.WriteAllTextAsync(
+        //     Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
+        //     modpackMakerTxt
+        // );
         await File.WriteAllTextAsync(
             Path.Join(mo2ProfilePath, "modpack_maker_list.json"),
             JsonSerializer.Serialize(
                 onlineModPackMakerRecords,
-                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
+                jsonTypeInfo: ModsListCtx.Default.ModsList
             )
         );
 

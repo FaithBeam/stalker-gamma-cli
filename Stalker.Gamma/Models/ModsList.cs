@@ -55,6 +55,9 @@ public class ModDb
     [JsonPropertyName("index")]
     public int Index { get; set; }
 
+    [JsonPropertyName("author")]
+    public required string Author { get; set; }
+
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 }
@@ -71,7 +74,7 @@ public class Github
     public string? NiceUrl { get; set; }
 
     [JsonPropertyName("size")]
-    public long Size { get; set; }
+    public long? Size { get; set; }
 
     [JsonPropertyName("md5")]
     public string? Md5 { get; set; }
@@ -81,6 +84,9 @@ public class Github
 
     [JsonPropertyName("index")]
     public int Index { get; set; }
+
+    [JsonPropertyName("author")]
+    public required string Author { get; set; }
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
