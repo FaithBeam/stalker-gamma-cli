@@ -29,71 +29,120 @@ public class ModDbRecord(
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
-        if (
-            Path.Exists(DownloadPath)
-                && !string.IsNullOrWhiteSpace(Md5)
-                && await HashUtils.HashFile(
+        try
+        {
+            if (
+                Path.Exists(DownloadPath)
+                    && !string.IsNullOrWhiteSpace(Md5)
+                    && await HashUtils.HashFile(
+                        DownloadPath,
+                        HashAlgorithmName.MD5,
+                        pct =>
+                            gammaProgress.OnProgressChanged(
+                                new GammaProgress.GammaInstallProgressEventArgs(
+                                    Name,
+                                    "Check MD5",
+                                    pct,
+                                    NiceUrl
+                                )
+                            ),
+                        cancellationToken
+                    ) != Md5
+                || !Path.Exists(DownloadPath)
+            )
+            {
+                await modDbUtility.GetModDbLinkCurl(
+                    Url,
                     DownloadPath,
-                    HashAlgorithmName.MD5,
                     pct =>
                         gammaProgress.OnProgressChanged(
                             new GammaProgress.GammaInstallProgressEventArgs(
                                 Name,
-                                "Check MD5",
+                                "Download",
                                 pct,
                                 NiceUrl
                             )
                         ),
-                    cancellationToken
-                ) != Md5
-            || !Path.Exists(DownloadPath)
-        )
+                    cancellationToken: cancellationToken
+                );
+                Downloaded = true;
+            }
+        }
+        catch (Exception e)
         {
-            await modDbUtility.GetModDbLinkCurl(
-                Url,
-                DownloadPath,
-                pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(
-                            Name,
-                            "Download",
-                            pct,
-                            NiceUrl
-                        )
-                    ),
-                cancellationToken: cancellationToken
+            throw new ModDbRecordException(
+                $"""
+                Error downloading ModDb record
+                {ToString()}
+                Exception Message: {e.Message}
+                """,
+                e
             );
-            Downloaded = true;
         }
     }
 
     public virtual async Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        // Delete what was previously extracted
-        if (Directory.Exists(ExtractPath))
+        try
         {
-            DirUtils.NormalizePermissions(ExtractPath);
-            DirUtils.RecursivelyDeleteDirectory(ExtractPath, doNotMatch: []);
+            // Delete what was previously extracted
+            if (Directory.Exists(ExtractPath))
+            {
+                DirUtils.NormalizePermissions(ExtractPath);
+                DirUtils.RecursivelyDeleteDirectory(ExtractPath, doNotMatch: []);
+            }
+
+            Directory.CreateDirectory(ExtractPath);
+
+            await archiveUtility.ExtractAsync(
+                DownloadPath,
+                ExtractPath,
+                pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(
+                            Name,
+                            "Extract",
+                            pct,
+                            NiceUrl
+                        )
+                    ),
+                ct: cancellationToken
+            );
+
+            ProcessInstructions.Process(ExtractPath, Instructions, cancellationToken);
+
+            CleanExtractPath.Clean(ExtractPath);
+
+            WriteAddonMetaIni.Write(ExtractPath, ArchiveName, NiceUrl);
         }
-
-        Directory.CreateDirectory(ExtractPath);
-
-        await archiveUtility.ExtractAsync(
-            DownloadPath,
-            ExtractPath,
-            pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, NiceUrl)
-                ),
-            ct: cancellationToken
-        );
-
-        ProcessInstructions.Process(ExtractPath, Instructions, cancellationToken);
-
-        CleanExtractPath.Clean(ExtractPath);
-
-        WriteAddonMetaIni.Write(ExtractPath, ArchiveName, NiceUrl);
+        catch (Exception e)
+        {
+            throw new ModDbRecordException(
+                $"""
+                Error extracting ModDb record
+                {ToString()}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
     }
 
     public bool Downloaded { get; set; }
+
+    public override string ToString() =>
+        $"""
+            Name: {Name}
+            Archive Name: {ArchiveName}
+            Url: {Url}
+            NiceUrl: {NiceUrl}
+            Download Path: {DownloadPath}
+            Extract Path: {ExtractPath}
+            Md5: {Md5}
+            Downloaded: {Downloaded}
+            Instructions: {string.Join(", ", Instructions)}
+            """;
 }
+
+public class ModDbRecordException(string message, Exception innerException)
+    : Exception(message, innerException);

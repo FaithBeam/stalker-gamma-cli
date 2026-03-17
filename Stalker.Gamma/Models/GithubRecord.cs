@@ -30,55 +30,100 @@ public class GithubRecord(
 
     public async Task DownloadAsync(CancellationToken cancellationToken)
     {
-        if (!Download && File.Exists(DownloadPath))
+        try
         {
-            return;
+            if (!Download && File.Exists(DownloadPath))
+            {
+                return;
+            }
+
+            await DownloadFileFast.DownloadAsync(
+                _hc,
+                Url,
+                DownloadPath,
+                onProgress: pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
+                    ),
+                cancellationToken: cancellationToken
+            );
+
+            gammaProgress.OnProgressChanged(
+                new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", 1, Url)
+            );
+            Downloaded = true;
         }
-
-        await DownloadFileFast.DownloadAsync(
-            _hc,
-            Url,
-            DownloadPath,
-            onProgress: pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
-                ),
-            cancellationToken: cancellationToken
-        );
-
-        gammaProgress.OnProgressChanged(
-            new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", 1, Url)
-        );
-        Downloaded = true;
+        catch (Exception e)
+        {
+            throw new GithubRecordException(
+                $"""
+                Error downloading github record
+                {ToString()}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
     }
 
     public async Task ExtractAsync(CancellationToken cancellationToken)
     {
-        // Delete what was previously extracted
-        if (Directory.Exists(ExtractPath))
+        try
         {
-            DirUtils.NormalizePermissions(ExtractPath);
-            DirUtils.RecursivelyDeleteDirectory(ExtractPath, doNotMatch: []);
+            // Delete what was previously extracted
+            if (Directory.Exists(ExtractPath))
+            {
+                DirUtils.NormalizePermissions(ExtractPath);
+                DirUtils.RecursivelyDeleteDirectory(ExtractPath, doNotMatch: []);
+            }
+
+            Directory.CreateDirectory(ExtractPath);
+
+            await archiveUtility.ExtractAsync(
+                DownloadPath,
+                ExtractPath,
+                pct =>
+                    gammaProgress.OnProgressChanged(
+                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
+                    ),
+                ct: cancellationToken
+            );
+
+            ProcessInstructions.Process(ExtractPath, Instructions, cancellationToken);
+
+            CleanExtractPath.Clean(ExtractPath);
+
+            WriteAddonMetaIni.Write(ExtractPath, ArchiveName, NiceUrl);
         }
-
-        Directory.CreateDirectory(ExtractPath);
-
-        await archiveUtility.ExtractAsync(
-            DownloadPath,
-            ExtractPath,
-            pct =>
-                gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                ),
-            ct: cancellationToken
-        );
-
-        ProcessInstructions.Process(ExtractPath, Instructions, cancellationToken);
-
-        CleanExtractPath.Clean(ExtractPath);
-
-        WriteAddonMetaIni.Write(ExtractPath, ArchiveName, NiceUrl);
+        catch (Exception e)
+        {
+            throw new GithubRecordException(
+                $"""
+                Error extracting github record
+                {ToString()}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
     }
 
     public bool Downloaded { get; set; }
+
+    public override string ToString() =>
+        $"""
+            Name: {Name}
+            Archive Name: {ArchiveName}
+            Url: {Url}
+            NiceUrl: {NiceUrl}
+            Download Path: {DownloadPath}
+            Extract Path: {ExtractPath}
+            Md5: {Md5}
+            Download: {Download}
+            Downloaded: {Downloaded}
+            Instructions: {string.Join(", ", Instructions)}
+            """;
 }
+
+public class GithubRecordException(string message, Exception innerException)
+    : Exception(message, innerException);
