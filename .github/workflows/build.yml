@@ -314,7 +314,7 @@ jobs:
   update-aur:
     name: update-aur
     runs-on: ubuntu-22.04
-    needs: [cli-linux-arm64, cli-ubuntu-x64]
+    needs: [cli-ubuntu-arm64, cli-ubuntu-x64]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
