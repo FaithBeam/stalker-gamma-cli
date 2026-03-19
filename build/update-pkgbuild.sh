@@ -26,7 +26,7 @@ sha256sums_x86_64=('${X64_SUM}')
 sha256sums_aarch64=('${ARM64_SUM}')
 
 package() {
-  install -Dm755 stalker-gamma+linux.*.AppImage "$pkgdir/usr/bin/stalker-gamma"
+  install -Dm755 stalker-gamma+linux.*.AppImage "\${pkgdir}/usr/bin/stalker-gamma"
 }
 EOF
 )
