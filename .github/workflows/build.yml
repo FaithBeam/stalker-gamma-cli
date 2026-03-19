@@ -11,7 +11,7 @@ jobs:
     name: cli-ubuntu
     runs-on: ubuntu-22.04
     outputs:
-      linux_x64_sha256: ${{ steps.build.outputs.linux_x64_sha256 }}
+      linux_x64_sha256: ${{ steps.make-appimage.outputs.linux_x64_sha256 }}
       version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
@@ -52,6 +52,7 @@ jobs:
         run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -Lo appimagetool-aarch64.AppImage
 
       - name: Make AppImage
+        id: make-appimage
         run: |
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
@@ -80,7 +81,7 @@ jobs:
     name: cli-ubuntu-arm64
     runs-on: ubuntu-22.04-arm
     outputs:
-      linux_arm64_sha256: ${{ steps.build.outputs.linux_arm64_sha256 }}
+      linux_arm64_sha256: ${{ steps.make-appimage.outputs.linux_arm64_sha256 }}
       version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
@@ -121,6 +122,7 @@ jobs:
         run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -Lo appimagetool-aarch64.AppImage
         
       - name: Make AppImage
+        id: make-appimage
         run: |
           chmod +x appimagetool-aarch64.AppImage
           mkdir -p build/linux/stalker-gamma.AppDir/usr/bin/
