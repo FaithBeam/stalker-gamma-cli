@@ -108,7 +108,7 @@ public class DownloadableRecordFactory(
         out GithubRecord? downloadableRecord
     )
     {
-        var outputDirName = $"{record.Index}- {record.Name} {record.Author}";
+        var outputDirName = $"{record.Index}- {record.Name} - {record.Author}";
         downloadableRecord = new GithubRecord(
             gammaProgress,
             record.Name,
