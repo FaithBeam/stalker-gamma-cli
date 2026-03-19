@@ -60,7 +60,7 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           chmod +x stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           
-          hash=$(sha256sum stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage | egrep -o '(.+)\s')
+          hash=$(sha256sum stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage | cut -d ' ' -f 1)
           echo "linux_x64_sha256=$hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
@@ -130,7 +130,7 @@ jobs:
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           chmod +x stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           
-          hash=$(sha256sum stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage | egrep -o '(.+)\s')
+          hash=$(sha256sum stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage | cut -d ' ' -f 1)
           echo "linux_arm64_sha256=$hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
