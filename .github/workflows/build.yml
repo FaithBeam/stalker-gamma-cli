@@ -10,7 +10,9 @@ jobs:
   cli-ubuntu-x64:
     name: cli-ubuntu
     runs-on: ubuntu-22.04
-
+    outputs:
+      linux_x64_sha256: ${{ steps.build.outputs.linux_x64_sha256 }}
+      version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -56,6 +58,9 @@ jobs:
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           chmod +x stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
+          
+          hash=$(sha256sum --quiet stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage)
+          echo "linux_x64_sha256=$hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
@@ -74,7 +79,9 @@ jobs:
   cli-ubuntu-arm64:
     name: cli-ubuntu-arm64
     runs-on: ubuntu-22.04-arm
-    
+    outputs:
+      linux_arm64_sha256: ${{ steps.build.outputs.linux_arm64_sha256 }}
+      version: ${{ steps.gitversion.outputs.SemVer }}
     env:
       APP_NAME: stalker-gamma-gui
       PROJECT_FOLDER: stalker-gamma-cli
@@ -120,6 +127,9 @@ jobs:
           cp -r build/linux/build/stalker-gamma-cli/* build/linux/stalker-gamma.AppDir/usr/bin/
           ./appimagetool-aarch64.AppImage build/linux/stalker-gamma.AppDir stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
           chmod +x stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage
+          
+          hash=$(sha256sum --quiet stalker-gamma+linux.${{ env.ARCHITECTURE }}.AppImage)
+          echo "linux_arm64_sha256=$hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
@@ -301,11 +311,39 @@ jobs:
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
           
+  update-aur:
+    name: update-aur
+    runs-on: ubuntu-22.04
+    needs: [cli-linux-arm64, cli-ubuntu-x64]
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          
+      - name: Generate PKGBUILD
+        run: |
+          PATH_TO_PKGBUILD="PKGBUILD"
+          chmod +x "./build/update-pkgbuild.sh"
+          ./build/update-pkgbuild.sh "${{ needs.cli-ubuntu-arm64.outputs.version }}" "${{ needs.cli-ubuntu-arm64.outputs.linux_arm64_sha256 }}" "${{ needs.cli-ubuntu-x64.outputs.linux_x64_sha256 }}" "$PATH_TO_PKGBUILD"
+
+      - name: Publish AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: stalker-gamma-cli-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY_PRIVATE }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: ed25519
+          
  
   update-chocolatey:
     name: update-chocolatey
     runs-on: windows-latest
-    needs: cli-windows
+    needs: [cli-windows, update-aur]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
