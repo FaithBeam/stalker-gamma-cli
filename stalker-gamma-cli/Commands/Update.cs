@@ -32,17 +32,7 @@ public class UpdateCmds(
     [Command("check")]
     public async Task CheckUpdates(CancellationToken cancellationToken = default)
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
+        LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 
@@ -193,39 +183,14 @@ public class UpdateCmds(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
+        LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
+
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
-        stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 
-        var anomaly = _cliSettings.ActiveProfile!.Anomaly;
-        var gamma = _cliSettings.ActiveProfile!.Gamma;
-        var cache = _cliSettings.ActiveProfile!.Cache;
-        var mo2Profile = _cliSettings.ActiveProfile!.Mo2Profile;
-        var modpackMakerUrl = _cliSettings.ActiveProfile!.ModPackMakerUrl;
-        var modListUrl = _cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads = _cliSettings.ActiveProfile!.DownloadThreads;
-        stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
-        stalkerGammaSettings.ModListUrl = modListUrl;
+        InitializeSettings(out var anomaly, out var gamma, out var cache, out var mo2Profile);
 
-        var gammaProgressObservable = Observable
-            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => gammaInstaller.Progress.ProgressChanged += handler,
-                handler => gammaInstaller.Progress.ProgressChanged -= handler
-            )
-            .Select(x => x.EventArgs);
-        var gammaProgressDisposable = gammaProgressObservable
-            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+        SetUpLogging(verbose, progressUpdateIntervalMs, out var gammaProgressDisposable);
+
         try
         {
             await gammaInstaller.UpdateAsync(
@@ -246,6 +211,42 @@ public class UpdateCmds(
         {
             gammaProgressDisposable.Dispose();
         }
+    }
+
+    private void InitializeSettings(
+        out string anomaly,
+        out string gamma,
+        out string cache,
+        out string mo2Profile
+    )
+    {
+        stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
+        anomaly = _cliSettings.ActiveProfile!.Anomaly;
+        gamma = _cliSettings.ActiveProfile!.Gamma;
+        cache = _cliSettings.ActiveProfile!.Cache;
+        mo2Profile = _cliSettings.ActiveProfile!.Mo2Profile;
+        var modpackMakerUrl = _cliSettings.ActiveProfile!.ModPackMakerUrl;
+        var modListUrl = _cliSettings.ActiveProfile!.ModListUrl;
+        stalkerGammaSettings.DownloadThreads = _cliSettings.ActiveProfile!.DownloadThreads;
+        stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
+        stalkerGammaSettings.ModListUrl = modListUrl;
+    }
+
+    private void SetUpLogging(
+        bool verbose,
+        long progressUpdateIntervalMs,
+        out IDisposable gammaProgressDisposable
+    )
+    {
+        var gammaProgressObservable = Observable
+            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
+                handler => gammaInstaller.Progress.ProgressChanged += handler,
+                handler => gammaInstaller.Progress.ProgressChanged -= handler
+            )
+            .Select(x => x.EventArgs);
+        gammaProgressDisposable = gammaProgressObservable
+            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
+            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
     }
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
