@@ -18,13 +18,18 @@ public class ModDbRecord(
     ModDbUtility modDbUtility
 ) : IDownloadableRecord
 {
+    private readonly GammaProgress _gammaProgress = gammaProgress;
+    private readonly string _gammaDir = gammaDir;
+    private readonly string _outputDirName = outputDirName;
+    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    private readonly ModDbUtility _modDbUtility = modDbUtility;
     public string Name { get; } = name;
     private string Url { get; } = url;
     private string NiceUrl { get; } = niceUrl;
     public string ArchiveName { get; } = archiveName;
     private string? Md5 { get; } = md5;
-    public string DownloadPath => Path.Join(gammaDir, "downloads", ArchiveName);
-    private string ExtractPath => Path.Join(gammaDir, "mods", outputDirName);
+    public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
+    private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
@@ -37,32 +42,16 @@ public class ModDbRecord(
                     && await HashUtils.HashFile(
                         DownloadPath,
                         HashAlgorithmName.MD5,
-                        pct =>
-                            gammaProgress.OnProgressChanged(
-                                new GammaProgress.GammaInstallProgressEventArgs(
-                                    Name,
-                                    "Check MD5",
-                                    pct,
-                                    NiceUrl
-                                )
-                            ),
+                        pct => OnProgress("Check MD5", pct),
                         cancellationToken
                     ) != Md5
                 || !Path.Exists(DownloadPath)
             )
             {
-                await modDbUtility.GetModDbLinkCurl(
+                await _modDbUtility.GetModDbLinkCurl(
                     Url,
                     DownloadPath,
-                    pct =>
-                        gammaProgress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Download",
-                                pct,
-                                NiceUrl
-                            )
-                        ),
+                    pct => OnProgress("Download", pct),
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;
@@ -94,18 +83,10 @@ public class ModDbRecord(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await archiveUtility.ExtractAsync(
+            await _archiveUtility.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
-                pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(
-                            Name,
-                            "Extract",
-                            pct,
-                            NiceUrl
-                        )
-                    ),
+                pct => OnProgress("Extract", pct),
                 ct: cancellationToken
             );
 
@@ -142,6 +123,21 @@ public class ModDbRecord(
             Downloaded: {Downloaded}
             Instructions: {string.Join(", ", Instructions)}
             """;
+
+    private void OnProgress(string operation, double pct) =>
+        _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
+
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+        new()
+        {
+            Name = Name,
+            ProgressType = operation,
+            Progress = pct,
+            Url = Url,
+            ArchiveName = ArchiveName,
+            DownloadPath = DownloadPath,
+            ExtractPath = ExtractPath,
+        };
 }
 
 public class ModDbRecordException(string message, Exception innerException)

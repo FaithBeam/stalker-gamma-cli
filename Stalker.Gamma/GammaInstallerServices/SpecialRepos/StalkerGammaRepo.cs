@@ -31,15 +31,7 @@ public class StalkerGammaRepo(
                 gitUtility.FetchGitRepo(
                     DownloadPath,
                     ct: cancellationToken,
-                    onProgress: pct =>
-                        _gammaProgress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Download",
-                                pct,
-                                Url
-                            )
-                        )
+                    onProgress: pct => OnProgress("Download", pct)
                 );
             }
             else
@@ -47,15 +39,7 @@ public class StalkerGammaRepo(
                 gitUtility.CloneGitRepo(
                     DownloadPath,
                     Url,
-                    onProgress: pct =>
-                        _gammaProgress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Download",
-                                pct,
-                                Url
-                            )
-                        ),
+                    onProgress: pct => OnProgress("Download", pct),
                     ct: cancellationToken,
                     bare: true
                 );
@@ -84,10 +68,7 @@ public class StalkerGammaRepo(
             DownloadPath,
             TempDir,
             ct: ct,
-            onProgress: pct =>
-                _gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
+            onProgress: pct => OnProgress("Extract", pct)
         );
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
@@ -97,20 +78,14 @@ public class StalkerGammaRepo(
             DirUtils.CopyDirectory(
                 Path.Join(TempDir, "G.A.M.M.A", "modpack_addons"),
                 GammaModsDir,
-                onProgress: pct =>
-                    _gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    ),
+                onProgress: pct => OnProgress("Extract", pct),
                 moveFile: true,
                 cancellationToken: cancellationToken
             );
             DirUtils.CopyDirectory(
                 Path.Join(TempDir, "G.A.M.M.A", "modpack_patches"),
                 AnomalyDir,
-                onProgress: pct =>
-                    _gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    ),
+                onProgress: pct => OnProgress("Extract", pct),
                 moveFile: true,
                 cancellationToken: cancellationToken
             );
@@ -131,4 +106,19 @@ public class StalkerGammaRepo(
     }
 
     public bool Downloaded { get; set; }
+
+    private void OnProgress(string operation, double pct) =>
+        _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
+
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+        new()
+        {
+            Name = Name,
+            ProgressType = operation,
+            Progress = pct,
+            Url = Url,
+            ArchiveName = ArchiveName,
+            DownloadPath = DownloadPath,
+            ExtractPath = GammaModsDir,
+        };
 }

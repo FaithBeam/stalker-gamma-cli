@@ -16,6 +16,7 @@ public class GammaLargeFilesRepo(
     public string ArchiveName { get; } = "";
     public string DownloadPath => Path.Join(_gammaDir, "downloads", $"{Name}.git");
     public string TempDir => Path.Join(_gammaDir, "downloads", Name);
+    public bool Downloaded { get; set; }
     protected string Url = url;
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
@@ -31,15 +32,7 @@ public class GammaLargeFilesRepo(
                 _gitUtility.FetchGitRepo(
                     DownloadPath,
                     ct: ct,
-                    onProgress: pct =>
-                        _gammaProgress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Download",
-                                pct,
-                                Url
-                            )
-                        )
+                    onProgress: pct => OnProgress("Download", pct)
                 );
             }
             else
@@ -47,15 +40,7 @@ public class GammaLargeFilesRepo(
                 _gitUtility.CloneGitRepo(
                     DownloadPath,
                     Url,
-                    onProgress: pct =>
-                        _gammaProgress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Download",
-                                pct,
-                                Url
-                            )
-                        ),
+                    onProgress: pct => OnProgress("Download", pct),
                     ct: ct,
                     bare: true
                 );
@@ -84,10 +69,7 @@ public class GammaLargeFilesRepo(
             DownloadPath,
             TempDir,
             ct: ct,
-            onProgress: pct =>
-                _gammaProgress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                )
+            onProgress: pct => OnProgress("Extract", pct)
         );
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
@@ -97,10 +79,7 @@ public class GammaLargeFilesRepo(
             DirUtils.CopyDirectory(
                 TempDir,
                 DestinationDir,
-                onProgress: pct =>
-                    _gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    ),
+                onProgress: pct => OnProgress("Extract", pct),
                 moveFile: true,
                 cancellationToken: cancellationToken
             );
@@ -115,5 +94,18 @@ public class GammaLargeFilesRepo(
         return Task.CompletedTask;
     }
 
-    public bool Downloaded { get; set; }
+    private void OnProgress(string operation, double pct) =>
+        _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
+
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+        new()
+        {
+            Name = Name,
+            ProgressType = operation,
+            Progress = pct,
+            Url = Url,
+            ArchiveName = ArchiveName,
+            DownloadPath = DownloadPath,
+            ExtractPath = DestinationDir,
+        };
 }

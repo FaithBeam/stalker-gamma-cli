@@ -22,10 +22,14 @@ public class GithubRecord(
     private string NiceUrl { get; } = niceUrl;
     public string ArchiveName { get; } = archiveName;
     private string? Md5 { get; } = md5;
-    public string DownloadPath => Path.Join(gammaDir, "downloads", ArchiveName);
-    private string ExtractPath => Path.Join(gammaDir, "mods", outputDirName);
+    public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
+    private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
     private readonly HttpClient _hc = hcf.CreateClient("githubDlArchive");
+    private readonly GammaProgress _gammaProgress = gammaProgress;
+    private readonly string _gammaDir = gammaDir;
+    private readonly string _outputDirName = outputDirName;
+    private readonly ArchiveUtility _archiveUtility = archiveUtility;
     public bool Download { get; set; } = true;
 
     public async Task DownloadAsync(CancellationToken cancellationToken)
@@ -41,16 +45,11 @@ public class GithubRecord(
                 _hc,
                 Url,
                 DownloadPath,
-                onProgress: pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", pct, Url)
-                    ),
+                onProgress: pct => OnProgress("Download", pct),
                 cancellationToken: cancellationToken
             );
 
-            gammaProgress.OnProgressChanged(
-                new GammaProgress.GammaInstallProgressEventArgs(Name, "Download", 1, Url)
-            );
+            OnProgress("Download", 1);
             Downloaded = true;
         }
         catch (Exception e)
@@ -79,13 +78,10 @@ public class GithubRecord(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await archiveUtility.ExtractAsync(
+            await _archiveUtility.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
-                pct =>
-                    gammaProgress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, Url)
-                    ),
+                pct => OnProgress("Extract", pct),
                 ct: cancellationToken
             );
 
@@ -123,6 +119,21 @@ public class GithubRecord(
             Downloaded: {Downloaded}
             Instructions: {string.Join(", ", Instructions)}
             """;
+
+    private void OnProgress(string operation, double pct) =>
+        _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
+
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+        new()
+        {
+            Name = Name,
+            ProgressType = operation,
+            Progress = pct,
+            Url = Url,
+            ArchiveName = ArchiveName,
+            DownloadPath = DownloadPath,
+            ExtractPath = ExtractPath,
+        };
 }
 
 public class GithubRecordException(string message, Exception innerException)

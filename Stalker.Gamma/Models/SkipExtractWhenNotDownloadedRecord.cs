@@ -28,7 +28,16 @@ public class SkipExtractWhenNotDownloadedRecord(
         {
             gammaProgress.IncrementCompletedMods();
             gammaProgress.OnProgressChanged(
-                new GammaProgress.GammaInstallProgressEventArgs(Name, "Skipped", 1, "")
+                new GammaProgress.GammaInstallProgressEventArgs
+                {
+                    Name = Name,
+                    ProgressType = "Skipped",
+                    Progress = 1,
+                    Url = "",
+                    ArchiveName = ArchiveName,
+                    DownloadPath = DownloadPath,
+                    ExtractPath = "",
+                }
             );
         }
     }
