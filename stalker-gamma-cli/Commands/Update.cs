@@ -23,7 +23,8 @@ public class UpdateCmds(
     GammaInstaller gammaInstaller,
     GitUtility gitUtility,
     UtilitiesReady utilitiesReady,
-    GetRemoteGitRepoCommit getRemoteGitRepoCommit
+    GetRemoteGitRepoCommit getRemoteGitRepoCommit,
+    ProgressLoggingService progressLoggingService
 )
 {
     /// <summary>
@@ -189,7 +190,12 @@ public class UpdateCmds(
 
         InitializeSettings(out var anomaly, out var gamma, out var cache, out var mo2Profile);
 
-        SetUpLogging(verbose, progressUpdateIntervalMs, out var gammaProgressDisposable);
+        SetUpLogging(
+            verbose,
+            progressUpdateIntervalMs,
+            out var gammaProgressDisposable,
+            out var gammaWriteFileDisposable
+        );
 
         try
         {
@@ -207,8 +213,16 @@ public class UpdateCmds(
             );
             _logger.Information("Update finished");
         }
+        catch (Exception e)
+        {
+            progressLoggingService.WriteToLogFile();
+            _logger.Error(e, "Update failed");
+            throw;
+        }
         finally
         {
+            progressLoggingService.WriteToLogFile();
+            gammaWriteFileDisposable.Dispose();
             gammaProgressDisposable.Dispose();
         }
     }
@@ -235,9 +249,20 @@ public class UpdateCmds(
     private void SetUpLogging(
         bool verbose,
         long progressUpdateIntervalMs,
-        out IDisposable gammaProgressDisposable
+        out IDisposable gammaProgressDisposable,
+        out IDisposable gammaWriteFileDisposable
     )
     {
+        var gammaWriteFileObs = Observable
+            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
+                handler => gammaInstaller.Progress.ProgressChanged += handler,
+                handler => gammaInstaller.Progress.ProgressChanged -= handler
+            )
+            .Select(x => x.EventArgs);
+        gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(
+            progressLoggingService.OnProgressChangedWriteToFile
+        );
+
         var gammaProgressObservable = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
                 handler => gammaInstaller.Progress.ProgressChanged += handler,

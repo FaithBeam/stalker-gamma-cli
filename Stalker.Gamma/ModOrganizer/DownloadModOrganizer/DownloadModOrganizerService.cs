@@ -95,7 +95,7 @@ public class DownloadModOrganizerService(
                         Url = dlUrl,
                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                         DownloadPath = cachePath,
-                        ExtractPath = extractPath
+                        ExtractPath = mo2ArchivePath,
                     }
                 ),
             ct: cancellationToken
@@ -155,7 +155,7 @@ public class DownloadModOrganizerService(
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                                         DownloadPath = cachePath,
-                                        ExtractPath = extractPath
+                                        ExtractPath = mo2ArchivePath,
                                     }
                                 ),
                             cancellationToken
@@ -176,7 +176,7 @@ public class DownloadModOrganizerService(
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                                         DownloadPath = cachePath,
-                                        ExtractPath = extractPath
+                                        ExtractPath = mo2ArchivePath,
                                     }
                                 ),
                             cancellationToken
@@ -199,7 +199,7 @@ public class DownloadModOrganizerService(
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                                         DownloadPath = cachePath,
-                                        ExtractPath = extractPath
+                                        ExtractPath = mo2ArchivePath,
                                     }
                                 ),
                             cancellationToken
@@ -220,7 +220,7 @@ public class DownloadModOrganizerService(
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                                         DownloadPath = cachePath,
-                                        ExtractPath = extractPath
+                                        ExtractPath = mo2ArchivePath,
                                     }
                                 ),
                             cancellationToken
@@ -245,7 +245,7 @@ public class DownloadModOrganizerService(
                             Url = dlUrl,
                             ArchiveName = Path.GetFileName(mo2ArchivePath),
                             DownloadPath = cachePath,
-                            ExtractPath = extractPath
+                            ExtractPath = mo2ArchivePath,
                         }
                     ),
                 cancellationToken

@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
+using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
@@ -17,7 +18,8 @@ public class FullInstallCmd(
     StalkerGammaSettings stalkerGammaSettings,
     GammaInstaller gammaInstaller,
     PowerShellCmdBuilder powerShellCmdBuilder,
-    UtilitiesReady utilitiesReady
+    UtilitiesReady utilitiesReady,
+    ProgressLoggingService progressLoggingService
 )
 {
     /// <summary>
@@ -129,45 +131,17 @@ public class FullInstallCmd(
         }
         catch (Exception e)
         {
-            WriteToLogFile();
+            progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Install failed");
             throw;
         }
         finally
         {
-            WriteToLogFile();
+            progressLoggingService.WriteToLogFile();
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
         }
-    }
-
-    private void WriteToLogFile()
-    {
-        if (_alreadyWrittenToLogFile)
-        {
-            return;
-        }
-        lock (_progressEventHashSetLock)
-        {
-            var maxOperationLen = _progressEventHashSet.Max(x => x.Operation.Length);
-            var maxArchiveNameLen = _progressEventHashSet.Max(x => x.ArchiveName.Length);
-            var maxDownloadPathLen = _progressEventHashSet.Max(x => x.DownloadPath.Length);
-            var maxExtractPathLen = _progressEventHashSet.Max(x => x.ExtractPath.Length);
-            var maxUrlLen = _progressEventHashSet.Max(x => x.Url.Length);
-            foreach (var e in _progressEventHashSet)
-            {
-                _logger.Verbose(
-                    "Operation: {Operation} | Archive Name: {ArchiveName} | Download Path: {DownloadPath} | Extract Path: {ExtractPath} | Url: {Url}",
-                    e.Operation.PadRight(maxOperationLen),
-                    e.ArchiveName.PadRight(maxArchiveNameLen),
-                    e.DownloadPath.PadRight(maxDownloadPathLen),
-                    e.ExtractPath.PadRight(maxExtractPathLen),
-                    e.Url.PadRight(maxUrlLen)
-                );
-            }
-        }
-        _alreadyWrittenToLogFile = true;
     }
 
     private static void ValidateOfflineRequirements(
@@ -274,7 +248,9 @@ public class FullInstallCmd(
                 handler => gammaInstaller.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
-        gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(OnProgressChangedWriteToFile);
+        gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(
+            progressLoggingService.OnProgressChangedWriteToFile
+        );
 
         var gammaProgressObservable = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
@@ -309,26 +285,6 @@ public class FullInstallCmd(
             e.Url
         );
 
-    private void OnProgressChangedWriteToFile(GammaProgress.GammaInstallProgressEventArgs e)
-    {
-        lock (_progressEventHashSetLock)
-        {
-            _progressEventHashSet.Add(
-                new LogFileRecord
-                {
-                    Operation = e.ProgressType,
-                    ArchiveName = e.Name,
-                    Url = e.Url,
-                    DownloadPath = e.DownloadPath,
-                    ExtractPath = e.ExtractPath,
-                }
-            );
-        }
-    }
-
-    private bool _alreadyWrittenToLogFile;
-    private readonly Lock _progressEventHashSetLock = new();
-    private readonly HashSet<LogFileRecord> _progressEventHashSet = [];
     private readonly ILogger _logger = logger;
     private readonly UtilitiesReady _utilitiesReady = utilitiesReady;
     private const string Informational = "{AddonName} | {Operation} | {Percent} | {CompleteTotal}";

@@ -60,6 +60,7 @@ public static class Program
                 services
                     .AddSingleton<ILogger>(log)
                     .AddScoped<UtilitiesReady>()
+                    .AddScoped<ProgressLoggingService>()
                     .AddScoped<GetRemoteGitRepoCommit>()
                     .AddScoped<SetupUtilitiesService>()
                     .RegisterCoreGammaServices();
