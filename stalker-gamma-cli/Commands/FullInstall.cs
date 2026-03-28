@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
+using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
@@ -17,7 +18,8 @@ public class FullInstallCmd(
     StalkerGammaSettings stalkerGammaSettings,
     GammaInstaller gammaInstaller,
     PowerShellCmdBuilder powerShellCmdBuilder,
-    UtilitiesReady utilitiesReady
+    UtilitiesReady utilitiesReady,
+    ProgressLoggingService progressLoggingService
 )
 {
     /// <summary>
@@ -69,87 +71,43 @@ public class FullInstallCmd(
         [Hidden] string stalkerAnomalyArchiveMd5 = "d6bce51a4e6d98f9610ef0aa967ba964"
     )
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
+        LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
 
-        if (
-            offline
-            && (
-                string.IsNullOrWhiteSpace(modPackMakerPath)
-                || string.IsNullOrWhiteSpace(modListPath)
-            )
-        )
-        {
-            throw new ArgumentException(
-                "--offline requires --mod-pack-maker-path and --mod-list-path"
-            );
-        }
+        ValidateOfflineRequirements(offline, modPackMakerPath, modListPath);
 
-        var anomaly = cliSettings.ActiveProfile!.Anomaly;
-        var gamma = cliSettings.ActiveProfile!.Gamma;
-        var cache = cliSettings.ActiveProfile!.Cache;
-        var mo2Profile = cliSettings.ActiveProfile!.Mo2Profile;
-        var modpackMakerUrl = cliSettings.ActiveProfile!.ModPackMakerUrl;
-        var modListUrl = cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads =
-            downloadThreads ?? cliSettings.ActiveProfile!.DownloadThreads;
-        stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
-        stalkerGammaSettings.ModListUrl = modListUrl;
-        stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
-        stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
-        stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
-        stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
-        stalkerGammaSettings.StalkerAnomalyModdbUrl = stalkerAnomalyModdbUrl;
-        stalkerGammaSettings.StalkerAnomalyArchiveMd5 = stalkerAnomalyArchiveMd5;
+        InitializeSettings(
+            downloadThreads,
+            gammaSetupRepoUrl,
+            stalkerGammaRepoUrl,
+            gammaLargeFilesRepoUrl,
+            teivazAnomalyGunslingerRepoUrl,
+            stalkerAnomalyModdbUrl,
+            stalkerAnomalyArchiveMd5,
+            out var anomaly,
+            out var gamma,
+            out var cache,
+            out var mo2Profile
+        );
 
-        if (OperatingSystem.IsWindows())
-        {
-            if (addFoldersToWinDefenderExclusion)
-            {
-                powerShellCmdBuilder.WithWindowsDefenderExclusions(
-                    Path.GetFullPath(gamma),
-                    Path.GetFullPath(anomaly),
-                    Path.GetFullPath(cache)
-                );
-            }
-            if (enableLongPaths)
-            {
-                powerShellCmdBuilder.WithEnableLongPaths();
-            }
-        }
+        ConfigurePowerShellSettings(
+            addFoldersToWinDefenderExclusion,
+            enableLongPaths,
+            gamma,
+            anomaly,
+            cache
+        );
 
-        IDisposable? gammaDbgDispo = null;
-        if (debug)
-        {
-            var gammaDbgObs = Observable
-                .FromEventPattern<GammaProgress.GammaInstallDebugProgressEventArgs>(
-                    handler => gammaInstaller.Progress.DebugProgressChanged += handler,
-                    handler => gammaInstaller.Progress.DebugProgressChanged -= handler
-                )
-                .Select(x => x.EventArgs);
-            gammaDbgDispo = gammaDbgObs.Subscribe(OnDebugProgressChanged);
-        }
+        SetUpLogging(
+            verbose,
+            debug,
+            progressUpdateIntervalMs,
+            out var gammaWriteFileDisposable,
+            out var gammaProgressDisposable,
+            out var gammaDbgDispo
+        );
 
-        var gammaProgressObservable = Observable
-            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => gammaInstaller.Progress.ProgressChanged += handler,
-                handler => gammaInstaller.Progress.ProgressChanged -= handler
-            )
-            .Select(x => x.EventArgs);
-        var gammaProgressDisposable = gammaProgressObservable
-            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
         try
         {
             await gammaInstaller.FullInstallAsync(
@@ -171,17 +129,142 @@ public class FullInstallCmd(
             );
             _logger.Information("Install finished");
         }
+        catch (Exception e)
+        {
+            progressLoggingService.WriteToLogFile();
+            _logger.Error(e, "Install failed");
+            throw;
+        }
         finally
         {
+            progressLoggingService.WriteToLogFile();
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
+            gammaWriteFileDisposable.Dispose();
         }
     }
 
-    private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e)
+    private static void ValidateOfflineRequirements(
+        bool offline,
+        string? modPackMakerPath,
+        string? modListPath
+    )
     {
-        File.AppendAllText("stalker-gamma-cli.log", $"{e.Text}{Environment.NewLine}");
+        if (
+            offline
+            && (
+                string.IsNullOrWhiteSpace(modPackMakerPath)
+                || string.IsNullOrWhiteSpace(modListPath)
+            )
+        )
+        {
+            throw new ArgumentException(
+                "--offline requires --mod-pack-maker-path and --mod-list-path"
+            );
+        }
     }
+
+    private void InitializeSettings(
+        int? downloadThreads,
+        string gammaSetupRepoUrl,
+        string stalkerGammaRepoUrl,
+        string gammaLargeFilesRepoUrl,
+        string teivazAnomalyGunslingerRepoUrl,
+        string stalkerAnomalyModdbUrl,
+        string stalkerAnomalyArchiveMd5,
+        out string anomaly,
+        out string gamma,
+        out string cache,
+        out string mo2Profile
+    )
+    {
+        anomaly = cliSettings.ActiveProfile!.Anomaly;
+        gamma = cliSettings.ActiveProfile!.Gamma;
+        cache = cliSettings.ActiveProfile!.Cache;
+        mo2Profile = cliSettings.ActiveProfile!.Mo2Profile;
+        var modpackMakerUrl = cliSettings.ActiveProfile!.ModPackMakerUrl;
+        var modListUrl = cliSettings.ActiveProfile!.ModListUrl;
+        stalkerGammaSettings.DownloadThreads =
+            downloadThreads ?? cliSettings.ActiveProfile!.DownloadThreads;
+        stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
+        stalkerGammaSettings.ModListUrl = modListUrl;
+        stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
+        stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
+        stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
+        stalkerGammaSettings.StalkerAnomalyModdbUrl = stalkerAnomalyModdbUrl;
+        stalkerGammaSettings.StalkerAnomalyArchiveMd5 = stalkerAnomalyArchiveMd5;
+    }
+
+    private void ConfigurePowerShellSettings(
+        bool addFoldersToWinDefenderExclusion,
+        bool enableLongPaths,
+        string gamma,
+        string anomaly,
+        string cache
+    )
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            if (addFoldersToWinDefenderExclusion)
+            {
+                powerShellCmdBuilder.WithWindowsDefenderExclusions(
+                    Path.GetFullPath(gamma),
+                    Path.GetFullPath(anomaly),
+                    Path.GetFullPath(cache)
+                );
+            }
+            if (enableLongPaths)
+            {
+                powerShellCmdBuilder.WithEnableLongPaths();
+            }
+        }
+    }
+
+    private void SetUpLogging(
+        bool verbose,
+        bool debug,
+        long progressUpdateIntervalMs,
+        out IDisposable gammaWriteFileDisposable,
+        out IDisposable gammaProgressDisposable,
+        out IDisposable? gammaDbgDisposable
+    )
+    {
+        gammaDbgDisposable = null;
+        if (debug)
+        {
+            var gammaDbgObs = Observable
+                .FromEventPattern<GammaProgress.GammaInstallDebugProgressEventArgs>(
+                    handler => gammaInstaller.Progress.DebugProgressChanged += handler,
+                    handler => gammaInstaller.Progress.DebugProgressChanged -= handler
+                )
+                .Select(x => x.EventArgs);
+            gammaDbgDisposable = gammaDbgObs.Subscribe(OnDebugProgressChanged);
+        }
+
+        var gammaWriteFileObs = Observable
+            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
+                handler => gammaInstaller.Progress.ProgressChanged += handler,
+                handler => gammaInstaller.Progress.ProgressChanged -= handler
+            )
+            .Select(x => x.EventArgs);
+        gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(
+            progressLoggingService.OnProgressChangedWriteToFile
+        );
+
+        var gammaProgressObservable = Observable
+            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
+                handler => gammaInstaller.Progress.ProgressChanged += handler,
+                handler => gammaInstaller.Progress.ProgressChanged -= handler
+            )
+            .Select(x => x.EventArgs);
+        gammaProgressDisposable = gammaProgressObservable
+            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
+            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+    }
+
+    private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
+        File.AppendAllText("stalker-gamma-cli.log", $"{e.Text}{Environment.NewLine}");
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(
@@ -203,6 +286,7 @@ public class FullInstallCmd(
         );
 
     private readonly ILogger _logger = logger;
+    private readonly UtilitiesReady _utilitiesReady = utilitiesReady;
     private const string Informational = "{AddonName} | {Operation} | {Percent} | {CompleteTotal}";
     private const string Verbose =
         "{AddonName} | {Operation} | {Percent} | {CompleteTotal} | {Url}";

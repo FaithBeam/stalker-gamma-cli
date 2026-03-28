@@ -39,18 +39,57 @@ public class GammaProgress : IGammaProgress
         public string? Text { get; set; }
     }
 
-    public class GammaInstallProgressEventArgs(
-        string name,
-        string progressType,
-        double progress,
-        string url
-    ) : EventArgs
+    public class GammaInstallProgressEventArgs
+        : EventArgs,
+            IEquatable<GammaInstallProgressEventArgs>
     {
-        public string Name { get; } = name;
-        public string ProgressType { get; } = progressType;
-        public double Progress { get; } = progress;
-        public string Url { get; } = url;
+        public required string Name { get; init; }
+        public required string ProgressType { get; init; }
+        public required double Progress { get; init; }
+        public required string Url { get; init; }
+        public required string ArchiveName { get; init; }
+        public required string DownloadPath { get; init; }
+        public required string ExtractPath { get; init; }
         public int Complete { get; set; }
         public int Total { get; set; }
+
+        public bool Equals(GammaInstallProgressEventArgs? other)
+        {
+            if (other is null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Name == other.Name
+                && ProgressType == other.ProgressType
+                && Progress.Equals(other.Progress)
+                && Url == other.Url
+                && ArchiveName == other.ArchiveName
+                && DownloadPath == other.DownloadPath
+                && ExtractPath == other.ExtractPath;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is null)
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (obj.GetType() != GetType())
+                return false;
+            return Equals((GammaInstallProgressEventArgs)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(
+                Name,
+                ProgressType,
+                Progress,
+                Url,
+                ArchiveName,
+                DownloadPath,
+                ExtractPath
+            );
+        }
     }
 }

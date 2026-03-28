@@ -20,10 +20,15 @@ public class AnomalyInstaller(
     private const string NiceUrl =
         "https://www.moddb.com/mods/stalker-anomaly/downloads/stalker-anomaly-153";
 
-    public IGammaProgress Progress => progress;
+    public IGammaProgress Progress => _progress;
     protected string StalkerAnomalyMd5 = "d6bce51a4e6d98f9610ef0aa967ba964";
-    public string DownloadPath => Path.Join(downloadDirectory, ArchiveName);
-    private string ExtractPath => anomalyDir;
+    private readonly GammaProgress _progress = progress;
+    private readonly string _downloadDirectory = downloadDirectory;
+    private readonly string _anomalyDir = anomalyDir;
+    private readonly ModDbUtility _modDbUtility = modDbUtility;
+    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    public string DownloadPath => Path.Join(_downloadDirectory, ArchiveName);
+    private string ExtractPath => _anomalyDir;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
@@ -34,32 +39,16 @@ public class AnomalyInstaller(
                 && await HashUtils.HashFile(
                     DownloadPath,
                     HashAlgorithmName.MD5,
-                    pct =>
-                        progress.OnProgressChanged(
-                            new GammaProgress.GammaInstallProgressEventArgs(
-                                Name,
-                                "Check MD5",
-                                pct,
-                                NiceUrl
-                            )
-                        ),
+                    pct => OnProgress("Check MD5", pct),
                     cancellationToken
                 ) != StalkerAnomalyMd5
             )
         )
         {
-            await modDbUtility.GetModDbLinkCurl(
+            await _modDbUtility.GetModDbLinkCurl(
                 StalkerAnomalyUrl,
                 DownloadPath,
-                pct =>
-                    progress.OnProgressChanged(
-                        new GammaProgress.GammaInstallProgressEventArgs(
-                            Name,
-                            "Download",
-                            pct,
-                            NiceUrl
-                        )
-                    ),
+                pct => OnProgress("Download", pct),
                 cancellationToken: cancellationToken
             );
             Downloaded = true;
@@ -68,19 +57,31 @@ public class AnomalyInstaller(
 
     public virtual async Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        await archiveUtility.ExtractAsync(
+        await _archiveUtility.ExtractAsync(
             DownloadPath,
             ExtractPath,
-            pct =>
-                progress.OnProgressChanged(
-                    new GammaProgress.GammaInstallProgressEventArgs(Name, "Extract", pct, NiceUrl)
-                ),
+            pct => OnProgress("Extract", pct),
             ct: cancellationToken
         );
-        progress.IncrementCompletedMods();
+        _progress.IncrementCompletedMods();
     }
 
     public bool Downloaded { get; set; }
+
+    private void OnProgress(string operation, double pct) =>
+        _progress.OnProgressChanged(ProgFunc(operation, pct));
+
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+        new()
+        {
+            Name = Name,
+            ProgressType = operation,
+            Progress = pct,
+            Url = StalkerAnomalyUrl,
+            ArchiveName = ArchiveName,
+            DownloadPath = DownloadPath,
+            ExtractPath = ExtractPath,
+        };
 }
 
 public class AnomalyInstallerException(string message, Exception innerException)
