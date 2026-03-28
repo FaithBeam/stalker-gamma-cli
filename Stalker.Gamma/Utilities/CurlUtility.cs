@@ -117,6 +117,19 @@ public class CurlServiceException(string message, Exception innerException)
 
 internal static class ArgumentsBuilderExtensions
 {
+    private static readonly HashSet<string> Impersonations =
+    [
+        "chrome145",
+        "chrome142",
+        "firefox147",
+        "safari2601",
+    ];
+
+    // choose an impersonation randomly to be used for this session's requests to moddb
+    private static readonly string Impersonation = Impersonations.ElementAt(
+        Random.Shared.Next(Impersonations.Count)
+    );
+
     internal static ArgumentsBuilder AddImpersonation(this ArgumentsBuilder argBuilder) =>
-        argBuilder.Add("--compressed").Add("--impersonate").Add("chrome145");
+        argBuilder.Add("--compressed").Add("--impersonate").Add(Impersonation);
 }
