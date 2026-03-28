@@ -30,7 +30,7 @@ tar -xzf $7zDlPath -C $7zDir
 
 #region curl-impersonate
 $curlDir = Join-Path $buildDir "curl-impersonate"
-$curlVersion = "v1.4.4"
+$curlVersion = "v1.5.1"
 $curlArchivePath = Join-Path $curlDir "libcurl-impersonate-$($curlVersion).x86_64-win32.tar.gz"
 New-Item -Path "$curlDir" -Type Directory -Force
 $curlImpersonateSplat = @{
