@@ -10,6 +10,33 @@ namespace stalker_gamma_cli.Commands;
 public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
 {
     /// <summary>
+    /// Open the logs folder.
+    /// </summary>
+    public void Logs()
+    {
+        if (!utilitiesReady.IsReady)
+        {
+            _logger.Error(
+                """
+                Dependency not found:
+                {Message}
+                """,
+                utilitiesReady.NotReadyReason
+            );
+            Environment.Exit(1);
+        }
+        ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
+
+        var stalkerGammaLogsPath = Path.Join(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "stalker-gamma",
+            "logs"
+        );
+        Directory.CreateDirectory(stalkerGammaLogsPath);
+        FileExplorerHelper.OpenFolderInExplorer(stalkerGammaLogsPath);
+    }
+
+    /// <summary>
     /// Hashes installation folders and creates a compressed archive containing the computed hashes.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
