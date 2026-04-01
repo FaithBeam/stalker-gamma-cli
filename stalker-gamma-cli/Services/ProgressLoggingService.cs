@@ -3,13 +3,43 @@ using Stalker.Gamma.GammaInstallerServices;
 
 namespace stalker_gamma_cli.Services;
 
-public record LogFileRecord
+public class LogFileRecord : IEquatable<LogFileRecord>
 {
+    public DateTimeOffset TimeStamp { get; set; } = DateTimeOffset.Now;
     public required string Operation { get; set; }
     public required string ArchiveName { get; set; }
     public required string DownloadPath { get; set; }
     public required string ExtractPath { get; set; }
     public required string Url { get; set; }
+
+    public bool Equals(LogFileRecord? other)
+    {
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        return Operation == other.Operation
+            && ArchiveName == other.ArchiveName
+            && DownloadPath == other.DownloadPath
+            && ExtractPath == other.ExtractPath
+            && Url == other.Url;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+        if (obj.GetType() != GetType())
+            return false;
+        return Equals((LogFileRecord)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Operation, ArchiveName, DownloadPath, ExtractPath, Url);
+    }
 }
 
 /// <summary>
@@ -42,7 +72,8 @@ public class ProgressLoggingService(ILogger logger)
             foreach (var e in _progressEventHashSet)
             {
                 logger.Verbose(
-                    "Operation: {Operation} | Archive Name: {ArchiveName} | Download Path: {DownloadPath} | Extract Path: {ExtractPath} | Url: {Url}",
+                    "[{DateTime:yyyy-MM-dd HH:mm:ss}] Operation: {Operation} | Archive Name: {ArchiveName} | Download Path: {DownloadPath} | Extract Path: {ExtractPath} | Url: {Url}",
+                    e.TimeStamp,
                     e.Operation.PadRight(maxOperationLen),
                     e.ArchiveName.PadRight(maxArchiveNameLen),
                     e.DownloadPath.PadRight(maxDownloadPathLen),

@@ -31,10 +31,14 @@ public static class Program
                         fileSizeLimitBytes: 10_000_000,
                         rollOnFileSizeLimit: true,
                         restrictedToMinimumLevel: LogEventLevel.Verbose,
-                        retainedFileCountLimit: 5
+                        retainedFileCountLimit: 5,
+                        outputTemplate: "{Message:lj}{NewLine}{Exception}"
                     )
             )
-            .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+            .WriteTo.Console(
+                restrictedToMinimumLevel: LogEventLevel.Information,
+                outputTemplate: "{Message:lj}{NewLine}{Exception}"
+            )
             .CreateLogger();
         var app = ConsoleApp
             .Create()

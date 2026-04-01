@@ -7,19 +7,19 @@ public class SetupUtilitiesService(StalkerGammaSettings settings)
     public void Setup()
     {
         settings.PathToCurl = Path.Join(
-            _resourcesPath,
+            ResourcesPath,
             OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate"
         );
         settings.PathTo7Z = Path.Join(
-            _resourcesPath,
+            ResourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
         );
         settings.PathToGit = OperatingSystem.IsWindows()
-            ? Path.Join(_resourcesPath, "git", "cmd", "git.exe")
+            ? Path.Join(ResourcesPath, "git", "cmd", "git.exe")
             : "git";
     }
 
-    private static readonly string _resourcesPath = Path.Join(
+    private static readonly string ResourcesPath = Path.Join(
         Path.GetDirectoryName(AppContext.BaseDirectory),
         "resources"
     );

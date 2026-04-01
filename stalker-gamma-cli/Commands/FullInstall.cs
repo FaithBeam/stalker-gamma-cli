@@ -269,6 +269,7 @@ public class FullInstallCmd(
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(
             Informational,
+            DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.PadRight(10),
             $"{e.Progress:P2}".PadRight(8),
@@ -287,7 +288,8 @@ public class FullInstallCmd(
 
     private readonly ILogger _logger = logger;
     private readonly UtilitiesReady _utilitiesReady = utilitiesReady;
-    private const string Informational = "{AddonName} | {Operation} | {Percent} | {CompleteTotal}";
+    private const string Informational =
+        "[{DateTime:yyyy-MM-dd HH:mm:ss}] | {AddonName} | {Operation} | {Percent} | {CompleteTotal}";
     private const string Verbose =
         "{AddonName} | {Operation} | {Percent} | {CompleteTotal} | {Url}";
 }
