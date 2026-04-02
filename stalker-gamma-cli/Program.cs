@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Reflection;
+using System.Text.Json;
 using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -84,6 +86,10 @@ public static class Program
             log.Verbose("OS: {OS}", Environment.OSVersion);
             log.Verbose("CWD: {Cwd}", Directory.GetCurrentDirectory());
             log.Verbose("stalker-gamma-cli Path: {Exe}", Environment.ProcessPath);
+            log.Verbose(
+                "stalker-gamma-cli Version: {Version}",
+                Assembly.GetExecutingAssembly().GetName().Version
+            );
             log.Verbose("Args: {Args}", string.Join(" ", args));
 
             await app.RunAsync(args);
