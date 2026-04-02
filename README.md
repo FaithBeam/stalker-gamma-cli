@@ -78,3 +78,7 @@ Artifacts in the `build/stalker-gamma-cli` folder.
 - .NET 10 SDK
 - 7zz, curl-impersonate, cacert.pem in stalker-gamma-cli/bin/debug/net10.0/resources folder
   - These dependencies can be retrieved by running your platform's `make build` command and copying the `resources` folder to the proper location
+
+### Advanced Options
+
+[Advanced](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced)
