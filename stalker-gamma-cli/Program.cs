@@ -3,6 +3,7 @@ using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 using stalker_gamma_cli.Models;
 using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
@@ -37,7 +38,8 @@ public static class Program
             )
             .WriteTo.Console(
                 restrictedToMinimumLevel: LogEventLevel.Information,
-                outputTemplate: "{Message:lj}{NewLine}{Exception}"
+                outputTemplate: "{Message:lj}{NewLine}{Exception}",
+                theme: ConsoleTheme.None
             )
             .CreateLogger();
         var app = ConsoleApp

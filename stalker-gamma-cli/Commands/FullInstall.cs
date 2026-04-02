@@ -289,7 +289,14 @@ public class FullInstallCmd(
     private readonly ILogger _logger = logger;
     private readonly UtilitiesReady _utilitiesReady = utilitiesReady;
     private const string Informational =
-        "[{DateTime:yyyy-MM-dd HH:mm:ss}] | {AddonName} | {Operation} | {Percent} | {CompleteTotal}";
+        "\e[97m[{DateTime}]\e[0m "
+        + "\e[96m{AddonName}\e[0m "
+        + "\e[97m|\e[0m "
+        + "\e[96m{Operation}\e[0m "
+        + "\e[97m|\e[0m "
+        + "\e[96m{Percent}\e[0m "
+        + "\e[97m|\e[0m "
+        + "\e[96m{CompleteTotal}\e[0m";
     private const string Verbose =
         "{AddonName} | {Operation} | {Percent} | {CompleteTotal} | {Url}";
 }
