@@ -45,11 +45,11 @@ public class GithubRecord(
                 _hc,
                 Url,
                 DownloadPath,
-                onProgress: pct => OnProgress("Download", pct),
+                onProgress: pct => OnProgress(GammaProgressType.Download, pct),
                 cancellationToken: cancellationToken
             );
 
-            OnProgress("Download", 1);
+            OnProgress(GammaProgressType.Download, 1);
             Downloaded = true;
         }
         catch (Exception e)
@@ -81,7 +81,7 @@ public class GithubRecord(
             await _archiveUtility.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
-                pct => OnProgress("Extract", pct),
+                pct => OnProgress(GammaProgressType.Extract, pct),
                 ct: cancellationToken
             );
 
@@ -120,10 +120,13 @@ public class GithubRecord(
             Instructions: {string.Join(", ", Instructions)}
             """;
 
-    private void OnProgress(string operation, double pct) =>
+    private void OnProgress(GammaProgressType operation, double pct) =>
         _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
 
-    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
+        GammaProgressType operation,
+        double pct
+    ) =>
         new()
         {
             Name = Name,

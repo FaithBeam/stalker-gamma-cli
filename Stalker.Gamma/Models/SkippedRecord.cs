@@ -13,23 +13,26 @@ public class SkippedRecord(GammaProgress gammaProgress, IDownloadableRecord reco
 
     public Task DownloadAsync(CancellationToken cancellationToken)
     {
-        OnProgress("Skipped", 1);
+        OnProgress(GammaProgressType.Skipped, 1);
         return Task.CompletedTask;
     }
 
     public Task ExtractAsync(CancellationToken cancellationToken)
     {
-        OnProgress("Skipped", 1);
+        OnProgress(GammaProgressType.Skipped, 1);
         _gammaProgress.IncrementCompletedMods();
         return Task.CompletedTask;
     }
 
     public bool Downloaded { get; }
 
-    private void OnProgress(string operation, double pct) =>
+    private void OnProgress(GammaProgressType operation, double pct) =>
         _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
 
-    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
+        GammaProgressType operation,
+        double pct
+    ) =>
         new()
         {
             Name = Name,

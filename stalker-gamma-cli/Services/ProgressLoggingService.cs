@@ -90,7 +90,7 @@ public class ProgressLoggingService(ILogger logger)
         AddProgressEvent(
             new LogFileRecord
             {
-                Operation = e.ProgressType,
+                Operation = e.ProgressType.GetHumanReadableString(),
                 ArchiveName = e.Name,
                 Url = e.Url,
                 DownloadPath = e.DownloadPath,

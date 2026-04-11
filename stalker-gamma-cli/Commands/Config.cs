@@ -86,7 +86,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="mo2Profile">The ModOrganizer profile to operate on</param>
     /// <param name="modPackMakerUrl">The modpack_maker_list definition url</param>
     /// <param name="modListUrl">The modlist definition url</param>
-    /// <param name="downloadThreads"></param>
+    /// <param name="downloadThreads">The number of threads that can download an extract at the same time</param>
     public async Task Create(
         string anomaly,
         string gamma,
@@ -96,7 +96,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
         string modPackMakerUrl = "https://stalker-gamma.com/api/list",
         string modListUrl =
             "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt",
-        [Range(1, 6)] int downloadThreads = 2
+        [Range(1, 20)] int downloadThreads = 2
     )
     {
         if (!utilitiesReady.IsReady)

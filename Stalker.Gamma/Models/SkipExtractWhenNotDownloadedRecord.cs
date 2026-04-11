@@ -31,7 +31,7 @@ public class SkipExtractWhenNotDownloadedRecord(
                 new GammaProgress.GammaInstallProgressEventArgs
                 {
                     Name = Name,
-                    ProgressType = "Skipped",
+                    ProgressType = GammaProgressType.Skipped,
                     Progress = 1,
                     Url = "",
                     ArchiveName = ArchiveName,

@@ -55,7 +55,7 @@ public class GammaInstaller(
 
     public virtual async Task FullInstallAsync(GammaInstallerArgs args)
     {
-        args.Mo2Version ??= OperatingSystem.IsWindows() ? "v2.5.2" : "v2.4.4";
+        args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
         args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
         args.Anomaly = Path.IsPathRooted(args.Anomaly)
@@ -76,14 +76,7 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt =
-            string.IsNullOrWhiteSpace(args.ModPackMakerPath)
-                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
-            : File.Exists(args.ModPackMakerPath)
-                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
-            : throw new FileNotFoundException(
-                $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
-            );
+        var modpackMakerTxt = await GetModpackMakerTxt(args);
         var modpackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
         var separators = separatorsFactory.Create(modpackMakerRecords);
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
@@ -331,9 +324,20 @@ public class GammaInstaller(
         internalProgress.Reset();
     }
 
+    private async Task<string> GetModpackMakerTxt(GammaInstallerArgs args)
+    {
+        return string.IsNullOrWhiteSpace(args.ModPackMakerPath)
+                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
+            : File.Exists(args.ModPackMakerPath)
+                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
+            : throw new FileNotFoundException(
+                $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
+            );
+    }
+
     public virtual async Task UpdateAsync(InstallUpdatesArgs args)
     {
-        args.Mo2Version ??= OperatingSystem.IsWindows() ? "v2.5.2" : "v2.4.4";
+        args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
         args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
         args.Anomaly = Path.IsPathRooted(args.Anomaly)
@@ -583,6 +587,10 @@ public class GammaInstaller(
                             grs.DeleteArchive();
                         }
                     }
+                }
+                catch (ModDbBotDetectedException)
+                {
+                    throw;
                 }
                 catch (Exception)
                 {

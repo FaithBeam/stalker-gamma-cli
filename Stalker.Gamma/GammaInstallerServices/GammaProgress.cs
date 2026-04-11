@@ -1,3 +1,5 @@
+using System.Runtime.Serialization;
+
 namespace Stalker.Gamma.GammaInstallerServices;
 
 public interface IGammaProgress
@@ -5,6 +7,23 @@ public interface IGammaProgress
     int TotalMods { get; set; }
     event EventHandler<GammaProgress.GammaInstallProgressEventArgs>? ProgressChanged;
     event EventHandler<GammaProgress.GammaInstallDebugProgressEventArgs>? DebugProgressChanged;
+}
+
+public static class GammaProgressExtensions
+{
+    extension(GammaProgressType e)
+    {
+        public string GetHumanReadableString() =>
+            e switch
+            {
+                GammaProgressType.Download => "Download",
+                GammaProgressType.Extract => "Extract",
+                GammaProgressType.Expand => "Expand",
+                GammaProgressType.CheckMd5 => "Check MD5",
+                GammaProgressType.Skipped => "Skipped",
+                _ => throw new ArgumentOutOfRangeException(nameof(e), e, null),
+            };
+    }
 }
 
 public class GammaProgress : IGammaProgress
@@ -44,7 +63,7 @@ public class GammaProgress : IGammaProgress
             IEquatable<GammaInstallProgressEventArgs>
     {
         public required string Name { get; init; }
-        public required string ProgressType { get; init; }
+        public required GammaProgressType ProgressType { get; init; }
         public required double Progress { get; init; }
         public required string Url { get; init; }
         public required string ArchiveName { get; init; }
@@ -92,4 +111,13 @@ public class GammaProgress : IGammaProgress
             );
         }
     }
+}
+
+public enum GammaProgressType
+{
+    Download,
+    Extract,
+    Expand,
+    CheckMd5,
+    Skipped,
 }

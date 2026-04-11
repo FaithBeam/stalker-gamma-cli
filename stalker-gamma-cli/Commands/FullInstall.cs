@@ -56,7 +56,7 @@ public class FullInstallCmd(
         bool offline = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
-        [Range(1, 6)] int? downloadThreads = null,
+        [Range(1, 20)] int? downloadThreads = null,
         [Hidden] bool debug = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250,
@@ -132,8 +132,7 @@ public class FullInstallCmd(
         catch (Exception e)
         {
             progressLoggingService.WriteToLogFile();
-            _logger.Error(e, "Install failed");
-            throw;
+            _logger.Error(e, "Install failed! {ExceptionMessage}", e.Message);
         }
         finally
         {
@@ -271,7 +270,7 @@ public class FullInstallCmd(
             Informational,
             DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
-            e.ProgressType.PadRight(10),
+            e.ProgressType.GetHumanReadableString().PadRight(10),
             $"{e.Progress:P2}".PadRight(8),
             $"[{e.Complete}/{e.Total}]"
         );
@@ -280,7 +279,7 @@ public class FullInstallCmd(
         _logger.Information(
             Verbose,
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
-            e.ProgressType.PadRight(10),
+            e.ProgressType.GetHumanReadableString().PadRight(10),
             $"{e.Progress:P2}".PadRight(8),
             $"[{e.Complete}/{e.Total}]",
             e.Url

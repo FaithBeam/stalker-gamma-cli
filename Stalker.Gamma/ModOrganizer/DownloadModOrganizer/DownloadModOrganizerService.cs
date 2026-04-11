@@ -10,7 +10,7 @@ namespace Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 public interface IDownloadModOrganizerService
 {
     Task DownloadAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         CancellationToken cancellationToken = default
@@ -19,7 +19,7 @@ public interface IDownloadModOrganizerService
     void DeleteArchive(string cachePath = "");
 
     Task ExtractAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         string dlUrl = "",
@@ -35,7 +35,7 @@ public class DownloadModOrganizerService(
 ) : IDownloadModOrganizerService
 {
     public async Task ExtractAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         string dlUrl = "",
@@ -90,7 +90,7 @@ public class DownloadModOrganizerService(
                     new GammaProgress.GammaInstallProgressEventArgs
                     {
                         Name = "ModOrganizer",
-                        ProgressType = "Extract",
+                        ProgressType = GammaProgressType.Extract,
                         Progress = pct,
                         Url = dlUrl,
                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -103,7 +103,7 @@ public class DownloadModOrganizerService(
     }
 
     public async Task DownloadAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         CancellationToken cancellationToken = default
@@ -150,7 +150,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Check MD5",
+                                        ProgressType = GammaProgressType.CheckMd5,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -171,7 +171,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Download",
+                                        ProgressType = GammaProgressType.Download,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -194,7 +194,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Check MD5",
+                                        ProgressType = GammaProgressType.CheckMd5,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -215,7 +215,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Download",
+                                        ProgressType = GammaProgressType.Download,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -240,7 +240,7 @@ public class DownloadModOrganizerService(
                         new GammaProgress.GammaInstallProgressEventArgs
                         {
                             Name = "ModOrganizer",
-                            ProgressType = "Download",
+                            ProgressType = GammaProgressType.Download,
                             Progress = pct,
                             Url = dlUrl,
                             ArchiveName = Path.GetFileName(mo2ArchivePath),
