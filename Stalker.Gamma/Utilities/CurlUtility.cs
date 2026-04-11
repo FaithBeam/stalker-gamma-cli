@@ -56,7 +56,20 @@ public partial class CurlUtility(StalkerGammaSettings settings)
                         .Add(Path.Join(AppContext.BaseDirectory, "resources", "cacert.pem"))
                         .AddImpersonation()
                 )
-                .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
+                .WithStandardOutputPipe(
+                    PipeTarget.Merge(
+                        PipeTarget.ToStringBuilder(stdOut),
+                        PipeTarget.ToDelegate(line =>
+                        {
+                            if (line.Contains("It appears you are a bot"))
+                            {
+                                throw new ModDbBotDetectedException(
+                                    "ModDb temporarily blocked you. Try again in 1 hour."
+                                );
+                            }
+                        })
+                    )
+                )
                 .WithStandardErrorPipe(
                     PipeTarget.Merge(
                         PipeTarget.ToStringBuilder(stdErr),
@@ -82,7 +95,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
                 .WithWorkingDirectory(workingDir ?? "")
                 .ExecuteAsync(cancellationToken);
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not ModDbBotDetectedException)
         {
             throw new CurlServiceException(
                 $"""
@@ -111,6 +124,8 @@ public partial class CurlUtility(StalkerGammaSettings settings)
     [GeneratedRegex(@"(\d+([\.,]\d+)?)\s*%", RegexOptions.Compiled)]
     private partial Regex ProgressRx();
 }
+
+public class ModDbBotDetectedException(string msg) : Exception(msg);
 
 public class CurlServiceException(string message, Exception innerException)
     : Exception(message, innerException);

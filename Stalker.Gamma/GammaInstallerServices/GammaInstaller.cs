@@ -76,14 +76,7 @@ public class GammaInstaller(
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
         }
 
-        var modpackMakerTxt =
-            string.IsNullOrWhiteSpace(args.ModPackMakerPath)
-                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
-            : File.Exists(args.ModPackMakerPath)
-                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
-            : throw new FileNotFoundException(
-                $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
-            );
+        var modpackMakerTxt = await GetModpackMakerTxt(args);
         var modpackMakerRecords = modListRecordFactory.Create(modpackMakerTxt);
         var separators = separatorsFactory.Create(modpackMakerRecords);
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
@@ -329,6 +322,17 @@ public class GammaInstaller(
         );
 
         internalProgress.Reset();
+    }
+
+    private async Task<string> GetModpackMakerTxt(GammaInstallerArgs args)
+    {
+        return string.IsNullOrWhiteSpace(args.ModPackMakerPath)
+                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
+            : File.Exists(args.ModPackMakerPath)
+                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
+            : throw new FileNotFoundException(
+                $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
+            );
     }
 
     public virtual async Task UpdateAsync(InstallUpdatesArgs args)
@@ -583,6 +587,10 @@ public class GammaInstaller(
                             grs.DeleteArchive();
                         }
                     }
+                }
+                catch (ModDbBotDetectedException)
+                {
+                    throw;
                 }
                 catch (Exception)
                 {

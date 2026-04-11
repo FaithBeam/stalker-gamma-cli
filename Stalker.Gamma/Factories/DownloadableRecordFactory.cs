@@ -32,7 +32,9 @@ public class DownloadableRecordFactory(
     GammaProgress gammaProgress,
     ModDbUtility modDbUtility,
     ArchiveUtility archiveUtility,
-    GitUtility gitUtility
+    GitUtility gitUtility,
+    GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
+    GetModDbAddonMetadata getModDbAddonMetadata
 ) : IDownloadableRecordFactory
 {
     public IDownloadableRecord CreateSkippedRecord(IDownloadableRecord record) =>
@@ -89,13 +91,15 @@ public class DownloadableRecordFactory(
     ) =>
         [
             .. records
-                .Where(r => r is ModDbRecord)
-                .Cast<ModDbRecord>()
+                .OfType<ModDbRecord>()
                 .GroupBy(r => r.ArchiveName)
                 .Select(r => new ModDbRecordGroup(gammaProgress, r.ToList())),
             .. records
-                .Where(r => r is GithubRecord)
-                .Cast<GithubRecord>()
+                .OfType<ModDbRecordGetMetadata>()
+                .GroupBy(r => r.StartLink)
+                .Select(r => new ModDbRecordGetMetadataGroup(gammaProgress, r.ToList())),
+            .. records
+                .OfType<GithubRecord>()
                 .GroupBy(r => r.ArchiveName)
                 .Select(r => new GithubRecordGroup(gammaProgress, r.ToList())),
         ];
@@ -114,12 +118,51 @@ public class DownloadableRecordFactory(
             return true;
         }
 
+        if (TryParseModDbGetMetadataRecord(gammaDir, record, out var modDbGetMetadataRecord))
+        {
+            downloadableRecord = modDbGetMetadataRecord;
+            return true;
+        }
+
         if (TryParseGithubRecord(gammaDir, record, out var githubRecord))
         {
             downloadableRecord = githubRecord;
             return true;
         }
 
+        return false;
+    }
+
+    private bool TryParseModDbGetMetadataRecord(
+        string gammaDir,
+        ModPackMakerRecord record,
+        out ModDbRecordGetMetadata? downloadableRecord
+    )
+    {
+        downloadableRecord = null;
+        if (
+            !string.IsNullOrWhiteSpace(record.AddonName)
+            && string.IsNullOrWhiteSpace(record.ZipName)
+            && !string.IsNullOrWhiteSpace(record.DlLink)
+            && record.DlLink.Contains("moddb")
+        )
+        {
+            var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
+            var instructions = ProcessInstructions(record.Instructions);
+            downloadableRecord = new ModDbRecordGetMetadata(
+                record.AddonName!,
+                record.DlLink,
+                instructions,
+                outputDirName,
+                gammaDir,
+                archiveUtility,
+                gammaProgress,
+                modDbUtility,
+                getCanonicalLinkFromModDbStartLink,
+                getModDbAddonMetadata
+            );
+            return true;
+        }
         return false;
     }
 
@@ -179,8 +222,11 @@ public class DownloadableRecordFactory(
                 || string.IsNullOrWhiteSpace(record.ZipName)
             )
             {
-                throw new DownloadableRecordFactoryException($"Invalid record: {record}");
+                // likely using the mod pack maker list from stalker_gamma repo with no moddb metadata
+                return false;
             }
+
+            // normal mod pack maker with moddb metadata
             var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
             var instructions = ProcessInstructions(record.Instructions);
             downloadableRecord = new ModDbRecord(
