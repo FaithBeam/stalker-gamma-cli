@@ -42,7 +42,7 @@ public class ModDbRecord(
                     && await HashUtils.HashFile(
                         DownloadPath,
                         HashAlgorithmName.MD5,
-                        pct => OnProgress("Check MD5", pct),
+                        pct => OnProgress(GammaProgressType.CheckMd5, pct),
                         cancellationToken
                     ) != Md5
                 || !Path.Exists(DownloadPath)
@@ -51,7 +51,7 @@ public class ModDbRecord(
                 await _modDbUtility.GetModDbLinkCurl(
                     Url,
                     DownloadPath,
-                    pct => OnProgress("Download", pct),
+                    pct => OnProgress(GammaProgressType.Download, pct),
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;
@@ -86,7 +86,7 @@ public class ModDbRecord(
             await _archiveUtility.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
-                pct => OnProgress("Extract", pct),
+                pct => OnProgress(GammaProgressType.Extract, pct),
                 ct: cancellationToken
             );
 
@@ -124,10 +124,13 @@ public class ModDbRecord(
             Instructions: {string.Join(", ", Instructions)}
             """;
 
-    private void OnProgress(string operation, double pct) =>
+    private void OnProgress(GammaProgressType operation, double pct) =>
         _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
 
-    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
+        GammaProgressType operation,
+        double pct
+    ) =>
         new()
         {
             Name = Name,

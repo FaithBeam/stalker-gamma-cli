@@ -90,7 +90,7 @@ public class DownloadModOrganizerService(
                     new GammaProgress.GammaInstallProgressEventArgs
                     {
                         Name = "ModOrganizer",
-                        ProgressType = "Extract",
+                        ProgressType = GammaProgressType.Extract,
                         Progress = pct,
                         Url = dlUrl,
                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -150,7 +150,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Check MD5",
+                                        ProgressType = GammaProgressType.CheckMd5,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -171,7 +171,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Download",
+                                        ProgressType = GammaProgressType.Download,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -194,7 +194,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Check MD5",
+                                        ProgressType = GammaProgressType.CheckMd5,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -215,7 +215,7 @@ public class DownloadModOrganizerService(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
-                                        ProgressType = "Download",
+                                        ProgressType = GammaProgressType.Download,
                                         Progress = pct,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
@@ -240,7 +240,7 @@ public class DownloadModOrganizerService(
                         new GammaProgress.GammaInstallProgressEventArgs
                         {
                             Name = "ModOrganizer",
-                            ProgressType = "Download",
+                            ProgressType = GammaProgressType.Download,
                             Progress = pct,
                             Url = dlUrl,
                             ArchiveName = Path.GetFileName(mo2ArchivePath),

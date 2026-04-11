@@ -16,6 +16,7 @@ public class AnomalyInstaller(
 {
     public string Name { get; } = "Stalker Anomaly";
     public string ArchiveName { get; } = "Anomaly-1.5.3-Full.2.7z";
+    public string ArchiveNameZstd => Path.ChangeExtension(ArchiveName, "tar.zst");
     protected string StalkerAnomalyUrl = "https://www.moddb.com/downloads/start/277404";
     private const string NiceUrl =
         "https://www.moddb.com/mods/stalker-anomaly/downloads/stalker-anomaly-153";
@@ -28,18 +29,19 @@ public class AnomalyInstaller(
     private readonly ModDbUtility _modDbUtility = modDbUtility;
     private readonly ArchiveUtility _archiveUtility = archiveUtility;
     public string DownloadPath => Path.Join(_downloadDirectory, ArchiveName);
+    public string DownloadPathZstd => Path.Join(_downloadDirectory, ArchiveNameZstd);
     private string ExtractPath => _anomalyDir;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
         if (
-            !File.Exists(DownloadPath)
+            (!File.Exists(DownloadPathZstd) && !File.Exists(DownloadPath))
             || (
                 File.Exists(DownloadPath)
                 && await HashUtils.HashFile(
                     DownloadPath,
                     HashAlgorithmName.MD5,
-                    pct => OnProgress("Check MD5", pct),
+                    pct => OnProgress(GammaProgressType.CheckMd5, pct),
                     cancellationToken
                 ) != StalkerAnomalyMd5
             )
@@ -48,7 +50,7 @@ public class AnomalyInstaller(
             await _modDbUtility.GetModDbLinkCurl(
                 StalkerAnomalyUrl,
                 DownloadPath,
-                pct => OnProgress("Download", pct),
+                pct => OnProgress(GammaProgressType.Download, pct),
                 cancellationToken: cancellationToken
             );
             Downloaded = true;
@@ -57,21 +59,37 @@ public class AnomalyInstaller(
 
     public virtual async Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        await _archiveUtility.ExtractAsync(
-            DownloadPath,
-            ExtractPath,
-            pct => OnProgress("Extract", pct),
-            ct: cancellationToken
-        );
+        // TODO: This likely needs an extra extract on Windows
+        if (File.Exists(DownloadPathZstd))
+        {
+            await _archiveUtility.ExtractAsync(
+                DownloadPathZstd,
+                ExtractPath,
+                pct => OnProgress(GammaProgressType.Extract, pct),
+                ct: cancellationToken
+            );
+        }
+        else
+        {
+            await _archiveUtility.ExtractAsync(
+                DownloadPath,
+                ExtractPath,
+                pct => OnProgress(GammaProgressType.Extract, pct),
+                ct: cancellationToken
+            );
+        }
         _progress.IncrementCompletedMods();
     }
 
     public bool Downloaded { get; set; }
 
-    private void OnProgress(string operation, double pct) =>
+    private void OnProgress(GammaProgressType operation, double pct) =>
         _progress.OnProgressChanged(ProgFunc(operation, pct));
 
-    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
+        GammaProgressType operation,
+        double pct
+    ) =>
         new()
         {
             Name = Name,

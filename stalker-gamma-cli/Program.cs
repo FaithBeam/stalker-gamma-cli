@@ -40,7 +40,7 @@ public static class Program
             )
             .WriteTo.Console(
                 restrictedToMinimumLevel: LogEventLevel.Information,
-                outputTemplate: "{Message:lj}{NewLine}{Exception}",
+                outputTemplate: "{Message:lj}{NewLine}",
                 theme: ConsoleTheme.None
             )
             .CreateLogger();

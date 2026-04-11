@@ -36,7 +36,7 @@ public class TeivazAnomalyGunslingerRepo(
                 gitUtility.FetchGitRepo(
                     DownloadPath,
                     ct: cancellationToken,
-                    onProgress: pct => OnProgress("Download", pct)
+                    onProgress: pct => OnProgress(GammaProgressType.Download, pct)
                 );
             }
             else
@@ -44,7 +44,7 @@ public class TeivazAnomalyGunslingerRepo(
                 gitUtility.CloneGitRepo(
                     DownloadPath,
                     Url,
-                    onProgress: pct => OnProgress("Download", pct),
+                    onProgress: pct => OnProgress(GammaProgressType.Download, pct),
                     ct: cancellationToken,
                     bare: true
                 );
@@ -73,7 +73,7 @@ public class TeivazAnomalyGunslingerRepo(
             DownloadPath,
             TempDir,
             ct: ct,
-            onProgress: pct => OnProgress("Extract", pct)
+            onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
         );
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
@@ -89,7 +89,7 @@ public class TeivazAnomalyGunslingerRepo(
                     gameDataDir,
                     ExtractPath,
                     overwrite: true,
-                    onProgress: pct => OnProgress("Extract", pct),
+                    onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
                     moveFile: true,
                     cancellationToken: cancellationToken
                 );
@@ -106,10 +106,13 @@ public class TeivazAnomalyGunslingerRepo(
 
     public bool Downloaded { get; set; }
 
-    private void OnProgress(string operation, double pct) =>
+    private void OnProgress(GammaProgressType operation, double pct) =>
         _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
 
-    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(string operation, double pct) =>
+    private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
+        GammaProgressType operation,
+        double pct
+    ) =>
         new()
         {
             Name = Name,
