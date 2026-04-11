@@ -10,7 +10,7 @@ namespace Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 public interface IDownloadModOrganizerService
 {
     Task DownloadAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         CancellationToken cancellationToken = default
@@ -19,7 +19,7 @@ public interface IDownloadModOrganizerService
     void DeleteArchive(string cachePath = "");
 
     Task ExtractAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         string dlUrl = "",
@@ -35,7 +35,7 @@ public class DownloadModOrganizerService(
 ) : IDownloadModOrganizerService
 {
     public async Task ExtractAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         string dlUrl = "",
@@ -103,7 +103,7 @@ public class DownloadModOrganizerService(
     }
 
     public async Task DownloadAsync(
-        string version = "v2.4.4",
+        string version = "v2.5.2",
         string cachePath = "",
         string? extractPath = null,
         CancellationToken cancellationToken = default

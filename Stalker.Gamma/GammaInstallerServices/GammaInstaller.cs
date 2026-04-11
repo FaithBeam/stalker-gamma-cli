@@ -55,7 +55,7 @@ public class GammaInstaller(
 
     public virtual async Task FullInstallAsync(GammaInstallerArgs args)
     {
-        args.Mo2Version ??= OperatingSystem.IsWindows() ? "v2.5.2" : "v2.4.4";
+        args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
         args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
         args.Anomaly = Path.IsPathRooted(args.Anomaly)
@@ -337,7 +337,7 @@ public class GammaInstaller(
 
     public virtual async Task UpdateAsync(InstallUpdatesArgs args)
     {
-        args.Mo2Version ??= OperatingSystem.IsWindows() ? "v2.5.2" : "v2.4.4";
+        args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
         args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
         args.Anomaly = Path.IsPathRooted(args.Anomaly)
