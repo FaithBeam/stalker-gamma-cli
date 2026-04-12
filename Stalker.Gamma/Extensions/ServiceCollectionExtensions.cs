@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<ModDbUtility>()
             .AddScoped<MirrorUtility>()
             .AddScoped<CurlUtility>()
+            .AddScoped<BackupUserLtxService>()
             .AddScoped<GetCanonicalLinkFromModDbStartLink>()
             .AddScoped<GetModDbAddonMetadata>()
             .AddScoped<IGetStalkerModsFromLocal, GetStalkerModsFromLocal>()
