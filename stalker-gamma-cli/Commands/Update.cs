@@ -174,12 +174,14 @@ public class UpdateCmds(
     /// <param name="cancellationToken"></param>
     /// <param name="verbose"></param>
     /// <param name="minimal"></param>
+    /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="mo2Version"></param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task Apply(
         CancellationToken cancellationToken,
         bool verbose = false,
         bool minimal = false,
+        bool preserveUserSettings = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
@@ -209,6 +211,7 @@ public class UpdateCmds(
                     Mo2Profile = mo2Profile,
                     Mo2Version = mo2Version,
                     Minimal = minimal,
+                    PreserveUserLtx = preserveUserSettings,
                 }
             );
             _logger.Information("Update finished");

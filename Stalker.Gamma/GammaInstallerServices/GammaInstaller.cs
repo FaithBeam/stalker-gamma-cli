@@ -23,6 +23,7 @@ public class GammaInstallerArgs
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
     public bool Minimal { get; set; }
     public bool Offline { get; set; }
+    public bool PreserveUserLtx { get; set; }
     public string? ModPackMakerPath { get; set; }
     public string? ModListPath { get; set; }
 }
@@ -32,6 +33,7 @@ public class InstallUpdatesArgs
     public required string Anomaly { get; set; }
     public required string Gamma { get; set; }
     public required string Cache { get; set; }
+    public bool PreserveUserLtx { get; set; }
     public string? Mo2Version { get; set; }
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
@@ -48,7 +50,8 @@ public class GammaInstaller(
     ISeparatorsFactory separatorsFactory,
     IHttpClientFactory hcf,
     PowerShellCmdBuilder powerShellCmdBuilder,
-    IGetStalkerModsFromLocal getStalkerModsFromLocal
+    IGetStalkerModsFromLocal getStalkerModsFromLocal,
+    BackupUserLtxService backupUserLtxService
 )
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -74,6 +77,11 @@ public class GammaInstaller(
         if (OperatingSystem.IsWindows())
         {
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
+        }
+
+        if (args.PreserveUserLtx)
+        {
+            await backupUserLtxService.ReadUserLtxAsync(args.Anomaly, args.CancellationToken);
         }
 
         var modpackMakerTxt = await GetModpackMakerTxt(args);
@@ -250,6 +258,12 @@ public class GammaInstaller(
 
         DeleteReshadeDlls.Delete(anomalyBinPath);
         DeleteShaderCache.Delete(args.Anomaly);
+
+        // user ltx
+        if (args.PreserveUserLtx)
+        {
+            await backupUserLtxService.WriteUserLtxAsync(args.CancellationToken);
+        }
         await UserLtxForceBorderless.ForceBorderless(args.Anomaly);
 
         if (!args.Offline)
@@ -356,6 +370,11 @@ public class GammaInstaller(
         if (OperatingSystem.IsWindows())
         {
             await powerShellCmdBuilder.Build().ExecuteAsync(args.CancellationToken);
+        }
+
+        if (args.PreserveUserLtx)
+        {
+            await backupUserLtxService.ReadUserLtxAsync(args.Anomaly, args.CancellationToken);
         }
 
         var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
@@ -486,8 +505,15 @@ public class GammaInstaller(
 
         DeleteReshadeDlls.Delete(anomalyBinPath);
         DeleteShaderCache.Delete(args.Anomaly);
+
+        // user ltx
+        if (args.PreserveUserLtx)
+        {
+            await backupUserLtxService.WriteUserLtxAsync(args.CancellationToken);
+        }
         await UserLtxForceBorderless.ForceBorderless(args.Anomaly);
 
+        // mod organizer
         await downloadModOrganizerService.DownloadAsync(
             cachePath: args.Cache,
             extractPath: args.Gamma,
@@ -504,13 +530,11 @@ public class GammaInstaller(
         {
             downloadModOrganizerService.DeleteArchive(args.Cache);
         }
-
         await InstallModOrganizerGammaProfile.InstallAsync(
             Path.Join(gammaDownloadsPath, stalkerGammaRecord.Name),
             args.Gamma,
             args.Mo2Profile
         );
-
         await WriteModOrganizerIni.WriteAsync(
             args.Gamma,
             args.Anomaly,
@@ -518,7 +542,6 @@ public class GammaInstaller(
             separators.Select(x => x.FolderName).ToList(),
             args.Mo2Profile
         );
-
         await DisableNexusModHandlerLink.DisableAsync(args.Gamma);
 
         var mo2ProfilePath = Path.Join(args.Gamma, "profiles", args.Mo2Profile);
