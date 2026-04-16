@@ -67,9 +67,6 @@ public class AnomalyInstallCmd(
             resourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
         );
-        stalkerGammaSettings.PathToGit = OperatingSystem.IsWindows()
-            ? Path.Join(resourcesPath, "git", "cmd", "git.exe")
-            : "git";
 
         var anomalyInstaller = (AnomalyInstaller)
             downloadableRecordFactory.CreateAnomalyRecord(cache, anomaly);

@@ -9,6 +9,7 @@ public class GammaLargeFilesRepo(
     GammaProgress gammaProgress,
     string gammaDir,
     string url,
+    string branch,
     GitUtility gitUtility
 ) : IGammaLargeFilesRepo
 {
@@ -18,6 +19,7 @@ public class GammaLargeFilesRepo(
     public string TempDir => Path.Join(_gammaDir, "downloads", Name);
     public bool Downloaded { get; set; }
     protected string Url = url;
+    public string Branch { get; } = branch;
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
     private readonly GitUtility _gitUtility = gitUtility;
@@ -68,6 +70,7 @@ public class GammaLargeFilesRepo(
         await GitUtility.ExtractAsync(
             DownloadPath,
             TempDir,
+            branch: Branch,
             ct: ct,
             onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
         );

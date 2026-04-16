@@ -9,9 +9,11 @@ public class GammaSetupRepo(
     GammaProgress gammaProgress,
     string gammaDir,
     string url,
+    string branch,
     GitUtility gitUtility
 ) : IGammaSetupRepo
 {
+    public string Branch { get; } = branch;
     public string Name { get; } = "gamma_setup";
     public string ArchiveName { get; } = "";
     protected string Url = url;
@@ -64,6 +66,7 @@ public class GammaSetupRepo(
         await GitUtility.ExtractAsync(
             DownloadPath,
             TempDir,
+            branch: Branch,
             ct: ct,
             onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
         );

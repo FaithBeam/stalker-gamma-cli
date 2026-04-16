@@ -21,17 +21,17 @@ public static class DownloadFileFast
             );
             response.EnsureSuccessStatusCode();
 
-            var totalBytes = response.Content.Headers.ContentLength;
-            if (totalBytes is null)
-            {
-                throw new DownloadFileFastException(
-                    $"""
-                    Content-Length header not found
-                    Url: {url}
-                    Download Path: {downloadPath}
-                    """
-                );
-            }
+            var totalBytes = response.Content.Headers.ContentLength ?? 1000;
+            //             if (totalBytes is null)
+            //             {
+            //                 throw new DownloadFileFastException(
+            //                     $"""
+            //                     Content-Length header not found
+            //                     Url: {url}
+            //                     Download Path: {downloadPath}
+            //                     """
+            //                 );
+            //             }
 
             await using var fs = new FileStream(
                 downloadPath,
@@ -49,7 +49,7 @@ public static class DownloadFileFast
                 chunkFunc: async args =>
                 {
                     await fs.WriteAsync(args.Buffer.AsMemory(0, args.BytesRead), cancellationToken);
-                    var progressPercentage = (double)args.TotalBytesRead / totalBytes!.Value;
+                    var progressPercentage = (double)args.TotalBytesRead / totalBytes;
                     onProgress?.Invoke(progressPercentage);
                 },
                 cancellationToken: cancellationToken

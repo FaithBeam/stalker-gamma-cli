@@ -12,9 +12,9 @@ public class ModDbPageMetadata
 
     public required string Filename { get; set; }
 
-    public required string Licence { get; set; }
+    public string? Licence { get; set; }
 
-    public required string Location { get; set; }
+    public string? Location { get; set; }
 
     public required string Md5Hash { get; set; }
 

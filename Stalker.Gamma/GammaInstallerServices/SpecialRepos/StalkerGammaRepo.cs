@@ -10,11 +10,13 @@ public class StalkerGammaRepo(
     string gammaDir,
     string anomalyDir,
     string url,
+    string branch,
     GitUtility gitUtility
 ) : IStalkerGammaRepo
 {
     public string Name { get; } = "Stalker_GAMMA";
     protected string Url = url;
+    public string Branch { get; } = branch;
     public string ArchiveName { get; } = "";
     public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
     public string TempDir => Path.Join(gammaDir, "downloads", Name);
@@ -67,6 +69,7 @@ public class StalkerGammaRepo(
         await GitUtility.ExtractAsync(
             DownloadPath,
             TempDir,
+            branch: Branch,
             ct: ct,
             onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
         );

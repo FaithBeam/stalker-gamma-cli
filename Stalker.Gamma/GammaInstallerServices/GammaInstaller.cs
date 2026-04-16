@@ -132,17 +132,26 @@ public class GammaInstaller(
             })
             .ToList();
         var gammaLargeFilesRecord = downloadableRecordFactory.CreateGammaLargeFilesRecord(
-            args.Gamma
+            args.Gamma,
+            settings.GammaLargeFilesRepo,
+            settings.GammaLargeFilesRepoBranch
         );
         var teivazAnomalyGunslingerRecord =
-            downloadableRecordFactory.CreateTeivazAnomalyGunslingerRecord(args.Gamma);
+            downloadableRecordFactory.CreateTeivazAnomalyGunslingerRecord(
+                args.Gamma,
+                settings.TeivazAnomalyGunslingerRepo,
+                settings.TeivazAnomalyGunslingerRepoBranch
+            );
         var gammaSetupRecord = downloadableRecordFactory.CreateGammaSetupRecord(
             args.Gamma,
-            args.Anomaly
+            settings.GammaSetupRepo,
+            settings.GammaSetupRepoBranch
         );
         var stalkerGammaRecord = downloadableRecordFactory.CreateStalkerGammaRecord(
             args.Gamma,
-            args.Anomaly
+            args.Anomaly,
+            settings.StalkerGammaRepo,
+            settings.StalkerGammaRepoBranch
         );
 
         var internalProgress = Progress as GammaProgress;
@@ -399,17 +408,26 @@ public class GammaInstaller(
             .CreateGroupedDownloadableRecords(addonRecords)
             .ToList();
         var gammaLargeFilesRecord = downloadableRecordFactory.CreateGammaLargeFilesRecord(
-            args.Gamma
+            args.Gamma,
+            settings.GammaLargeFilesRepo,
+            settings.GammaLargeFilesRepoBranch
         );
         var teivazAnomalyGunslingerRecord =
-            downloadableRecordFactory.CreateTeivazAnomalyGunslingerRecord(args.Gamma);
+            downloadableRecordFactory.CreateTeivazAnomalyGunslingerRecord(
+                args.Gamma,
+                settings.TeivazAnomalyGunslingerRepo,
+                settings.TeivazAnomalyGunslingerRepoBranch
+            );
         var gammaSetupRecord = downloadableRecordFactory.CreateGammaSetupRecord(
             args.Gamma,
-            args.Anomaly
+            settings.GammaSetupRepo,
+            settings.GammaSetupRepoBranch
         );
         var stalkerGammaRecord = downloadableRecordFactory.CreateStalkerGammaRecord(
             args.Gamma,
-            args.Anomaly
+            args.Anomaly,
+            settings.StalkerGammaRepo,
+            settings.StalkerGammaRepoBranch
         );
 
         var internalProgress = Progress as GammaProgress;

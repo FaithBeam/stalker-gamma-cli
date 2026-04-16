@@ -87,6 +87,14 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="modPackMakerUrl">The modpack_maker_list definition url</param>
     /// <param name="modListUrl">The modlist definition url</param>
     /// <param name="downloadThreads">The number of threads that can download an extract at the same time</param>
+    /// <param name="gammaSetupRepoUrl">The gamma_setup repo url</param>
+    /// <param name="gammaSetupRepoBranch">The gamma_setup repo branch</param>
+    /// <param name="stalkerGammaRepoUrl">The Stalker_GAMMA repo url</param>
+    /// <param name="stalkerGammaRepoBranch">The Stalker_GAMMA repo branch</param>
+    /// <param name="gammaLargeFilesRepoUrl">The gamma_large_files repo url</param>
+    /// <param name="gammaLargeFilesRepoBranch">The gamma_large_files repo branch</param>
+    /// <param name="teivazAnomalyGunslingerRepoUrl">The teivaz_anomaly_gunslinger repo url</param>
+    /// <param name="teivazAnomalyGunslingerRepoBranch">The teivaz_anomaly_gunslinger repo branch</param>
     public async Task Create(
         string anomaly,
         string gamma,
@@ -96,7 +104,16 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
         string modPackMakerUrl = "https://stalker-gamma.com/api/list",
         string modListUrl =
             "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt",
-        [Range(1, 20)] int downloadThreads = 2
+        [Range(1, 20)] int downloadThreads = 2,
+        string gammaSetupRepoUrl = "https://github.com/Grokitach/gamma_setup",
+        string gammaSetupRepoBranch = "main",
+        string stalkerGammaRepoUrl = "https://github.com/Grokitach/Stalker_GAMMA",
+        string stalkerGammaRepoBranch = "main",
+        string gammaLargeFilesRepoUrl = "https://github.com/Grokitach/gamma_large_files_v2",
+        string gammaLargeFilesRepoBranch = "main",
+        string teivazAnomalyGunslingerRepoUrl =
+            "https://github.com/Grokitach/teivaz_anomaly_gunslinger",
+        string teivazAnomalyGunslingerRepoBranch = "main"
     )
     {
         if (!utilitiesReady.IsReady)
@@ -133,6 +150,14 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
                 Anomaly = anomaly,
                 Gamma = gamma,
                 Mo2Profile = mo2Profile,
+                GammaSetupRepoUrl = gammaSetupRepoUrl,
+                GammaSetupRepoBranch = gammaSetupRepoBranch,
+                StalkerGammaRepoUrl = stalkerGammaRepoUrl,
+                StalkerGammaRepoBranch = stalkerGammaRepoBranch,
+                GammaLargeFilesRepoUrl = gammaLargeFilesRepoUrl,
+                GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch,
+                TeivazAnomalyGunslingerRepoUrl = teivazAnomalyGunslingerRepoUrl,
+                TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch,
             };
             await newProfile.SetActiveAsync();
             cliSettings.Profiles.Add(newProfile);
@@ -147,6 +172,14 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             foundProfile.DownloadThreads = downloadThreads;
             foundProfile.ModPackMakerUrl = modPackMakerUrl;
             foundProfile.ModListUrl = modListUrl;
+            foundProfile.GammaSetupRepoUrl = gammaSetupRepoUrl;
+            foundProfile.GammaSetupRepoBranch = gammaSetupRepoBranch;
+            foundProfile.StalkerGammaRepoUrl = stalkerGammaRepoUrl;
+            foundProfile.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
+            foundProfile.GammaLargeFilesRepoUrl = gammaLargeFilesRepoUrl;
+            foundProfile.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
+            foundProfile.TeivazAnomalyGunslingerRepoUrl = teivazAnomalyGunslingerRepoUrl;
+            foundProfile.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
             await foundProfile.SetActiveAsync();
         }
         await cliSettings.SaveAsync();

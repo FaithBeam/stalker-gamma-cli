@@ -14,9 +14,6 @@ public class SetupUtilitiesService(StalkerGammaSettings settings)
             ResourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
         );
-        settings.PathToGit = OperatingSystem.IsWindows()
-            ? Path.Join(ResourcesPath, "git", "cmd", "git.exe")
-            : "git";
     }
 
     private static readonly string ResourcesPath = Path.Join(

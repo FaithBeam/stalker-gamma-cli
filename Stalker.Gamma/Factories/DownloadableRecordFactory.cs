@@ -8,10 +8,27 @@ namespace Stalker.Gamma.Factories;
 public interface IDownloadableRecordFactory
 {
     IDownloadableRecord CreateAnomalyRecord(string downloadDirectory, string anomalyDir);
-    IDownloadableRecord CreateGammaSetupRecord(string gammaDir, string anomalyDir);
-    IDownloadableRecord CreateGammaLargeFilesRecord(string gammaDir);
-    IDownloadableRecord CreateStalkerGammaRecord(string gammaDir, string anomalyDir);
-    IDownloadableRecord CreateTeivazAnomalyGunslingerRecord(string gammaDir);
+    IDownloadableRecord CreateGammaSetupRecord(
+        string gammaDir,
+        string gammaSetupRepo,
+        string gammaSetupBranch
+    );
+    IDownloadableRecord CreateGammaLargeFilesRecord(
+        string gammaDir,
+        string gammaLargeFilesRepo,
+        string gammaLargeFilesBranch
+    );
+    IDownloadableRecord CreateStalkerGammaRecord(
+        string gammaDir,
+        string anomalyDir,
+        string stalkerGammaRepo,
+        string stalkerGammaBranch
+    );
+    IDownloadableRecord CreateTeivazAnomalyGunslingerRecord(
+        string gammaDir,
+        string teivazAnomalyGunslingerRepo,
+        string teivazAnomalyGunslingerBranch
+    );
 
     bool TryCreate(
         string gammaDir,
@@ -27,7 +44,6 @@ public interface IDownloadableRecordFactory
 }
 
 public class DownloadableRecordFactory(
-    StalkerGammaSettings stalkerGammaSettings,
     IHttpClientFactory httpClientFactory,
     GammaProgress gammaProgress,
     ModDbUtility modDbUtility,
@@ -53,36 +69,50 @@ public class DownloadableRecordFactory(
             archiveUtility
         );
 
-    public IDownloadableRecord CreateGammaSetupRecord(string gammaDir, string anomalyDir) =>
-        new GammaSetupRepo(
-            gammaProgress,
-            gammaDir,
-            stalkerGammaSettings.GammaSetupRepo,
-            gitUtility
-        );
+    public IDownloadableRecord CreateGammaSetupRecord(
+        string gammaDir,
+        string gammaSetupRepo,
+        string gammaSetupBranch
+    ) => new GammaSetupRepo(gammaProgress, gammaDir, gammaSetupRepo, gammaSetupBranch, gitUtility);
 
-    public IDownloadableRecord CreateGammaLargeFilesRecord(string gammaDir) =>
+    public IDownloadableRecord CreateGammaLargeFilesRecord(
+        string gammaDir,
+        string gammaLargeFilesRepo,
+        string gammaLargeFilesBranch
+    ) =>
         new GammaLargeFilesRepo(
             gammaProgress,
             gammaDir,
-            stalkerGammaSettings.GammaLargeFilesRepo,
+            gammaLargeFilesRepo,
+            gammaLargeFilesBranch,
             gitUtility
         );
 
-    public IDownloadableRecord CreateStalkerGammaRecord(string gammaDir, string anomalyDir) =>
+    public IDownloadableRecord CreateStalkerGammaRecord(
+        string gammaDir,
+        string anomalyDir,
+        string stalkerGammaRepo,
+        string stalkerGammaBranch
+    ) =>
         new StalkerGammaRepo(
             gammaProgress,
             gammaDir,
             anomalyDir,
-            stalkerGammaSettings.StalkerGammaRepo,
+            stalkerGammaRepo,
+            stalkerGammaBranch,
             gitUtility
         );
 
-    public IDownloadableRecord CreateTeivazAnomalyGunslingerRecord(string gammaDir) =>
+    public IDownloadableRecord CreateTeivazAnomalyGunslingerRecord(
+        string gammaDir,
+        string teivazAnomalyGunslingerRepo,
+        string teivazAnomalyGunslingerBranch
+    ) =>
         new TeivazAnomalyGunslingerRepo(
             gammaProgress,
             gammaDir,
-            stalkerGammaSettings.TeivazAnomalyGunslingerRepo,
+            teivazAnomalyGunslingerRepo,
+            teivazAnomalyGunslingerBranch,
             gitUtility
         );
 
