@@ -25,6 +25,7 @@ public class FullInstallCmd(
     /// <summary>
     /// This will install/update Anomaly and all GAMMA addons. This will take ~150GB.
     /// </summary>
+    /// <param name="cancellationToken"></param>
     /// <param name="skipGithubDownloads">Disable downloading github addons. They will still download if these archives do not exist.</param>
     /// <param name="skipExtractOnHashMatch">Skip extracting archives when their MD5 hashes match</param>
     /// <param name="addFoldersToWinDefenderExclusion">(Windows) Add the anomaly, gamma, and cache folders to the Windows Defender Exclusion list</param>
@@ -39,14 +40,9 @@ public class FullInstallCmd(
     /// <param name="debug"></param>
     /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
-    /// <param name="gammaSetupRepoUrl">Escape hatch for git repo gamma_setup</param>
-    /// <param name="stalkerGammaRepoUrl">Escape hatch for git repo Stalker_GAMMA</param>
-    /// <param name="gammaLargeFilesRepoUrl">Escape hatch for git repo gamma_large_files_v2</param>
-    /// <param name="teivazAnomalyGunslingerRepoUrl">Escape hatch for git repo teivaz_anomaly_gunslinger</param>
     /// <param name="stalkerAnomalyModdbUrl">Escape hatch for Stalker Anomaly</param>
     /// <param name="stalkerAnomalyArchiveMd5">The hash of the archive downloaded from --stalker-anomaly-moddb-url</param>
     public async Task FullInstall(
-        // ReSharper disable once InvalidXmlDocComment
         CancellationToken cancellationToken,
         bool skipGithubDownloads = false,
         bool skipExtractOnHashMatch = false,
@@ -62,13 +58,6 @@ public class FullInstallCmd(
         [Hidden] bool debug = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250,
-        [Hidden] string gammaSetupRepoUrl = "https://github.com/Grokitach/gamma_setup",
-        [Hidden] string stalkerGammaRepoUrl = "https://github.com/Grokitach/Stalker_GAMMA",
-        [Hidden]
-            string gammaLargeFilesRepoUrl = "https://github.com/Grokitach/gamma_large_files_v2",
-        [Hidden]
-            string teivazAnomalyGunslingerRepoUrl =
-            "https://github.com/Grokitach/teivaz_anomaly_gunslinger",
         [Hidden] string stalkerAnomalyModdbUrl = "https://www.moddb.com/downloads/start/277404",
         [Hidden] string stalkerAnomalyArchiveMd5 = "d6bce51a4e6d98f9610ef0aa967ba964"
     )
@@ -81,10 +70,14 @@ public class FullInstallCmd(
 
         InitializeSettings(
             downloadThreads,
-            gammaSetupRepoUrl,
-            stalkerGammaRepoUrl,
-            gammaLargeFilesRepoUrl,
-            teivazAnomalyGunslingerRepoUrl,
+            cliSettings.ActiveProfile!.GammaSetupRepoUrl,
+            cliSettings.ActiveProfile.GammaSetupRepoBranch,
+            cliSettings.ActiveProfile.StalkerGammaRepoUrl,
+            cliSettings.ActiveProfile.StalkerGammaRepoBranch,
+            cliSettings.ActiveProfile.GammaLargeFilesRepoUrl,
+            cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
+            cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
+            cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
             stalkerAnomalyModdbUrl,
             stalkerAnomalyArchiveMd5,
             out var anomaly,
@@ -169,9 +162,13 @@ public class FullInstallCmd(
     private void InitializeSettings(
         int? downloadThreads,
         string gammaSetupRepoUrl,
+        string gammaSetupRepoBranch,
         string stalkerGammaRepoUrl,
+        string stalkerGammaRepoBranch,
         string gammaLargeFilesRepoUrl,
+        string gammaLargeFilesRepoBranch,
         string teivazAnomalyGunslingerRepoUrl,
+        string teivazAnomalyGunslingerRepoBranch,
         string stalkerAnomalyModdbUrl,
         string stalkerAnomalyArchiveMd5,
         out string anomaly,
@@ -191,11 +188,13 @@ public class FullInstallCmd(
         stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
         stalkerGammaSettings.ModListUrl = modListUrl;
         stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
+        stalkerGammaSettings.GammaSetupRepoBranch = gammaSetupRepoBranch;
         stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
+        stalkerGammaSettings.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
         stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
+        stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
         stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
-        stalkerGammaSettings.StalkerAnomalyModdbUrl = stalkerAnomalyModdbUrl;
-        stalkerGammaSettings.StalkerAnomalyArchiveMd5 = stalkerAnomalyArchiveMd5;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
     }
 
     private void ConfigurePowerShellSettings(

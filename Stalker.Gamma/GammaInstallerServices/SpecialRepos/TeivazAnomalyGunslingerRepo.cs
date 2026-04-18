@@ -9,12 +9,14 @@ public class TeivazAnomalyGunslingerRepo(
     GammaProgress gammaProgress,
     string gammaDir,
     string url,
+    string branch,
     GitUtility gitUtility
 ) : ITeivazAnomalyGunslingerRepo
 {
     public string Name { get; } = "teivaz_anomaly_gunslinger";
     public string ArchiveName { get; } = "";
     protected string Url = url;
+    public string Branch { get; } = branch;
     public string DownloadPath => Path.Join(gammaDir, "downloads", $"{Name}.git");
     public string TempDir => Path.Join(gammaDir, "downloads", Name);
     private string GammaModsDir => Path.Join(gammaDir, "mods");
@@ -58,9 +60,10 @@ public class TeivazAnomalyGunslingerRepo(
                 $"""
                 Error downloading from Teivaz Anomaly Gunslinger Repo
                 Url: {Url}
+                Branch: {Branch}
                 Download Path: {DownloadPath}
                 Destination Dir: {GammaModsDir}
-                {e}
+                Exception Message: {e.Message}
                 """,
                 e
             );
@@ -68,13 +71,33 @@ public class TeivazAnomalyGunslingerRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
-        await GitUtility.ExtractAsync(
-            DownloadPath,
-            TempDir,
-            ct: ct,
-            onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
-        );
+    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                branch: Branch,
+                ct: ct,
+                onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
+            );
+        }
+        catch (Exception e)
+        {
+            throw new SpecialRepoException(
+                $"""
+                Error expanding files from Teivaz Anomaly Gunslinger Repo
+                Url: {Url}
+                Branch: {Branch}
+                Download Path: {DownloadPath}
+                Destination Dir: {GammaModsDir}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
+    }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {

@@ -9,6 +9,7 @@ public class GammaLargeFilesRepo(
     GammaProgress gammaProgress,
     string gammaDir,
     string url,
+    string branch,
     GitUtility gitUtility
 ) : IGammaLargeFilesRepo
 {
@@ -18,6 +19,7 @@ public class GammaLargeFilesRepo(
     public string TempDir => Path.Join(_gammaDir, "downloads", Name);
     public bool Downloaded { get; set; }
     protected string Url = url;
+    public string Branch { get; } = branch;
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
     private readonly GitUtility _gitUtility = gitUtility;
@@ -54,9 +56,10 @@ public class GammaLargeFilesRepo(
                 $"""
                 Error downloading from Gamma Large Files Repo
                 Url: {Url}
+                Branch: {Branch}
                 Download Path: {DownloadPath}
                 Destination Dir: {DestinationDir}
-                {e}
+                Exception Message: {e.Message}
                 """,
                 e
             );
@@ -64,13 +67,33 @@ public class GammaLargeFilesRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
-        await GitUtility.ExtractAsync(
-            DownloadPath,
-            TempDir,
-            ct: ct,
-            onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
-        );
+    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                branch: Branch,
+                ct: ct,
+                onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
+            );
+        }
+        catch (Exception e)
+        {
+            throw new SpecialRepoException(
+                $"""
+                Error expanding files from Gamma Large Files Repo
+                Url: {Url}
+                Branch: {Branch}
+                Download Path: {DownloadPath}
+                Destination Dir: {DestinationDir}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
+    }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {

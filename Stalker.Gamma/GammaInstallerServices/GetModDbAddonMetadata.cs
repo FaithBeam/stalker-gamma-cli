@@ -48,8 +48,8 @@ public partial class GetModDbAddonMetadata(CurlUtility curlUtility)
                     provider: CultureInfo.InvariantCulture
                 ),
                 Filename = modDbAddonMetadataDict["Filename"],
-                Licence = modDbAddonMetadataDict["Licence"],
-                Location = modDbAddonMetadataDict["Location"],
+                // Licence = modDbAddonMetadataDict["Licence"],
+                // Location = modDbAddonMetadataDict["Location"],
                 Md5Hash = modDbAddonMetadataDict["MD5 Hash"],
                 Size = long.Parse(
                     SizeRx().Match(modDbAddonMetadataDict["Size"]).Groups[1].Value,

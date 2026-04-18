@@ -16,6 +16,16 @@ public partial class CliProfile
     public string ModPackMakerUrl { get; set; } = "https://stalker-gamma.com/api/list";
     public string ModListUrl { get; set; } =
         "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt";
+    public string GammaSetupRepoUrl { get; set; } = "https://github.com/Grokitach/gamma_setup";
+    public string GammaSetupRepoBranch { get; set; } = "main";
+    public string StalkerGammaRepoUrl { get; set; } = "https://github.com/Grokitach/Stalker_GAMMA";
+    public string StalkerGammaRepoBranch { get; set; } = "main";
+    public string GammaLargeFilesRepoUrl { get; set; } =
+        "https://github.com/Grokitach/gamma_large_files_v2";
+    public string GammaLargeFilesRepoBranch { get; set; } = "main";
+    public string TeivazAnomalyGunslingerRepoUrl { get; set; } =
+        "https://github.com/Grokitach/teivaz_anomaly_gunslinger";
+    public string TeivazAnomalyGunslingerRepoBranch { get; set; } = "main";
 
     public override string ToString() =>
         $"""
@@ -26,6 +36,14 @@ public partial class CliProfile
             Mo2Profile: {Mo2Profile}
             DownloadThreads: {DownloadThreads}
             ModPackMakerUrl: {ModPackMakerUrl}
+            GammaSetupRepoUrl: {GammaSetupRepoUrl}
+            GammaSetupRepoBranch: {GammaSetupRepoBranch}
+            StalkerGammaRepoUrl: {StalkerGammaRepoUrl}
+            StalkerGammaRepoBranch: {StalkerGammaRepoBranch}
+            GammaLargeFilesRepoUrl: {GammaLargeFilesRepoUrl}
+            GammaLargeFilesRepoBranch: {GammaLargeFilesRepoBranch}
+            TeivazAnomalyGunslingerRepoUrl: {TeivazAnomalyGunslingerRepoUrl}
+            TeivazAnomalyGunslingerRepoBranch: {TeivazAnomalyGunslingerRepoBranch}
             ModListUrl: {ModListUrl}
             Active: {Active}
             """;
@@ -97,6 +115,46 @@ public partial class CliProfile
 
             case "modlisturl":
                 ModListUrl = value;
+                error = null;
+                return true;
+
+            case "gammasetuprepourl":
+                GammaSetupRepoUrl = value;
+                error = null;
+                return true;
+
+            case "gammasetuprepobranch":
+                GammaSetupRepoBranch = value;
+                error = null;
+                return true;
+
+            case "stalkergammarepourl":
+                StalkerGammaRepoUrl = value;
+                error = null;
+                return true;
+
+            case "stalkergammarepobranch":
+                StalkerGammaRepoBranch = value;
+                error = null;
+                return true;
+
+            case "gammalargefilesrepourl":
+                GammaLargeFilesRepoUrl = value;
+                error = null;
+                return true;
+
+            case "gammalargefilesrepobranch":
+                GammaLargeFilesRepoBranch = value;
+                error = null;
+                return true;
+
+            case "teivazanomalygunslingerrepourl":
+                TeivazAnomalyGunslingerRepoUrl = value;
+                error = null;
+                return true;
+
+            case "teivazanomalygunslingerrepobranch":
+                TeivazAnomalyGunslingerRepoBranch = value;
                 error = null;
                 return true;
 
