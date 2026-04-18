@@ -188,9 +188,13 @@ public class FullInstallCmd(
         stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
         stalkerGammaSettings.ModListUrl = modListUrl;
         stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
+        stalkerGammaSettings.GammaSetupRepoBranch = gammaSetupRepoBranch;
         stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
+        stalkerGammaSettings.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
         stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
+        stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
         stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
     }
 
     private void ConfigurePowerShellSettings(

@@ -54,10 +54,11 @@ public class StalkerGammaRepo(
                 $"""
                 Error downloading from Stalker Gamma Repo
                 Url: {Url}
+                Branch: {Branch}
                 Download Path: {DownloadPath}
                 Destination Dir: {GammaModsDir}
                 Anomaly Dir: {AnomalyDir}
-                {e}
+                Exception Message: {e.Message}
                 """,
                 e
             );
@@ -65,14 +66,34 @@ public class StalkerGammaRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
-        await GitUtility.ExtractAsync(
-            DownloadPath,
-            TempDir,
-            branch: Branch,
-            ct: ct,
-            onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
-        );
+    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                branch: Branch,
+                ct: ct,
+                onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
+            );
+        }
+        catch (Exception e)
+        {
+            throw new SpecialRepoException(
+                $"""
+                Error expanding Stalker Gamma Repo
+                Url: {Url}
+                Branch: {Branch}
+                Download Path: {DownloadPath}
+                Destination Dir: {GammaModsDir}
+                Anomaly Dir: {AnomalyDir}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
+    }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {

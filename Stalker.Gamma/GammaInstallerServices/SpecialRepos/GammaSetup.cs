@@ -52,9 +52,10 @@ public class GammaSetupRepo(
                 $"""
                 Error downloading from Gamma Setup Repo
                 Url: {Url}
+                Branch: {Branch}
                 Download Path: {DownloadPath}
                 Destination Dir: {GammaModsDir}
-                {e}
+                Exception Message: {e.Message}
                 """,
                 e
             );
@@ -62,14 +63,33 @@ public class GammaSetupRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default) =>
-        await GitUtility.ExtractAsync(
-            DownloadPath,
-            TempDir,
-            branch: Branch,
-            ct: ct,
-            onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
-        );
+    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await GitUtility.ExtractAsync(
+                DownloadPath,
+                TempDir,
+                branch: Branch,
+                ct: ct,
+                onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
+            );
+        }
+        catch (Exception e)
+        {
+            throw new SpecialRepoException(
+                $"""
+                Error expanding from Gamma Setup Repo
+                Url: {Url}
+                Branch: {Branch}
+                Download Path: {DownloadPath}
+                Destination Dir: {GammaModsDir}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
+    }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
