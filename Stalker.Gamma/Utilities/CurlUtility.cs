@@ -1,8 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using CliWrap;
-using CliWrap.Builders;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -36,66 +34,50 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         ).StdOut;
 
     private async Task<StdOutStdErrOutput> ExecuteCurlCmdAsync(
-        string[] args,
+        List<string> args,
         Action<double>? onProgress = null,
-        Action<string>? txtProgress = null,
         string? workingDir = null,
         CancellationToken cancellationToken = default
     )
     {
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
-
-        try
-        {
-            await Cli.Wrap(PathToCurlImpersonate)
-                .WithArguments(argBuilder =>
-                    argBuilder
-                        .Add(args)
-                        .Add("--cacert")
-                        .Add(Path.Join(AppContext.BaseDirectory, "resources", "cacert.pem"))
-                        .AddImpersonation()
-                )
-                .WithStandardOutputPipe(
-                    PipeTarget.Merge(
-                        PipeTarget.ToStringBuilder(stdOut),
-                        PipeTarget.ToDelegate(line =>
-                        {
-                            if (line.Contains("It appears you are a bot"))
-                            {
-                                throw new ModDbBotDetectedException(
-                                    "ModDb temporarily blocked you. Try again in 1 hour."
-                                );
-                            }
-                        })
+        args.AddRange("--cacert", Path.Join(AppContext.BaseDirectory, "resources", "cacert.pem"));
+        args.AddImpersonation();
+        var exitCode = await RunProcessUtility.RunProcessAsync(
+            PathToCurlImpersonate,
+            args,
+            onStdout: line =>
+            {
+                if (line.Contains("It appears you are a bot"))
+                {
+                    throw new ModDbBotDetectedException(
+                        "ModDb temporarily blocked you. Try again in 1 hour."
+                    );
+                }
+                stdOut.AppendLine(line);
+            },
+            onStderr: line =>
+            {
+                var match = ProgressRx().Match(line);
+                if (
+                    onProgress is not null
+                    && match.Success
+                    && double.TryParse(
+                        ProgressRx().Match(line).Groups[1].Value,
+                        provider: CultureInfo.InvariantCulture,
+                        out var parsed
                     )
                 )
-                .WithStandardErrorPipe(
-                    PipeTarget.Merge(
-                        PipeTarget.ToStringBuilder(stdErr),
-                        PipeTarget.ToDelegate(line =>
-                        {
-                            txtProgress?.Invoke(line);
-                            var match = ProgressRx().Match(line);
-                            if (
-                                onProgress is not null
-                                && match.Success
-                                && double.TryParse(
-                                    ProgressRx().Match(line).Groups[1].Value,
-                                    provider: CultureInfo.InvariantCulture,
-                                    out var parsed
-                                )
-                            )
-                            {
-                                onProgress(parsed / 100);
-                            }
-                        })
-                    )
-                )
-                .WithWorkingDirectory(workingDir ?? "")
-                .ExecuteAsync(cancellationToken);
-        }
-        catch (Exception e) when (e is not ModDbBotDetectedException)
+                {
+                    onProgress(parsed / 100);
+                }
+                stdErr.AppendLine(line);
+            },
+            workingDir,
+            ct: cancellationToken
+        );
+        if (exitCode != 0)
         {
             throw new CurlServiceException(
                 $"""
@@ -103,12 +85,10 @@ public partial class CurlUtility(StalkerGammaSettings settings)
                 {string.Join(' ', args)}
                 StdOut: {stdOut}
                 StdErr: {stdErr}
-                Exception: {e}
-                """,
-                e
+                Exit Code: {exitCode}
+                """
             );
         }
-
         return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
 
@@ -127,8 +107,14 @@ public partial class CurlUtility(StalkerGammaSettings settings)
 
 public class ModDbBotDetectedException(string msg) : Exception(msg);
 
-public class CurlServiceException(string message, Exception innerException)
-    : Exception(message, innerException);
+public class CurlServiceException : Exception
+{
+    public CurlServiceException(string message)
+        : base(message) { }
+
+    public CurlServiceException(string message, Exception innerException)
+        : base(message, innerException) { }
+}
 
 internal static class ArgumentsBuilderExtensions
 {
@@ -145,6 +131,9 @@ internal static class ArgumentsBuilderExtensions
         Random.Shared.Next(Impersonations.Count)
     );
 
-    internal static ArgumentsBuilder AddImpersonation(this ArgumentsBuilder argBuilder) =>
-        argBuilder.Add("--compressed").Add("--impersonate").Add(Impersonation);
+    internal static List<string> AddImpersonation(this List<string> argBuilder)
+    {
+        argBuilder.AddRange("--compressed", "--impersonate", Impersonation);
+        return argBuilder;
+    }
 }

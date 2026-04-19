@@ -10,13 +10,14 @@ public class GetCanonicalLinkFromModDbStartLink(CurlUtility curlUtility)
         CancellationToken ct = default
     )
     {
+        string? htmlContent = null;
         try
         {
-            var htmlContent = await _curlUtility.GetStringAsync(modDbStartLink, ct);
+            htmlContent = await _curlUtility.GetStringAsync(modDbStartLink, ct);
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
             var linkNode = htmlDoc.DocumentNode.SelectSingleNode("//link[@rel='canonical']");
-            var canonicalLink = linkNode?.GetAttributeValue("href", string.Empty);
+            var canonicalLink = linkNode.GetAttributeValue("href", string.Empty);
             return string.IsNullOrWhiteSpace(canonicalLink)
                 ? throw new CanonicalLinkNotFoundException(modDbStartLink)
                 : canonicalLink;
@@ -25,7 +26,12 @@ public class GetCanonicalLinkFromModDbStartLink(CurlUtility curlUtility)
             when (e is not CanonicalLinkNotFoundException and not ModDbBotDetectedException)
         {
             throw new GetCanonicalLinkFromModDbStartLinkException(
-                $"Error retrieving canonical link from: {modDbStartLink}",
+                $"""
+                Error retrieving canonical link from
+                ModDbStartLink: {modDbStartLink}
+                Exception Message: {e.Message}
+                HTML Content: {htmlContent}
+                """,
                 e
             );
         }

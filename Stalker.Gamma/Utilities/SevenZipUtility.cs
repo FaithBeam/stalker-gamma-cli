@@ -1,7 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using CliWrap;
-using CliWrap.Builders;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -12,7 +10,6 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         string archivePath,
         string destinationFolder,
         Action<double>? onProgress = null,
-        Action<string>? txtProgress = null,
         string? workingDirectory = null,
         CancellationToken cancellationToken = default
     )
@@ -23,9 +20,8 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         }
 
         return await ExecuteSevenZipCmdAsync(
-            ["x", "-y", "-bsp1", archivePath, $"-o{destinationFolder}"],
+            ["x", "-y", "-bsp1", $"\"{archivePath}\"", $"\"-o{destinationFolder}\""],
             onProgress,
-            txtProgress,
             workingDirectory: workingDirectory,
             cancellationToken: cancellationToken
         );
@@ -69,7 +65,6 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         return await ExecuteSevenZipCmdAsync(
             args,
             workingDirectory: workDirectory,
-            txtProgress: txtProgress,
             cancellationToken: cancellationToken
         );
     }
@@ -81,7 +76,6 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
     private async Task<StdOutStdErrOutput> ExecuteSevenZipCmdAsync(
         string[] args,
         Action<double>? onProgress = null,
-        Action<string>? txtProgress = null,
         string? workingDirectory = null,
         CancellationToken cancellationToken = default
     )
@@ -89,61 +83,31 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
 
-        try
-        {
-            await Cli.Wrap(PathTo7Z)
-                .WithArguments(argBuilder => AppendArgument(args, argBuilder))
-                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr))
-                .WithStandardOutputPipe(
-                    PipeTarget.Merge(
-                        PipeTarget.ToStringBuilder(stdOut),
-                        PipeTarget.Create(
-                            async (origin, ct) =>
-                            {
-                                // Buffer must be bigger than the process's stdout/stderr buffer
-                                const int bufferSize = 1024;
-
-                                using var reader = new StreamReader(
-                                    origin,
-                                    Console.OutputEncoding,
-                                    false,
-                                    bufferSize,
-                                    true
-                                );
-                                var buffer = new char[bufferSize];
-
-                                int charsRead;
-                                while (
-                                    (charsRead = await reader.ReadAsync(buffer, 0, buffer.Length))
-                                    > 0
-                                )
-                                {
-                                    ct.ThrowIfCancellationRequested();
-
-                                    var data = new string(buffer, 0, charsRead);
-
-                                    // Do something with data here
-                                    if (onProgress is null)
-                                    {
-                                        return;
-                                    }
-                                    var matches = ProgressRx().Matches(data).ToList();
-                                    if (matches.Count > 0)
-                                    {
-                                        foreach (var m in matches)
-                                        {
-                                            onProgress(double.Parse(m.Groups[1].Value) / 100);
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                    )
-                )
-                .WithWorkingDirectory(workingDirectory ?? "")
-                .ExecuteAsync(cancellationToken);
-        }
-        catch (Exception e)
+        var exitCode = await RunProcessUtility.RunProcessAsync(
+            PathTo7Z,
+            args,
+            onStdout: line =>
+            {
+                stdOut.AppendLine(line);
+                if (onProgress is null)
+                {
+                    return;
+                }
+                var matches = ProgressRx().Matches(line).ToList();
+                if (matches.Count > 0)
+                {
+                    foreach (var m in matches)
+                    {
+                        onProgress(double.Parse(m.Groups[1].Value) / 100);
+                    }
+                }
+            },
+            onStderr: line => stdErr.AppendLine(line),
+            workingDirectory,
+            stdOutEncoding: Console.OutputEncoding,
+            ct: cancellationToken
+        );
+        if (exitCode != 0)
         {
             throw new SevenZipUtilityException(
                 $"""
@@ -151,9 +115,8 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
                 {string.Join(' ', args)}
                 StdOut: {stdOut}
                 StdErr: {stdErr}
-                Exception: {e}
-                """,
-                e
+                Exit Code: {exitCode}
+                """
             );
         }
 
@@ -163,19 +126,10 @@ public partial class SevenZipUtility(StalkerGammaSettings settings)
         return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
 
-    private void AppendArgument(string[] args, ArgumentsBuilder argBuilder)
-    {
-        foreach (var arg in args)
-        {
-            argBuilder.Add(arg);
-        }
-    }
-
     private string PathTo7Z => settings.PathTo7Z;
 
     [GeneratedRegex(@"(\d+(\.\d+)?)\s*%", RegexOptions.Compiled)]
     private partial Regex ProgressRx();
 }
 
-public class SevenZipUtilityException(string msg, Exception innerException)
-    : Exception(msg, innerException);
+public class SevenZipUtilityException(string msg) : Exception(msg);
