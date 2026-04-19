@@ -1,6 +1,4 @@
 using System.Text;
-using CliWrap;
-using CliWrap.Builders;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -33,16 +31,15 @@ public class UnzipUtility(StalkerGammaSettings settings)
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
 
-        try
-        {
-            await Cli.Wrap(settings.PathToUnzip)
-                .WithArguments(argBuilder => AppendArgument(args, argBuilder))
-                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr))
-                .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
-                .WithWorkingDirectory(workingDirectory ?? "")
-                .ExecuteAsync(cancellationToken);
-        }
-        catch (Exception e)
+        var exitCode = await RunProcessUtility.RunProcessAsync(
+            settings.PathToUnzip,
+            args,
+            onStdout: line => stdOut.AppendLine(line),
+            onStderr: line => stdErr.AppendLine(line),
+            workingDirectory,
+            ct: cancellationToken
+        );
+        if (exitCode != 0)
         {
             if (!stdErr.ToString().Contains("appears to use backslashes as path separators"))
             {
@@ -52,9 +49,8 @@ public class UnzipUtility(StalkerGammaSettings settings)
                     {string.Join(' ', args)}
                     StdOut: {stdOut}
                     StdErr: {stdErr}
-                    Exception: {e}
-                    """,
-                    e
+                    Exit Code: {exitCode}
+                    """
                 );
             }
         }
@@ -63,15 +59,6 @@ public class UnzipUtility(StalkerGammaSettings settings)
 
         return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
-
-    private void AppendArgument(string[] args, ArgumentsBuilder argBuilder)
-    {
-        foreach (var arg in args)
-        {
-            argBuilder.Add(arg);
-        }
-    }
 }
 
-public class UnzipUtilityException(string message, Exception innerException)
-    : Exception(message, innerException);
+public class UnzipUtilityException(string message) : Exception(message);

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text;
 
 namespace Stalker.Gamma.Utilities;
 
@@ -10,6 +11,7 @@ public static partial class RunProcessUtility
         Action<string> onStdout,
         Action<string> onStderr,
         string? workingDirectory = null,
+        Encoding? stdOutEncoding = null,
         CancellationToken ct = default
     )
     {
@@ -23,6 +25,7 @@ public static partial class RunProcessUtility
             UseShellExecute = false,
             CreateNoWindow = true,
             WorkingDirectory = workingDirectory,
+            StandardOutputEncoding = stdOutEncoding,
         };
         process.EnableRaisingEvents = true;
 

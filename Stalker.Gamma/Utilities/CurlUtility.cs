@@ -1,9 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using CliWrap;
-using CliWrap.Buffered;
-using CliWrap.Builders;
 using Stalker.Gamma.Models;
 
 namespace Stalker.Gamma.Utilities;
@@ -45,58 +42,42 @@ public partial class CurlUtility(StalkerGammaSettings settings)
     {
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
-        try
-        {
-            args.AddRange(
-                "--cacert",
-                Path.Join(AppContext.BaseDirectory, "resources", "cacert.pem")
-            );
-            args.AddImpersonation();
-            var result = await RunProcessUtility.RunProcessAsync(
-                PathToCurlImpersonate,
-                args,
-                onStdout: line =>
+        args.AddRange("--cacert", Path.Join(AppContext.BaseDirectory, "resources", "cacert.pem"));
+        args.AddImpersonation();
+        var exitCode = await RunProcessUtility.RunProcessAsync(
+            PathToCurlImpersonate,
+            args,
+            onStdout: line =>
+            {
+                if (line.Contains("It appears you are a bot"))
                 {
-                    if (line.Contains("It appears you are a bot"))
-                    {
-                        throw new ModDbBotDetectedException(
-                            "ModDb temporarily blocked you. Try again in 1 hour."
-                        );
-                    }
-                    stdOut.AppendLine(line);
-                },
-                onStderr: line =>
-                {
-                    var match = ProgressRx().Match(line);
-                    if (
-                        onProgress is not null
-                        && match.Success
-                        && double.TryParse(
-                            ProgressRx().Match(line).Groups[1].Value,
-                            provider: CultureInfo.InvariantCulture,
-                            out var parsed
-                        )
+                    throw new ModDbBotDetectedException(
+                        "ModDb temporarily blocked you. Try again in 1 hour."
+                    );
+                }
+                stdOut.AppendLine(line);
+            },
+            onStderr: line =>
+            {
+                var match = ProgressRx().Match(line);
+                if (
+                    onProgress is not null
+                    && match.Success
+                    && double.TryParse(
+                        ProgressRx().Match(line).Groups[1].Value,
+                        provider: CultureInfo.InvariantCulture,
+                        out var parsed
                     )
-                    {
-                        onProgress(parsed / 100);
-                    }
-                    stdErr.AppendLine(line);
-                },
-                workingDir,
-                cancellationToken
-            );
-            return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
-        }
-        catch (Exception e)
-            when (e is OperationCanceledException or TaskCanceledException
-                && cancellationToken.IsCancellationRequested
-                && stdOut.Length > 0
-            )
-        {
-            // weird case where the output is there, but the task won't complete on its own.
-            return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
-        }
-        catch (Exception e) when (e is not ModDbBotDetectedException)
+                )
+                {
+                    onProgress(parsed / 100);
+                }
+                stdErr.AppendLine(line);
+            },
+            workingDir,
+            ct: cancellationToken
+        );
+        if (exitCode != 0)
         {
             throw new CurlServiceException(
                 $"""
@@ -104,11 +85,11 @@ public partial class CurlUtility(StalkerGammaSettings settings)
                 {string.Join(' ', args)}
                 StdOut: {stdOut}
                 StdErr: {stdErr}
-                Exception Message: {e.Message}
-                """,
-                e
+                Exit Code: {exitCode}
+                """
             );
         }
+        return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
 
     private string PathToCurlImpersonate => settings.PathToCurl;
@@ -126,8 +107,14 @@ public partial class CurlUtility(StalkerGammaSettings settings)
 
 public class ModDbBotDetectedException(string msg) : Exception(msg);
 
-public class CurlServiceException(string message, Exception innerException)
-    : Exception(message, innerException);
+public class CurlServiceException : Exception
+{
+    public CurlServiceException(string message)
+        : base(message) { }
+
+    public CurlServiceException(string message, Exception innerException)
+        : base(message, innerException) { }
+}
 
 internal static class ArgumentsBuilderExtensions
 {
