@@ -12,7 +12,7 @@ public class UnzipUtility(StalkerGammaSettings settings)
         CancellationToken ct
     ) =>
         await ExecuteUnzipCmdAsync(
-            ["-o", archivePath, "-d", extractDirectory],
+            ["-o", $"\"{archivePath}\"", "-d", $"\"{extractDirectory}\""],
             onProgress: onProgress,
             cancellationToken: ct
         );

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Buffers;
+using System.Diagnostics;
 using System.Text;
 
 namespace Stalker.Gamma.Utilities;
@@ -47,10 +48,37 @@ public static partial class RunProcessUtility
         CancellationToken ct
     )
     {
-        while (await reader.ReadLineAsync(ct) is { } line)
+        var sb = new StringBuilder();
+        var buffer = ArrayPool<char>.Shared.Rent(4096);
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            onLine(line);
+            int read;
+            while ((read = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                ct.ThrowIfCancellationRequested();
+                for (var i = 0; i < read; i++)
+                {
+                    // 7z updates the terminal with \b control characters, se we consider everything in sb as a line
+                    if (buffer[i] == '\n' || buffer[i] == '\r' || buffer[i] == '\b')
+                    {
+                        onLine(sb.ToString());
+                        sb.Clear();
+                    }
+                    else
+                    {
+                        sb.Append(buffer[i]);
+                    }
+                }
+            }
+
+            if (sb.Length > 0)
+            {
+                onLine(sb.ToString());
+            }
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
         }
     }
 }
