@@ -88,13 +88,13 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="modListUrl">The modlist definition url</param>
     /// <param name="downloadThreads">The number of threads that can download an extract at the same time</param>
     /// <param name="gammaSetupRepoUrl">The gamma_setup repo url</param>
-    /// <param name="gammaSetupRepoBranch">The gamma_setup repo branch</param>
+    /// <param name="gammaSetupRepoBranch">The gamma_setup repo branch or commit sha</param>
     /// <param name="stalkerGammaRepoUrl">The Stalker_GAMMA repo url</param>
-    /// <param name="stalkerGammaRepoBranch">The Stalker_GAMMA repo branch</param>
+    /// <param name="stalkerGammaRepoBranch">The Stalker_GAMMA repo branch or commit sha</param>
     /// <param name="gammaLargeFilesRepoUrl">The gamma_large_files repo url</param>
-    /// <param name="gammaLargeFilesRepoBranch">The gamma_large_files repo branch</param>
+    /// <param name="gammaLargeFilesRepoBranch">The gamma_large_files repo branch or commit sha</param>
     /// <param name="teivazAnomalyGunslingerRepoUrl">The teivaz_anomaly_gunslinger repo url</param>
-    /// <param name="teivazAnomalyGunslingerRepoBranch">The teivaz_anomaly_gunslinger repo branch</param>
+    /// <param name="teivazAnomalyGunslingerRepoBranch">The teivaz_anomaly_gunslinger repo branch or commit sha</param>
     public async Task Create(
         string anomaly,
         string gamma,

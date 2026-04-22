@@ -105,10 +105,10 @@ public partial class GitUtility
         CancellationToken ct = default
     )
     {
+        var branchOrSha = branch is "main" or "dev2" ? $"refs/remotes/origin/{branch}" : branch;
+        var gammaLauncherBranch = $"refs/remotes/Grokitach/{branch}";
         using var repo = new Repository(pathToRepo);
-        var commit =
-            repo.Lookup<Commit>($"refs/remotes/origin/{branch}")
-            ?? repo.Lookup<Commit>($"refs/remotes/Grokitach/{branch}");
+        var commit = repo.Lookup<Commit>(branchOrSha) ?? repo.Lookup<Commit>(gammaLauncherBranch);
         await ExtractTreeAsync(commit.Tree, outputDir, ct: ct, onProgress: onProgress);
     }
 
