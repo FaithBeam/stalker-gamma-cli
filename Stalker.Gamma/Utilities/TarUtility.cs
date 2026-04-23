@@ -14,7 +14,7 @@ public class TarUtility(StalkerGammaSettings settings)
     {
         Directory.CreateDirectory(extractDirectory);
         await ExecuteTarCmdAsync(
-            ["-xzvf", $"\"{archivePath}\"", "-C", $"\"{extractDirectory}\""],
+            ["-xzvf", archivePath, "-C", extractDirectory],
             onProgress: onProgress,
             cancellationToken: cancellationToken
         );

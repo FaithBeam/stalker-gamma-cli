@@ -20,7 +20,7 @@ public static partial class RunProcessUtility
         process.StartInfo = new ProcessStartInfo
         {
             FileName = fileName,
-            Arguments = string.Join(' ', arguments),
+            Arguments = string.Join(' ', arguments.Select(x => $"\"{x}\"")),
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
