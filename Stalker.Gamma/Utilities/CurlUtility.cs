@@ -16,7 +16,13 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         CancellationToken cancellationToken = default
     ) =>
         await ExecuteCurlCmdAsync(
-            ["--progress-bar", "--clobber", "-Lo", Path.Join(pathToDownloads, fileName), url],
+            [
+                "--progress-bar",
+                "--clobber",
+                "-Lo",
+                $"\"{Path.Join(pathToDownloads, fileName)}\"",
+                url,
+            ],
             onProgress: onProgress,
             workingDir: workingDir,
             cancellationToken: cancellationToken
