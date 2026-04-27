@@ -7,6 +7,11 @@ namespace Stalker.Gamma.Utilities;
 
 public partial class CurlUtility(StalkerGammaSettings settings)
 {
+    public async Task<StdOutStdErrOutput> GetHeadersAsync(
+        string url,
+        CancellationToken cancellationToken = default
+    ) => await ExecuteCurlCmdAsync(["-I", url], cancellationToken: cancellationToken);
+
     public async Task<StdOutStdErrOutput> DownloadFileAsync(
         string url,
         string pathToDownloads,
@@ -16,7 +21,7 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         CancellationToken cancellationToken = default
     ) =>
         await ExecuteCurlCmdAsync(
-            ["--progress-bar", "--clobber", "-Lo", Path.Join(pathToDownloads, fileName), url],
+            ["--progress-bar", "--clobber", "-o", Path.Join(pathToDownloads, fileName), url],
             onProgress: onProgress,
             workingDir: workingDir,
             cancellationToken: cancellationToken

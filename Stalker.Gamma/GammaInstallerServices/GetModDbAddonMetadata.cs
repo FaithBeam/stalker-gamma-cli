@@ -32,7 +32,7 @@ public partial class GetModDbAddonMetadata(CurlUtility curlUtility)
                 )
                 .ToDictionary(x => x.Title!, x => x.Value!);
             modDbAddonMetadataDict.TryGetValue("Credits", out var credits);
-            return new ModDbPageMetadata
+            var modDbPageMetadata = new ModDbPageMetadata
             {
                 Url = modDbAddonUrl,
                 Added = DateTimeOffset.ParseExact(
@@ -48,8 +48,6 @@ public partial class GetModDbAddonMetadata(CurlUtility curlUtility)
                     provider: CultureInfo.InvariantCulture
                 ),
                 Filename = modDbAddonMetadataDict["Filename"],
-                // Licence = modDbAddonMetadataDict["Licence"],
-                // Location = modDbAddonMetadataDict["Location"],
                 Md5Hash = modDbAddonMetadataDict["MD5 Hash"],
                 Size = long.Parse(
                     SizeRx().Match(modDbAddonMetadataDict["Size"]).Groups[1].Value,
@@ -69,10 +67,7 @@ public partial class GetModDbAddonMetadata(CurlUtility curlUtility)
                     ),
                 Uploader = modDbAddonMetadataDict["Uploader"],
             };
-        }
-        catch (ModDbBotDetectedException)
-        {
-            throw;
+            return modDbPageMetadata;
         }
         catch (Exception e)
         {

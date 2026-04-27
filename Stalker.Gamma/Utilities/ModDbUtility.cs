@@ -1,8 +1,13 @@
 using System.Text.RegularExpressions;
+using Stalker.Gamma.GammaInstallerServices;
 
 namespace Stalker.Gamma.Utilities;
 
-public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlUtility)
+public partial class ModDbUtility(
+    MirrorUtility mirrorUtility,
+    CurlUtility curlUtility,
+    GetDbolicalUrl getDbolicalUrlSvc
+)
 {
     /// <summary>
     /// Downloads from ModDB using curl.
@@ -59,17 +64,14 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
                 parentPath.Create();
             }
 
-            await curlUtility.DownloadFileAsync(
+            var dbolicalLink = await getDbolicalUrlSvc.GetDbolicalUrlAsync(
                 downloadLink,
-                parentPath?.FullName ?? "./",
-                Path.GetFileName(output),
-                onProgress,
-                cancellationToken: cancellationToken
+                cancellationToken
             );
 
-            if (await IsBadMirrorAsync(output, cancellationToken))
+            // if bad mirror
+            if (string.IsNullOrWhiteSpace(dbolicalLink))
             {
-                // retry download with a different mirror
                 await GetModDbLinkCurl(
                     url,
                     output,
@@ -80,6 +82,16 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
                     excludeMirrors: [.. excludeMirrors ?? [], mirror]
                 );
             }
+            else
+            {
+                await curlUtility.DownloadFileAsync(
+                    dbolicalLink,
+                    parentPath?.FullName ?? "./",
+                    Path.GetFileName(output),
+                    onProgress,
+                    cancellationToken: cancellationToken
+                );
+            }
 
             return mirror;
         }
@@ -87,42 +99,6 @@ public partial class ModDbUtility(MirrorUtility mirrorUtility, CurlUtility curlU
         {
             throw new ModDbUtilityException("Error downloading from ModDB", e);
         }
-    }
-
-    /// <summary>
-    /// Read the first byte of the file to determine if it's a bad mirror
-    /// </summary>
-    /// <param name="pathToArchive"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    private static async Task<bool> IsBadMirrorAsync(
-        string pathToArchive,
-        CancellationToken cancellationToken = default
-    )
-    {
-        // hex for character <
-        // <!DOCTYPE html>
-        const int badByte = 0x3C;
-        await using var fs = File.OpenRead(pathToArchive);
-        // the download size for a bad mirror is an HTML page ~5kb, so we know it's bad.
-        // check if the size is less than 10kb to give us wiggle room
-        if (fs.Length > 10000)
-        {
-            return false;
-        }
-        fs.Seek(0, SeekOrigin.Begin);
-        var readByte = fs.ReadByte();
-        if (readByte == badByte)
-        {
-            fs.Seek(0, SeekOrigin.Begin);
-            using var sr = new StreamReader(fs);
-            var contents = await sr.ReadToEndAsync(cancellationToken);
-            if (contents.Contains("An error has occurred loading the file mirror"))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     [GeneratedRegex("""window.location.href="(.+)";""")]
