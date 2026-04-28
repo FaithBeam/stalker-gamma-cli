@@ -127,7 +127,7 @@ internal static class ArgumentsBuilderExtensions
     [
         "chrome145",
         "chrome142",
-        "firefox147",
+        // "firefox147",
         "safari2601",
     ];
 
