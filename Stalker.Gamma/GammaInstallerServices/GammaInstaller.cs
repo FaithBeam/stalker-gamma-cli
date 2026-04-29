@@ -24,6 +24,7 @@ public class GammaInstallerArgs
     public bool Minimal { get; set; }
     public bool Offline { get; set; }
     public bool PreserveUserLtx { get; set; }
+    public bool PreserveMcmSettings { get; set; }
     public string? ModPackMakerPath { get; set; }
     public string? ModListPath { get; set; }
 }
@@ -34,6 +35,7 @@ public class InstallUpdatesArgs
     public required string Gamma { get; set; }
     public required string Cache { get; set; }
     public bool PreserveUserLtx { get; set; }
+    public bool PreserveMcmSettings { get; set; }
     public string? Mo2Version { get; set; }
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
@@ -51,7 +53,8 @@ public class GammaInstaller(
     IHttpClientFactory hcf,
     PowerShellCmdBuilder powerShellCmdBuilder,
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
-    BackupUserLtxService backupUserLtxService
+    PreserveUserLtxSettingsService preserveUserLtxSettingsService,
+    PreserveMcmSettings preserveMcmSettings
 )
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -81,7 +84,15 @@ public class GammaInstaller(
 
         if (args.PreserveUserLtx)
         {
-            await backupUserLtxService.ReadUserLtxAsync(args.Anomaly, args.CancellationToken);
+            await preserveUserLtxSettingsService.ReadUserLtxAsync(
+                args.Anomaly,
+                args.CancellationToken
+            );
+        }
+
+        if (args.PreserveMcmSettings)
+        {
+            await preserveMcmSettings.ReadAxrOptionsAsync(args.Gamma, args.CancellationToken);
         }
 
         var modpackMakerTxt = await GetModpackMakerTxt(args);
@@ -271,9 +282,15 @@ public class GammaInstaller(
         // user ltx
         if (args.PreserveUserLtx)
         {
-            await backupUserLtxService.WriteUserLtxAsync(args.CancellationToken);
+            await preserveUserLtxSettingsService.WriteUserLtxAsync(args.CancellationToken);
         }
         await UserLtxForceBorderless.ForceBorderless(args.Anomaly);
+
+        // MCM settings
+        if (args.PreserveMcmSettings)
+        {
+            await preserveMcmSettings.WriteAxrOptionsAsync(args.CancellationToken);
+        }
 
         if (!args.Offline)
         {
@@ -383,7 +400,15 @@ public class GammaInstaller(
 
         if (args.PreserveUserLtx)
         {
-            await backupUserLtxService.ReadUserLtxAsync(args.Anomaly, args.CancellationToken);
+            await preserveUserLtxSettingsService.ReadUserLtxAsync(
+                args.Anomaly,
+                args.CancellationToken
+            );
+        }
+
+        if (args.PreserveMcmSettings)
+        {
+            await preserveMcmSettings.ReadAxrOptionsAsync(args.Gamma, args.CancellationToken);
         }
 
         var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
@@ -527,9 +552,15 @@ public class GammaInstaller(
         // user ltx
         if (args.PreserveUserLtx)
         {
-            await backupUserLtxService.WriteUserLtxAsync(args.CancellationToken);
+            await preserveUserLtxSettingsService.WriteUserLtxAsync(args.CancellationToken);
         }
         await UserLtxForceBorderless.ForceBorderless(args.Anomaly);
+
+        // MCM settings
+        if (args.PreserveMcmSettings)
+        {
+            await preserveMcmSettings.WriteAxrOptionsAsync(args.CancellationToken);
+        }
 
         // mod organizer
         await downloadModOrganizerService.DownloadAsync(

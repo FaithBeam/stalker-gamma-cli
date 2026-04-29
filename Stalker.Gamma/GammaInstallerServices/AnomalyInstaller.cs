@@ -34,51 +34,77 @@ public class AnomalyInstaller(
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
     {
-        if (
-            (!File.Exists(DownloadPathZstd) && !File.Exists(DownloadPath))
-            || (
-                File.Exists(DownloadPath)
-                && await HashUtils.HashFile(
-                    DownloadPath,
-                    HashAlgorithmName.MD5,
-                    pct => OnProgress(GammaProgressType.CheckMd5, pct),
-                    cancellationToken
-                ) != StalkerAnomalyMd5
-            )
-        )
+        try
         {
-            await _modDbUtility.GetModDbLinkCurl(
-                StalkerAnomalyUrl,
-                DownloadPath,
-                pct => OnProgress(GammaProgressType.Download, pct),
-                cancellationToken: cancellationToken
+            if (
+                (!File.Exists(DownloadPathZstd) && !File.Exists(DownloadPath))
+                || (
+                    File.Exists(DownloadPath)
+                    && await HashUtils.HashFile(
+                        DownloadPath,
+                        HashAlgorithmName.MD5,
+                        pct => OnProgress(GammaProgressType.CheckMd5, pct),
+                        cancellationToken
+                    ) != StalkerAnomalyMd5
+                )
+            )
+            {
+                await _modDbUtility.GetModDbLinkCurl(
+                    StalkerAnomalyUrl,
+                    DownloadPath,
+                    pct => OnProgress(GammaProgressType.Download, pct),
+                    cancellationToken: cancellationToken
+                );
+                Downloaded = true;
+            }
+        }
+        catch (Exception e)
+        {
+            throw new AnomalyInstallerException(
+                $"""
+                Error downloading Stalker Anomaly
+                Exception Message: {e.Message}
+                """,
+                e
             );
-            Downloaded = true;
         }
     }
 
     public virtual async Task ExtractAsync(CancellationToken cancellationToken = default)
     {
-        // TODO: This likely needs an extra extract on Windows
-        if (File.Exists(DownloadPathZstd))
+        try
         {
-            await _archiveUtility.ExtractAsync(
-                DownloadPathZstd,
-                ExtractPath,
-                pct => OnProgress(GammaProgressType.Extract, pct),
-                ct: cancellationToken
+            // TODO: This likely needs an extra extract on Windows
+            if (File.Exists(DownloadPathZstd))
+            {
+                await _archiveUtility.ExtractAsync(
+                    DownloadPathZstd,
+                    ExtractPath,
+                    pct => OnProgress(GammaProgressType.Extract, pct),
+                    ct: cancellationToken
+                );
+            }
+            else
+            {
+                await _archiveUtility.ExtractAsync(
+                    DownloadPath,
+                    ExtractPath,
+                    pct => OnProgress(GammaProgressType.Extract, pct),
+                    ct: cancellationToken
+                );
+            }
+            _progress.IncrementCompletedMods();
+        }
+        catch (Exception e)
+        {
+            throw new AnomalyInstallerException(
+                $"""
+                Error extracting Stalker Anomaly
+                Exception Message: {e.Message}
+                """,
+                e
             );
         }
-        else
-        {
-            await _archiveUtility.ExtractAsync(
-                DownloadPath,
-                ExtractPath,
-                pct => OnProgress(GammaProgressType.Extract, pct),
-                ct: cancellationToken
-            );
-        }
-        _progress.IncrementCompletedMods();
     }
 
     public bool Downloaded { get; set; }

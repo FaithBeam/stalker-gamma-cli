@@ -34,6 +34,7 @@ public class FullInstallCmd(
     /// <param name="minimal">Delete cache files after extracting. Could be useful for space constrained devices but increases the chance of installation failure and will make updates much slower. This will take about ~100GB.</param>
     /// <param name="offline">Perform an offline install from cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
+    /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
@@ -52,6 +53,7 @@ public class FullInstallCmd(
         bool minimal = false,
         bool offline = false,
         bool preserveUserSettings = false,
+        bool preserveMcmSettings = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
@@ -121,6 +123,7 @@ public class FullInstallCmd(
                     ModPackMakerPath = modPackMakerPath,
                     ModListPath = modListPath,
                     PreserveUserLtx = preserveUserSettings,
+                    PreserveMcmSettings = preserveMcmSettings,
                 }
             );
             _logger.Information("Install finished");

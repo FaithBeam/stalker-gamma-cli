@@ -175,6 +175,7 @@ public class UpdateCmds(
     /// <param name="verbose"></param>
     /// <param name="minimal"></param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
+    /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="mo2Version"></param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task Apply(
@@ -182,6 +183,7 @@ public class UpdateCmds(
         bool verbose = false,
         bool minimal = false,
         bool preserveUserSettings = false,
+        bool preserveMcmSettings = false,
         [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
@@ -212,6 +214,7 @@ public class UpdateCmds(
                     Mo2Version = mo2Version,
                     Minimal = minimal,
                     PreserveUserLtx = preserveUserSettings,
+                    PreserveMcmSettings = preserveMcmSettings,
                 }
             );
             _logger.Information("Update finished");

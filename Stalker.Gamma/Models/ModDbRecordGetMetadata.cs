@@ -54,7 +54,7 @@ public class ModDbRecordGetMetadata(
                 Downloaded = true;
             }
         }
-        catch (Exception e) when (e is not ModDbBotDetectedException)
+        catch (Exception e)
         {
             throw new ModDbRecordException(
                 $"""

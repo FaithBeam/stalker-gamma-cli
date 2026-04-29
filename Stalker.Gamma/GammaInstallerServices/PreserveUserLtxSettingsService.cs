@@ -1,6 +1,6 @@
 namespace Stalker.Gamma.GammaInstallerServices;
 
-public class BackupUserLtxService
+public class PreserveUserLtxSettingsService
 {
     public async Task ReadUserLtxAsync(string anomalyPath, CancellationToken ct = default)
     {
