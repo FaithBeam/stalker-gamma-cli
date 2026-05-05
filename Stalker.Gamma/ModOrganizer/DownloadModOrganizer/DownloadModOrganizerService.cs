@@ -113,7 +113,7 @@ public class DownloadModOrganizerService(
         Directory.CreateDirectory(cachePath);
         Directory.CreateDirectory(extractPath);
 
-        var hc = hcf.CreateClient("githubDlArchive");
+        var hc = hcf.CreateClient("dlArchive");
         var getReleaseByTagResponse = await hc.GetAsync(
             $"https://api.github.com/repos/ModOrganizer2/modorganizer/releases/tags/{version}",
             cancellationToken

@@ -4,9 +4,9 @@ namespace stalker_gamma_cli.Utilities;
 
 public static class LogAndExitOnDependencyError
 {
-    public static void Check(UtilitiesReady utilitiesReady, ILogger logger)
+    public static async Task Check(UtilitiesReady utilitiesReady, ILogger logger)
     {
-        if (!utilitiesReady.IsReady)
+        if (!await utilitiesReady.IsReady())
         {
             logger.Error(
                 """

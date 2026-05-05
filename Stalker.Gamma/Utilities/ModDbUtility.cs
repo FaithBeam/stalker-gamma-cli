@@ -1,115 +1,99 @@
 using System.Text.RegularExpressions;
+using Polly;
+using Polly.Retry;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.Utilities;
 
 public partial class ModDbUtility(
     MirrorUtility mirrorUtility,
-    CurlUtility curlUtility,
+    PythonApiProxy pythonApiProxy,
     GetDbolicalUrl getDbolicalUrlSvc
 )
 {
     /// <summary>
     /// Downloads from ModDB using curl.
     /// </summary>
-    public async Task<string?> GetModDbLinkCurl(
+    public async Task GetModDbLinkCurl(
         string url,
         string output,
         Action<double> onProgress,
-        bool invalidateMirrorCache = false,
-        int retryCount = 0,
-        CancellationToken cancellationToken = default,
-        params string[]? excludeMirrors
+        CancellationToken cancellationToken = default
     )
     {
-        if (retryCount > 3)
+        List<string> visitedMirrors = [];
+
+        var diabolicalResilience = new ResiliencePipelineBuilder()
+            .AddRetry(
+                new RetryStrategyOptions
+                {
+                    MaxRetryAttempts = 3,
+                    UseJitter = true,
+                    OnRetry = args =>
+                    {
+                        return ValueTask.CompletedTask;
+                    },
+                }
+            )
+            .Build();
+
+        string? diabolicalLink = null;
+        await diabolicalResilience.ExecuteAsync(
+            async ct => diabolicalLink = await GetCdnLinkAsync(url, visitedMirrors, ct: ct),
+            cancellationToken
+        );
+
+        // if bad mirror
+        if (string.IsNullOrWhiteSpace(diabolicalLink))
         {
-            throw new ModDbUtilityException(
-                $"""
-                Too many retries
-                {url}
-                Mirrors tried: {string.Join(", ", excludeMirrors ?? [])}
-                """
-            );
+            throw new ModDbUtilityException("Failed to get diabolical link");
         }
 
-        try
+        var parentPath = Directory.GetParent(output);
+        if (parentPath is not null && !parentPath.Exists)
         {
-            var mirrorTask = Task.Run(
-                () =>
-                    mirrorUtility.GetMirrorAsync(
-                        $"{url}/all",
-                        invalidateMirrorCache,
-                        excludeMirrors: excludeMirrors ?? [],
-                        cancellationToken: cancellationToken
-                    ),
-                cancellationToken
-            );
-            var getContentTask = Task.Run(
-                () => curlUtility.GetStringAsync(url, cancellationToken),
-                cancellationToken
-            );
-            var results = await Task.WhenAll(mirrorTask, getContentTask);
-
-            var (mirror, content) = (results[0], results[1]);
-            var link = WindowLocationRx().Match(content).Groups[1].Value;
-            var linkSplit = link.Split('/');
-
-            linkSplit[6] = mirror;
-
-            var downloadLink = string.Join("/", linkSplit);
-            var parentPath = Directory.GetParent(output);
-            if (parentPath is not null && !parentPath.Exists)
-            {
-                parentPath.Create();
-            }
-
-            var dbolicalLink = await getDbolicalUrlSvc.GetDbolicalUrlAsync(
-                downloadLink,
-                cancellationToken
-            );
-
-            // if bad mirror
-            if (string.IsNullOrWhiteSpace(dbolicalLink))
-            {
-                await GetModDbLinkCurl(
-                    url,
-                    output,
-                    onProgress,
-                    invalidateMirrorCache,
-                    retryCount + 1,
-                    cancellationToken,
-                    excludeMirrors: [.. excludeMirrors ?? [], mirror]
-                );
-            }
-            else
-            {
-                await curlUtility.DownloadFileAsync(
-                    dbolicalLink,
-                    parentPath?.FullName ?? "./",
-                    Path.GetFileName(output),
-                    onProgress,
-                    cancellationToken: cancellationToken
-                );
-            }
-
-            return mirror;
+            parentPath.Create();
         }
-        catch (Exception e)
-        {
-            throw new ModDbUtilityException("Error downloading from ModDB", e);
-        }
+
+        await pythonApiProxy.DownloadFileAsync(
+            diabolicalLink,
+            parentPath?.FullName ?? "./",
+            Path.GetFileName(output),
+            onProgress,
+            cancellationToken: cancellationToken
+        );
+    }
+
+    private async Task<string?> GetCdnLinkAsync(
+        string url,
+        List<string> mirrorsVisited,
+        CancellationToken ct = default
+    )
+    {
+        var mirrorTask = mirrorUtility.GetMirrorAsync(
+            $"{url}/all",
+            excludeMirrors: mirrorsVisited,
+            cancellationToken: ct
+        );
+        var getContentTask = pythonApiProxy.GetStringAsync(url, ct);
+        var results = await Task.WhenAll(mirrorTask, getContentTask);
+
+        var (mirror, content) = (results[0], results[1]);
+        var link = WindowLocationRx().Match(content).Groups[1].Value;
+        var linkSplit = link.Split('/');
+
+        linkSplit[6] = mirror;
+
+        var downloadLink = string.Join("/", linkSplit);
+
+        mirrorsVisited.Add(mirror);
+
+        return await getDbolicalUrlSvc.GetDiabolicalUrlAsync(downloadLink, ct);
     }
 
     [GeneratedRegex("""window.location.href="(.+)";""")]
     private static partial Regex WindowLocationRx();
 }
 
-public class ModDbUtilityException : Exception
-{
-    public ModDbUtilityException(string msg)
-        : base(msg) { }
-
-    public ModDbUtilityException(string msg, Exception innerException)
-        : base(msg, innerException) { }
-}
+public class ModDbUtilityException(string msg) : Exception(msg);

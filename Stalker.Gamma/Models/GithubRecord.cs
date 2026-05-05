@@ -25,7 +25,7 @@ public class GithubRecord(
     public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
     private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
-    private readonly HttpClient _hc = hcf.CreateClient("githubDlArchive");
+    private readonly HttpClient _hc = hcf.CreateClient("dlArchive");
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
     private readonly string _outputDirName = outputDirName;

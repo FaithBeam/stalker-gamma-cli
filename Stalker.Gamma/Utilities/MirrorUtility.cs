@@ -1,9 +1,10 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
+using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.Utilities;
 
-public partial class MirrorUtility(CurlUtility curlUtility)
+public partial class MirrorUtility(PythonApiProxy pythonApiProxy)
 {
     private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);
@@ -12,7 +13,7 @@ public partial class MirrorUtility(CurlUtility curlUtility)
         string mirrorUrl,
         bool invalidateCache = false,
         CancellationToken cancellationToken = default,
-        params string[] excludeMirrors
+        params IEnumerable<string> excludeMirrors
     )
     {
         await Lock.WaitAsync(cancellationToken);
@@ -49,7 +50,7 @@ public partial class MirrorUtility(CurlUtility curlUtility)
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await curlUtility.GetStringAsync(mirrorUrl, cancellationToken);
+        var mirrorsHtml = await pythonApiProxy.GetStringAsync(mirrorUrl, cancellationToken);
         if (mirrorsHtml.Contains("Just a moment..."))
         {
             throw new CloudflareChallengeException(

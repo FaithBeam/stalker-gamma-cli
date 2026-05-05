@@ -7,24 +7,13 @@ using stalker_gamma_cli.Utilities;
 namespace stalker_gamma_cli.Commands;
 
 [RegisterCommands("debug")]
-public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
+public class Debug(ILogger logger, CliSettings cliSettings)
 {
     /// <summary>
     /// Open the logs folder.
     /// </summary>
     public void Logs()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
 
         var stalkerGammaLogsPath = Path.Join(
@@ -43,18 +32,6 @@ public class Debug(ILogger logger, CliSettings cliSettings, UtilitiesReady utili
     /// <returns></returns>
     public async Task HashInstall(CancellationToken cancellationToken)
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
         var anomaly = cliSettings.ActiveProfile!.Anomaly;
         var gamma = cliSettings.ActiveProfile!.Gamma;

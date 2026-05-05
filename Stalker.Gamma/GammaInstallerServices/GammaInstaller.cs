@@ -6,6 +6,7 @@ using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
@@ -183,16 +184,12 @@ public class GammaInstaller(
         var brokenAddons = new ConcurrentBag<IDownloadableRecord>();
 
         // Batch #1
-        var mainBatch = Task.Run(
-            async () =>
-                await ProcessAddonsAsync(
-                    [anomalyRecord, .. groupedAddonRecords],
-                    brokenAddons,
-                    args.Minimal,
-                    args.Offline,
-                    cancellationToken: args.CancellationToken
-                ),
-            args.CancellationToken
+        var mainBatch = ProcessAddonsAsync(
+            [anomalyRecord, .. groupedAddonRecords],
+            brokenAddons,
+            args.Minimal,
+            args.Offline,
+            cancellationToken: args.CancellationToken
         );
         var teivazDlTask = Task.Run(
             async () =>
@@ -466,15 +463,11 @@ public class GammaInstaller(
 
         var brokenAddons = new ConcurrentBag<IDownloadableRecord>();
 
-        var mainBatch = Task.Run(
-            async () =>
-                await ProcessAddonsAsync(
-                    groupedAddonRecords,
-                    brokenAddons,
-                    args.Minimal,
-                    cancellationToken: args.CancellationToken
-                ),
-            args.CancellationToken
+        var mainBatch = ProcessAddonsAsync(
+            groupedAddonRecords,
+            brokenAddons,
+            args.Minimal,
+            cancellationToken: args.CancellationToken
         );
         var teivazDlTask = Task.Run(
             async () =>

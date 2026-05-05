@@ -16,6 +16,11 @@
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.6" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Resilience" Version="10.5.0" />
+    <PackageReference Include="Microsoft.Kiota.Bundle" Version="1.22.1" />
     <PackageReference Include="WindowsShortcutFactory" Version="1.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="OpenApi\" />
   </ItemGroup>
 </Project>

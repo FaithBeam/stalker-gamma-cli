@@ -10,18 +10,6 @@ DOTNET_INSTALL_URL = https://dot.net/v1/dotnet-install.sh
 DOTNET_INSTALL_SCRIPT_PATH = $(BUILD_DIR)/dotnet-install.sh
 DOTNET_INSTALL_PATH = $(BUILD_DIR)/.dotnet
 
-CURL_IMPERSONATE_VERSION = v1.5.1
-ifeq ($(ARCH),x64)
-    CURL_ARCH := x86_64
-else ifeq ($(ARCH),arm64)
-    CURL_ARCH := aarch64
-else
-    CURL_ARCH := unknown
-endif
-CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
-CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-linux-gnu.tar.gz
-CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/curl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-linux-gnu.tar.gz
-
 7Z_VERSION = 2501
 ifeq ($(ARCH),x64)
     7Z_ARCH := x64
@@ -40,11 +28,6 @@ STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
 build:
 	mkdir $(BUILD_DIR)
-
-	# curl-impersonate
-	mkdir $(CURL_BUILD_DIR)
-	curl -Lo $(CURL_IMPERSONATE_ARCHIVE) $(CURL_IMPERSONATE_DL_URL)
-	tar -xvzf $(CURL_IMPERSONATE_ARCHIVE) -C $(CURL_BUILD_DIR)
 
 	# 7zip
 	mkdir $(7Z_BUILD_DIR)
@@ -70,8 +53,6 @@ build:
 
 	# copy dependency artifacts to stalker-gamma-cli
 	mkdir $(STALKER_RESOURCES_DIR)
-	curl -Lo $(STALKER_RESOURCES_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
-	cp $(CURL_BUILD_DIR)/curl-impersonate $(STALKER_RESOURCES_DIR)/
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 

@@ -33,7 +33,7 @@ public class UpdateCmds(
     [Command("check")]
     public async Task CheckUpdates(CancellationToken cancellationToken = default)
     {
-        LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
+        await LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 
@@ -188,7 +188,7 @@ public class UpdateCmds(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
-        LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
+        await LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 

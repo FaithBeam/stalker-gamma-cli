@@ -64,7 +64,7 @@ public class FullInstallCmd(
         [Hidden] string stalkerAnomalyArchiveMd5 = "d6bce51a4e6d98f9610ef0aa967ba964"
     )
     {
-        LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
+        await LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
 
@@ -80,8 +80,7 @@ public class FullInstallCmd(
             cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
             cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
             cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
-            stalkerAnomalyModdbUrl,
-            stalkerAnomalyArchiveMd5,
+            cliSettings.ActiveProfile.PythonApiUrl,
             out var anomaly,
             out var gamma,
             out var cache,
@@ -172,8 +171,7 @@ public class FullInstallCmd(
         string gammaLargeFilesRepoBranch,
         string teivazAnomalyGunslingerRepoUrl,
         string teivazAnomalyGunslingerRepoBranch,
-        string stalkerAnomalyModdbUrl,
-        string stalkerAnomalyArchiveMd5,
+        string pythonApiUrl,
         out string anomaly,
         out string gamma,
         out string cache,
@@ -198,6 +196,7 @@ public class FullInstallCmd(
         stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
         stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
         stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
+        stalkerGammaSettings.PythonApiUrl = pythonApiUrl;
     }
 
     private void ConfigurePowerShellSettings(

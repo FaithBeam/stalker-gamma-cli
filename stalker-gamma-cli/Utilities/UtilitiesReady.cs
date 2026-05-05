@@ -1,26 +1,27 @@
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Utilities;
 
 public class UtilitiesReady(
-    CurlUtility curlUtility,
+    PythonApiProxy pythonApiProxy,
     TarUtility tarUtility,
     UnzipUtility unzipUtility,
     SevenZipUtility sevenZipUtility
 )
 {
-    public bool IsReady =>
-        curlUtility.Ready
+    public async Task<bool> IsReady() =>
+        await pythonApiProxy.Ready()
         && GitUtility.Ready
         && sevenZipUtility.Ready
         && (OperatingSystem.IsWindows() || tarUtility.Ready)
         && (OperatingSystem.IsWindows() || unzipUtility.Ready);
 
-    public string NotReadyReason =>
-        IsReady
+    public async Task<string> NotReadyReason() =>
+        await IsReady()
             ? ""
             : $"""
-                Curl: {(curlUtility.Ready ? "Ready" : "Not Ready")}
+                Curl: {(await pythonApiProxy.Ready() ? "Ready" : "Not Ready")}
                 Git: {(GitUtility.Ready ? "Ready" : "Not Ready")}
                 7z: {(sevenZipUtility.Ready ? "Ready" : "Not Ready")}
                 Tar: {(tarUtility.Ready ? "Ready" : "Not Ready")}

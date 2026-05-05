@@ -5,6 +5,7 @@ using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
@@ -16,7 +17,7 @@ public static class ServiceCollectionExtensions
     {
         s.AddHttpClient()
             .AddHttpClient(
-                "githubDlArchive",
+                "dlArchive",
                 client =>
                 {
                     client.DefaultRequestHeaders.Add("User-Agent", "stalker-gamma-clone/1.0");
@@ -31,6 +32,8 @@ public static class ServiceCollectionExtensions
             );
         s.AddSingleton<StalkerGammaSettings>().AddSingleton<GammaProgress, GammaProgress>();
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
+            .AddScoped<PythonApiClientFactory>()
+            .AddScoped<GithubClientFactory>()
             .AddScoped<ArchiveUtility>()
             .AddScoped<SevenZipUtility>()
             .AddScoped<TarUtility>()
@@ -38,7 +41,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<GitUtility>()
             .AddScoped<ModDbUtility>()
             .AddScoped<MirrorUtility>()
-            .AddScoped<CurlUtility>()
+            .AddScoped<PythonApiProxy>()
             .AddScoped<GetDbolicalUrl>()
             .AddScoped<PreserveMcmSettings>()
             .AddScoped<PreserveUserLtxSettingsService>()

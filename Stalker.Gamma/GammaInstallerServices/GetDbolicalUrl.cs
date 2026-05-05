@@ -1,17 +1,14 @@
-using System.Text.RegularExpressions;
-using Stalker.Gamma.Utilities;
+using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
-public partial class GetDbolicalUrl(CurlUtility curlUtility)
+public class GetDbolicalUrl(PythonApiProxy pythonApiProxy)
 {
-    public async Task<string?> GetDbolicalUrlAsync(string moddbMirrorUrl, CancellationToken ct)
+    public async Task<string?> GetDiabolicalUrlAsync(string moddbMirrorUrl, CancellationToken ct)
     {
-        var headers = await curlUtility.GetHeadersAsync(moddbMirrorUrl, ct);
-        var location = LocationRx().Match(headers.StdOut).Groups["location"].Value;
-        return location;
+        var headers = await pythonApiProxy.GetHeadersAsync(moddbMirrorUrl, ct);
+        return headers.TryGetValue("location", out var locationValue)
+            ? locationValue.ToString()
+            : null;
     }
-
-    [GeneratedRegex("^location: (?<location>.*)$", RegexOptions.Multiline)]
-    private partial Regex LocationRx();
 }

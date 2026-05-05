@@ -43,7 +43,7 @@ public class AnomalyInstallCmd(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
-        if (!utilitiesReady.IsReady)
+        if (!await utilitiesReady.IsReady())
         {
             _logger.Error(
                 """
@@ -59,10 +59,6 @@ public class AnomalyInstallCmd(
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         var cache = _cliSettings.ActiveProfile!.Cache;
         var resourcesPath = Path.Join(Path.GetDirectoryName(AppContext.BaseDirectory), "resources");
-        stalkerGammaSettings.PathToCurl = Path.Join(
-            resourcesPath,
-            OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate"
-        );
         stalkerGammaSettings.PathTo7Z = Path.Join(
             resourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
@@ -101,7 +97,7 @@ public class AnomalyInstallCmd(
     [Command("check")]
     public async Task CheckAnomaly(CancellationToken cancellationToken)
     {
-        if (!utilitiesReady.IsReady)
+        if (!await utilitiesReady.IsReady())
         {
             _logger.Error(
                 """
@@ -143,17 +139,6 @@ public class AnomalyInstallCmd(
     /// </summary>
     public void PurgeShaderCache()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomalyAppDataShadersDir = Path.Join(
             _cliSettings.ActiveProfile!.Anomaly,
@@ -177,17 +162,6 @@ public class AnomalyInstallCmd(
     /// </summary>
     public void DeleteReshade()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomalyBinDir = Path.Join(_cliSettings.ActiveProfile!.Anomaly, "bin");
         List<string> reshadeFiles =
