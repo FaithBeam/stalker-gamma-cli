@@ -68,11 +68,18 @@ $pathToProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli") "stalker-g
 dotnet publish -c Release $pathToProject -o $stalkerCliDir -r $cfg.DotnetRid -p:AssemblyVersion=$Version
 #endregion
 
+#region python-api
+$pyinstallerDistDir = Join-Path $buildDir "pyinstaller-dist"
+$pythonApiDir = Join-Path $repoRoot "python-api"
+pyinstaller --distpath $pyinstallerDistDir (Join-Path $pythonApiDir "main.spec")
+#endregion
+
 $stalkerCliResourceDir = Join-Path $stalkerCliDir "resources"
 New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
+Copy-Item -Path (Join-Path $pyinstallerDistDir "cloudscraper.exe") -Destination (Join-Path $stalkerCliResourceDir "cloudscraper.exe")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
 

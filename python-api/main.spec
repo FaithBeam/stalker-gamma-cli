@@ -14,6 +14,8 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+a.scripts.insert(0, ('X jit=1', '', 'OPTION'))
+
 pyz = PYZ(a.pure)
 
 exe = EXE(

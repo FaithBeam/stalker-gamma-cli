@@ -68,7 +68,7 @@ public class GammaInstaller(
         {
             _pythonServerReady = nxt;
         });
-        await pythonServerService.StartAsync();
+        await pythonServerService.StartAsync(args.CancellationToken);
 
         args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
