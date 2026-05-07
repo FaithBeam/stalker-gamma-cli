@@ -19,6 +19,9 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
+PYTHON_API_DIR = $(ROOT)/python-api
+PYINSTALLER_DIST_DIR = $(BUILD_DIR)/pyinstaller-dist
+
 build:
 	mkdir $(BUILD_DIR)
 
@@ -44,9 +47,13 @@ build:
 	rm $(STALKER_GAMMA_BUILD_DIR)/*.pdb
 	rm -rf $(STALKER_GAMMA_BUILD_DIR)/*.dSYM
 
+	# build python-api cloudscraper executable
+	pyinstaller --distpath $(PYINSTALLER_DIST_DIR) $(PYTHON_API_DIR)/main.spec
+
 	# copy dependency artifacts to stalker-gamma-cli
 	mkdir $(STALKER_RESOURCES_DIR)
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
+	cp $(PYINSTALLER_DIST_DIR)/cloudscraper $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:
