@@ -70,8 +70,17 @@ public class PythonApiProxy(
         return response.Content!;
     }
 
-    public async Task<bool> Ready() =>
-        await _pythonApiClient.Readyz.GetAsReadyzGetResponseAsync() is not null;
+    public async Task<bool> Ready()
+    {
+        try
+        {
+            return await _pythonApiClient.Readyz.GetAsReadyzGetResponseAsync() is not null;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     private readonly PythonApiClient.PythonApiClient _pythonApiClient =
         pythonApiClientFactory.Create(settings.PythonApiUrl);

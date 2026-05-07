@@ -22,4 +22,6 @@ public class StalkerGammaSettings
     public string PathTo7Z = OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
     public string PathToTar = "tar";
     public string PythonApiUrl { get; set; } = "http://localhost:8000";
+    public string PythonServerPath { get; set; } =
+        OperatingSystem.IsWindows() ? "cloudscraper.exe" : "cloudscraper";
 }

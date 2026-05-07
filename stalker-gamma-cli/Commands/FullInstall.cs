@@ -41,8 +41,6 @@ public class FullInstallCmd(
     /// <param name="debug"></param>
     /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
-    /// <param name="stalkerAnomalyModdbUrl">Escape hatch for Stalker Anomaly</param>
-    /// <param name="stalkerAnomalyArchiveMd5">The hash of the archive downloaded from --stalker-anomaly-moddb-url</param>
     public async Task FullInstall(
         CancellationToken cancellationToken,
         bool skipGithubDownloads = false,
@@ -59,9 +57,7 @@ public class FullInstallCmd(
         [Range(1, 20)] int? downloadThreads = null,
         [Hidden] bool debug = false,
         [Hidden] string? mo2Version = null,
-        [Hidden] long progressUpdateIntervalMs = 250,
-        [Hidden] string stalkerAnomalyModdbUrl = "https://www.moddb.com/downloads/start/277404",
-        [Hidden] string stalkerAnomalyArchiveMd5 = "d6bce51a4e6d98f9610ef0aa967ba964"
+        [Hidden] long progressUpdateIntervalMs = 250
     )
     {
         await LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
@@ -138,6 +134,7 @@ public class FullInstallCmd(
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
+            gammaInstaller.Dispose();
         }
     }
 

@@ -10,12 +10,13 @@ public class UtilitiesReady(
     SevenZipUtility sevenZipUtility
 )
 {
-    public async Task<bool> IsReady() =>
-        await pythonApiProxy.Ready()
-        && GitUtility.Ready
-        && sevenZipUtility.Ready
-        && (OperatingSystem.IsWindows() || tarUtility.Ready)
-        && (OperatingSystem.IsWindows() || unzipUtility.Ready);
+    public Task<bool> IsReady() =>
+        Task.FromResult(
+            GitUtility.Ready
+                && sevenZipUtility.Ready
+                && (OperatingSystem.IsWindows() || tarUtility.Ready)
+                && (OperatingSystem.IsWindows() || unzipUtility.Ready)
+        );
 
     public async Task<string> NotReadyReason() =>
         await IsReady()

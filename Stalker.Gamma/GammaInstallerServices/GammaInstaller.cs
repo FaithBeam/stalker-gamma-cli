@@ -55,13 +55,21 @@ public class GammaInstaller(
     PowerShellCmdBuilder powerShellCmdBuilder,
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
-    PreserveMcmSettings preserveMcmSettings
-)
+    PreserveMcmSettings preserveMcmSettings,
+    PythonServerService pythonServerService
+) : IDisposable
 {
     public IGammaProgress Progress { get; } = gammaProgress;
+    private bool _pythonServerReady;
 
     public virtual async Task FullInstallAsync(GammaInstallerArgs args)
     {
+        using var pythonServerReadyDisposable = pythonServerService.ReadySubject.Subscribe(nxt =>
+        {
+            _pythonServerReady = nxt;
+        });
+        await pythonServerService.StartAsync();
+
         args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
         args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
@@ -624,7 +632,13 @@ public class GammaInstaller(
         bool minimal = false,
         bool offline = false,
         CancellationToken cancellationToken = default
-    ) =>
+    )
+    {
+        // wait for python server to be ready
+        while (!_pythonServerReady)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+        }
         await Parallel.ForEachAsync(
             addons,
             new ParallelOptions { MaxDegreeOfParallelism = settings.DownloadThreads },
@@ -663,6 +677,13 @@ public class GammaInstaller(
                 }
             }
         );
+    }
 
     private readonly HttpClient _hc = hcf.CreateClient();
+
+    public void Dispose()
+    {
+        _hc.Dispose();
+        pythonServerService.Dispose();
+    }
 }

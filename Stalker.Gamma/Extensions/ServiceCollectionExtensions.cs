@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         s.AddSingleton<StalkerGammaSettings>().AddSingleton<GammaProgress, GammaProgress>();
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
             .AddScoped<PythonApiClientFactory>()
+            .AddSingleton<PythonServerService>()
             .AddScoped<GithubClientFactory>()
             .AddScoped<ArchiveUtility>()
             .AddScoped<SevenZipUtility>()
