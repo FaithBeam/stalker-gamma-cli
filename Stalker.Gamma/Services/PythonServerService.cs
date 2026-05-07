@@ -28,8 +28,6 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
             RedirectStandardError = true,
         };
         _process.EnableRaisingEvents = true;
-        _process.Start();
-            await Task.Delay(TimeSpan.FromSeconds(5), ct);
 
         while (!await _pythonApiProxy.Ready())
         {
