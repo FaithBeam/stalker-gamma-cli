@@ -29,20 +29,15 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
         };
         _process.EnableRaisingEvents = true;
         _process.Start();
+            await Task.Delay(TimeSpan.FromSeconds(5), ct);
 
-        await Task.Run(
-            async () =>
-            {
-                while (!await _pythonApiProxy.Ready())
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(1), ct);
-                }
-                ReadySubject.OnNext(true);
-                ReadySubject.OnCompleted();
-            },
-            ct
-        );
-
+        while (!await _pythonApiProxy.Ready())
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1), ct);
+        }
+        ReadySubject.OnNext(true);
+        ReadySubject.OnCompleted();
+        
         var stdOutTask = ReadStreamAsync(_process.StandardOutput, ct);
         var stdErrTask = ReadStreamAsync(_process.StandardError, ct);
 
