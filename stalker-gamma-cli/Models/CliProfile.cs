@@ -13,7 +13,8 @@ public partial class CliProfile
     public string Cache { get; set; } = Path.Join("gamma", "cache");
     public string Mo2Profile { get; set; } = "G.A.M.M.A";
     public int DownloadThreads { get; set; } = 2;
-    public string ModPackMakerUrl { get; set; } = "https://stalker-gamma.com/api/list";
+    public string ModPackMakerUrl { get; set; } =
+        "https://stalker-gamma.com/api/client/v1/mods/list";
     public string ModListUrl { get; set; } =
         "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt";
     public string GammaSetupRepoUrl { get; set; } = "https://github.com/Grokitach/gamma_setup";
