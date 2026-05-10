@@ -345,7 +345,7 @@ jobs:
   update-chocolatey:
     name: update-chocolatey
     runs-on: windows-latest
-    needs: [cli-windows, update-aur]
+    needs: [cli-windows]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
@@ -360,7 +360,7 @@ jobs:
   update-homebrew:
     name: update-homebrew
     runs-on: ubuntu-22.04
-    needs: [cli-macos-x64, cli-macos-arm64, update-chocolatey]
+    needs: [cli-macos-x64, cli-macos-arm64]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout source repo
