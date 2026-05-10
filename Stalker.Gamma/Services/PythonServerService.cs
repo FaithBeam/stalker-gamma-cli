@@ -28,6 +28,7 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
             RedirectStandardError = true,
         };
         _process.EnableRaisingEvents = true;
+        _process.Start();
 
         while (!await _pythonApiProxy.Ready())
         {
@@ -35,11 +36,6 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
         }
         ReadySubject.OnNext(true);
         ReadySubject.OnCompleted();
-        
-        var stdOutTask = ReadStreamAsync(_process.StandardOutput, ct);
-        var stdErrTask = ReadStreamAsync(_process.StandardError, ct);
-
-        await Task.WhenAll(stdOutTask, stdErrTask);
     }
 
     public void Dispose()
