@@ -57,10 +57,6 @@ stalker-gamma update check
 stalker-gamma update apply
 ```
 
-## FPS / Steam Deck / Potato Mode Mod Lists
-
-[FPS / Steam Deck / Potato Mode Mod Lists](https://github.com/FaithBeam/stalker-gamma-cli/wiki/FPS-Config-%7C-Steam-Deck-%7C-Potato-Mode-Modlist)
-
 ## Build
 
 | Platform | Commands                       |
@@ -70,6 +66,10 @@ stalker-gamma update apply
 | macOS    | `cd build/mac && make build`   |
 
 Artifacts in the `build/stalker-gamma-cli` folder.
+
+## Troubleshooting
+
+[Troubleshooting wiki](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Troubleshooting)
 
 ## Development
 
