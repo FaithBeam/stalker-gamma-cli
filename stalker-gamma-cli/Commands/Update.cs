@@ -203,20 +203,18 @@ public class UpdateCmds(
 
         try
         {
-            await gammaInstaller.UpdateAsync(
-                new InstallUpdatesArgs
-                {
-                    Gamma = gamma,
-                    Anomaly = anomaly,
-                    Cache = cache,
-                    CancellationToken = cancellationToken,
-                    Mo2Profile = mo2Profile,
-                    Mo2Version = mo2Version,
-                    Minimal = minimal,
-                    PreserveUserLtx = preserveUserSettings,
-                    PreserveMcmSettings = preserveMcmSettings,
-                }
-            );
+            var updateArgs = GammaInstallerArgs
+                .Create(anomaly, gamma, cache)
+                .WithCancellationToken(cancellationToken)
+                .WithMo2Profile(mo2Profile)
+                .WithMinimal(minimal)
+                .WithPreserveUserLtx(preserveUserSettings)
+                .WithPreserveMcmSettings(preserveMcmSettings)
+                .Build();
+            updateArgs.GroupedAddonRecords =
+                await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);
+            gammaInstaller.BuildSpecialRepoRecords(updateArgs);
+            await gammaInstaller.InstallAsync(updateArgs);
             _logger.Information("Update finished");
         }
         catch (Exception e)

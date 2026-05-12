@@ -107,25 +107,23 @@ public class FullInstallCmd(
 
         try
         {
-            await gammaInstaller.FullInstallAsync(
-                new GammaInstallerArgs
-                {
-                    Anomaly = anomaly,
-                    Gamma = gamma,
-                    Cache = cache,
-                    Mo2Version = mo2Version,
-                    CancellationToken = cancellationToken,
-                    DownloadGithubArchives = !skipGithubDownloads,
-                    SkipExtractOnHashMatch = skipExtractOnHashMatch,
-                    Mo2Profile = mo2Profile,
-                    Minimal = minimal,
-                    Offline = offline,
-                    ModPackMakerPath = modPackMakerPath,
-                    ModListPath = modListPath,
-                    PreserveUserLtx = preserveUserSettings,
-                    PreserveMcmSettings = preserveMcmSettings,
-                }
-            );
+            var args = GammaInstallerArgs
+                .Create(anomaly, gamma, cache)
+                .WithCancellationToken(cancellationToken)
+                .WithDownloadGithubArchives(!skipGithubDownloads)
+                .WithSkipExtractOnHashMatch(skipExtractOnHashMatch)
+                .WithMo2Profile(mo2Profile)
+                .WithMinimal(minimal)
+                .WithOffline(offline)
+                .WithModPackMakerPath(modPackMakerPath)
+                .WithModListPath(modListPath)
+                .WithPreserveUserLtx(preserveUserSettings)
+                .WithPreserveMcmSettings(preserveMcmSettings)
+                .Build();
+            args.GroupedAddonRecords = await gammaInstaller.BuildGroupedAddonRecordsAsync(args);
+            args.AnomalyRecord = gammaInstaller.BuildAnomalyRecord(args);
+            gammaInstaller.BuildSpecialRepoRecords(args);
+            await gammaInstaller.InstallAsync(args);
             _logger.Information("Install finished");
         }
         catch (Exception e)
