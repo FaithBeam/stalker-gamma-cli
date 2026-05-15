@@ -63,23 +63,26 @@ public class ProgressLoggingService(ILogger logger)
 
         lock (_progressEventHashSetLock)
         {
-            var maxOperationLen = _progressEventHashSet.Max(x => x.Operation.Length);
-            var maxArchiveNameLen = _progressEventHashSet.Max(x => x.ArchiveName.Length);
-            var maxDownloadPathLen = _progressEventHashSet.Max(x => x.DownloadPath.Length);
-            var maxExtractPathLen = _progressEventHashSet.Max(x => x.ExtractPath.Length);
-            var maxUrlLen = _progressEventHashSet.Max(x => x.Url.Length);
-
-            foreach (var e in _progressEventHashSet)
+            if (_progressEventHashSet.Count > 0)
             {
-                logger.Verbose(
-                    "[{DateTime:yyyy-MM-dd HH:mm:ss}] Operation: {Operation} | Archive Name: {ArchiveName} | Download Path: {DownloadPath} | Extract Path: {ExtractPath} | Url: {Url}",
-                    e.TimeStamp,
-                    e.Operation.PadRight(maxOperationLen),
-                    e.ArchiveName.PadRight(maxArchiveNameLen),
-                    e.DownloadPath.PadRight(maxDownloadPathLen),
-                    e.ExtractPath.PadRight(maxExtractPathLen),
-                    e.Url.PadRight(maxUrlLen)
-                );
+                var maxOperationLen = _progressEventHashSet.Max(x => x.Operation.Length);
+                var maxArchiveNameLen = _progressEventHashSet.Max(x => x.ArchiveName.Length);
+                var maxDownloadPathLen = _progressEventHashSet.Max(x => x.DownloadPath.Length);
+                var maxExtractPathLen = _progressEventHashSet.Max(x => x.ExtractPath.Length);
+                var maxUrlLen = _progressEventHashSet.Max(x => x.Url.Length);
+
+                foreach (var e in _progressEventHashSet)
+                {
+                    logger.Verbose(
+                        "[{DateTime:yyyy-MM-dd HH:mm:ss}] Operation: {Operation} | Archive Name: {ArchiveName} | Download Path: {DownloadPath} | Extract Path: {ExtractPath} | Url: {Url}",
+                        e.TimeStamp,
+                        e.Operation.PadRight(maxOperationLen),
+                        e.ArchiveName.PadRight(maxArchiveNameLen),
+                        e.DownloadPath.PadRight(maxDownloadPathLen),
+                        e.ExtractPath.PadRight(maxExtractPathLen),
+                        e.Url.PadRight(maxUrlLen)
+                    );
+                }
             }
         }
 

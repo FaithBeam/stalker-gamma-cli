@@ -17,6 +17,7 @@ public class FullInstallCmd(
     CliSettings cliSettings,
     StalkerGammaSettings stalkerGammaSettings,
     GammaInstaller gammaInstaller,
+    OfflineGammaInstaller offlineGammaInstaller,
     PowerShellCmdBuilder powerShellCmdBuilder,
     UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
@@ -96,7 +97,10 @@ public class FullInstallCmd(
             cache
         );
 
+        IGammaInstaller installer = offline ? offlineGammaInstaller : gammaInstaller;
+
         SetUpLogging(
+            installer,
             verbose,
             debug,
             progressUpdateIntervalMs,
@@ -107,25 +111,22 @@ public class FullInstallCmd(
 
         try
         {
-            await gammaInstaller.FullInstallAsync(
-                new GammaInstallerArgs
-                {
-                    Anomaly = anomaly,
-                    Gamma = gamma,
-                    Cache = cache,
-                    Mo2Version = mo2Version,
-                    CancellationToken = cancellationToken,
-                    DownloadGithubArchives = !skipGithubDownloads,
-                    SkipExtractOnHashMatch = skipExtractOnHashMatch,
-                    Mo2Profile = mo2Profile,
-                    Minimal = minimal,
-                    Offline = offline,
-                    ModPackMakerPath = modPackMakerPath,
-                    ModListPath = modListPath,
-                    PreserveUserLtx = preserveUserSettings,
-                    PreserveMcmSettings = preserveMcmSettings,
-                }
-            );
+            var args = GammaInstallerArgs
+                .Create(anomaly, gamma, cache)
+                .WithCancellationToken(cancellationToken)
+                .WithDownloadGithubArchives(!skipGithubDownloads)
+                .WithSkipExtractOnHashMatch(skipExtractOnHashMatch)
+                .WithMo2Profile(mo2Profile)
+                .WithMinimal(minimal)
+                .WithModPackMakerPath(modPackMakerPath)
+                .WithModListPath(modListPath)
+                .WithPreserveUserLtx(preserveUserSettings)
+                .WithPreserveMcmSettings(preserveMcmSettings)
+                .Build();
+            args.GroupedAddonRecords = await installer.BuildGroupedAddonRecordsAsync(args);
+            args.AnomalyRecord = installer.BuildAnomalyRecord(args);
+            installer.BuildSpecialRepoRecords(args);
+            await installer.InstallAsync(args);
             _logger.Information("Install finished");
         }
         catch (Exception e)
@@ -226,6 +227,7 @@ public class FullInstallCmd(
     }
 
     private void SetUpLogging(
+        IGammaInstaller installer,
         bool verbose,
         bool debug,
         long progressUpdateIntervalMs,
@@ -239,8 +241,8 @@ public class FullInstallCmd(
         {
             var gammaDbgObs = Observable
                 .FromEventPattern<GammaProgress.GammaInstallDebugProgressEventArgs>(
-                    handler => gammaInstaller.Progress.DebugProgressChanged += handler,
-                    handler => gammaInstaller.Progress.DebugProgressChanged -= handler
+                    handler => installer.Progress.DebugProgressChanged += handler,
+                    handler => installer.Progress.DebugProgressChanged -= handler
                 )
                 .Select(x => x.EventArgs);
             gammaDbgDisposable = gammaDbgObs.Subscribe(OnDebugProgressChanged);
@@ -248,8 +250,8 @@ public class FullInstallCmd(
 
         var gammaWriteFileObs = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => gammaInstaller.Progress.ProgressChanged += handler,
-                handler => gammaInstaller.Progress.ProgressChanged -= handler
+                handler => installer.Progress.ProgressChanged += handler,
+                handler => installer.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
         gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(
@@ -258,8 +260,8 @@ public class FullInstallCmd(
 
         var gammaProgressObservable = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => gammaInstaller.Progress.ProgressChanged += handler,
-                handler => gammaInstaller.Progress.ProgressChanged -= handler
+                handler => installer.Progress.ProgressChanged += handler,
+                handler => installer.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable

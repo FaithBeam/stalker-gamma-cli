@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<IStalkerGammaRepo, StalkerGammaRepo>()
             .AddScoped<ITeivazAnomalyGunslingerRepo, TeivazAnomalyGunslingerRepo>()
             .AddScoped<GammaInstaller>()
+            .AddScoped<OfflineGammaInstaller>()
             .AddScoped<IAnomalyInstaller, AnomalyInstaller>()
             .AddScoped<PowerShellCmdBuilder>();
     }

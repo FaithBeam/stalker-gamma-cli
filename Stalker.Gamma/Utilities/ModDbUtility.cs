@@ -97,7 +97,15 @@ public partial class ModDbUtility(
         }
         catch (Exception e)
         {
-            throw new ModDbUtilityException("Error downloading from ModDB", e);
+            throw new ModDbUtilityException(
+                $"""
+                Error downloading from ModDB
+                Url: {url}
+                Output: {output}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
         }
     }
 
