@@ -146,7 +146,6 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         };
 }
 
-
 public interface IGammaInstaller
 {
     IGammaProgress Progress { get; }
@@ -333,9 +332,9 @@ public class GammaInstaller : IGammaInstaller
             async () =>
             {
                 await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(args.CancellationToken);
-                await ((TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!).ExpandFilesAsync(
-                    args.CancellationToken
-                );
+                await (
+                    (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
+                ).ExpandFilesAsync(args.CancellationToken);
             },
             args.CancellationToken
         );
@@ -353,7 +352,9 @@ public class GammaInstaller : IGammaInstaller
             async () =>
             {
                 await args.GammaSetupRecord!.DownloadAsync(args.CancellationToken);
-                await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(args.CancellationToken);
+                await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(
+                    args.CancellationToken
+                );
             },
             args.CancellationToken
         );
@@ -549,6 +550,4 @@ public class GammaInstaller : IGammaInstaller
                 }
             }
         );
-
 }
-

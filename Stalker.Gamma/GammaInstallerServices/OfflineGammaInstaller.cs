@@ -23,20 +23,21 @@ public class OfflineGammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings
-) : GammaInstaller(
-    settings,
-    gammaProgress,
-    downloadModOrganizerService,
-    getStalkerModsFromApi,
-    downloadableRecordFactory,
-    modListRecordFactory,
-    separatorsFactory,
-    hcf,
-    powerShellCmdBuilder,
-    getStalkerModsFromLocal,
-    preserveUserLtxSettingsService,
-    preserveMcmSettings
 )
+    : GammaInstaller(
+        settings,
+        gammaProgress,
+        downloadModOrganizerService,
+        getStalkerModsFromApi,
+        downloadableRecordFactory,
+        modListRecordFactory,
+        separatorsFactory,
+        hcf,
+        powerShellCmdBuilder,
+        getStalkerModsFromLocal,
+        preserveUserLtxSettingsService,
+        preserveMcmSettings
+    )
 {
     public override async Task InstallAsync(GammaInstallerArgs args)
     {
@@ -111,9 +112,9 @@ public class OfflineGammaInstaller(
         );
         var teivazTask = Task.Run(
             async () =>
-                await ((TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!).ExpandFilesAsync(
-                    args.CancellationToken
-                ),
+                await (
+                    (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
+                ).ExpandFilesAsync(args.CancellationToken),
             args.CancellationToken
         );
         var gammaLargeFilesTask = Task.Run(
