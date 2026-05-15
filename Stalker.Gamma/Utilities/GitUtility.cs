@@ -6,8 +6,22 @@ public partial class GitUtility
 {
     public string GetLatestCommitHash(string pathToRepo)
     {
-        using var repo = new Repository(pathToRepo);
-        return repo.Head.Tip.Sha;
+        try
+        {
+            using var repo = new Repository(pathToRepo);
+            return repo.Head.Tip.Sha;
+        }
+        catch (Exception e)
+        {
+            throw new GitUtilityException(
+                $"""
+                Error getting latest commit hash
+                Path to repo: {pathToRepo}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
     }
 
     public void FetchGitRepo(
@@ -16,45 +30,11 @@ public partial class GitUtility
         CancellationToken ct = default
     )
     {
-        using var repo = new Repository(pathToRepo);
-        var remote = repo.Network.Remotes["origin"] ?? repo.Network.Remotes["Grokitach"];
-        var options = new FetchOptions
+        try
         {
-            OnTransferProgress = progress =>
-            {
-                if (ct.IsCancellationRequested)
-                {
-                    return false;
-                }
-                if (progress.TotalObjects > 0)
-                {
-                    onProgress?.Invoke((double)progress.ReceivedObjects / progress.TotalObjects);
-                }
-                return true;
-            },
-        };
-        Commands.Fetch(
-            repo,
-            remote.Name,
-            ["+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
-            options,
-            "Fetch updates"
-        );
-    }
-
-    public void CloneGitRepo(
-        string outputDir,
-        string repoUrl,
-        Action<double>? onProgress = null,
-        bool bare = false,
-        CancellationToken ct = default
-    )
-    {
-        var options = new CloneOptions
-        {
-            IsBare = bare,
-            Checkout = !bare,
-            FetchOptions =
+            using var repo = new Repository(pathToRepo);
+            var remote = repo.Network.Remotes["origin"] ?? repo.Network.Remotes["Grokitach"];
+            var options = new FetchOptions
             {
                 OnTransferProgress = progress =>
                 {
@@ -70,11 +50,76 @@ public partial class GitUtility
                     }
                     return true;
                 },
-            },
-        };
-        Repository.Clone(repoUrl, outputDir, options);
-        using var repo = new Repository(outputDir);
-        repo.Config.Set("core.longpaths", true);
+            };
+            Commands.Fetch(
+                repo,
+                remote.Name,
+                ["+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
+                options,
+                "Fetch updates"
+            );
+        }
+        catch (Exception e)
+        {
+            throw new GitUtilityException(
+                $"""
+                Error fetching updates for repo
+                Path to repo: {pathToRepo}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
+    }
+
+    public void CloneGitRepo(
+        string outputDir,
+        string repoUrl,
+        Action<double>? onProgress = null,
+        bool bare = false,
+        CancellationToken ct = default
+    )
+    {
+        try
+        {
+            var options = new CloneOptions
+            {
+                IsBare = bare,
+                Checkout = !bare,
+                FetchOptions =
+                {
+                    OnTransferProgress = progress =>
+                    {
+                        if (ct.IsCancellationRequested)
+                        {
+                            return false;
+                        }
+                        if (progress.TotalObjects > 0)
+                        {
+                            onProgress?.Invoke(
+                                (double)progress.ReceivedObjects / progress.TotalObjects
+                            );
+                        }
+                        return true;
+                    },
+                },
+            };
+            Repository.Clone(repoUrl, outputDir, options);
+            using var repo = new Repository(outputDir);
+            repo.Config.Set("core.longpaths", true);
+        }
+        catch (Exception e)
+        {
+            throw new GitUtilityException(
+                $"""
+                Error cloning repo
+                Output Dir: {outputDir}
+                Repo URL: {repoUrl}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
     }
 
     private static int CountBlobs(Tree tree)
@@ -105,11 +150,28 @@ public partial class GitUtility
         CancellationToken ct = default
     )
     {
-        var branchOrSha = branch is "main" or "dev2" ? $"refs/remotes/origin/{branch}" : branch;
-        var gammaLauncherBranch = $"refs/remotes/Grokitach/{branch}";
-        using var repo = new Repository(pathToRepo);
-        var commit = repo.Lookup<Commit>(branchOrSha) ?? repo.Lookup<Commit>(gammaLauncherBranch);
-        await ExtractTreeAsync(commit.Tree, outputDir, ct: ct, onProgress: onProgress);
+        try
+        {
+            var branchOrSha = branch is "main" or "dev2" ? $"refs/remotes/origin/{branch}" : branch;
+            var gammaLauncherBranch = $"refs/remotes/Grokitach/{branch}";
+            using var repo = new Repository(pathToRepo);
+            var commit =
+                repo.Lookup<Commit>(branchOrSha) ?? repo.Lookup<Commit>(gammaLauncherBranch);
+            await ExtractTreeAsync(commit.Tree, outputDir, ct: ct, onProgress: onProgress);
+        }
+        catch (Exception e)
+        {
+            throw new GitUtilityException(
+                $"""
+                Error extracting repo
+                Path to repo: {pathToRepo}
+                Output Dir: {outputDir}
+                Branch: {branch}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
     }
 
     private static async Task<int> ExtractTreeAsync(
