@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using HtmlAgilityPack;
 using Polly;
 using Polly.Retry;
 using Stalker.Gamma.GammaInstallerServices;
