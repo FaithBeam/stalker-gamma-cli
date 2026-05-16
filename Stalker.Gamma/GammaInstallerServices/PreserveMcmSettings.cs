@@ -15,6 +15,7 @@ public class PreserveMcmSettings
         if (File.Exists(_axrOptionsPath))
         {
             _axrOptionsContent = await File.ReadAllTextAsync(_axrOptionsPath, ct);
+            _lastWriteTime = File.GetLastWriteTimeUtc(_axrOptionsPath);
         }
     }
 
@@ -24,13 +25,17 @@ public class PreserveMcmSettings
             Directory.Exists(_mcmModSettingsPath)
             && !string.IsNullOrWhiteSpace(_axrOptionsPath)
             && !string.IsNullOrWhiteSpace(_axrOptionsContent)
+            && _lastWriteTime != null
         )
         {
             await File.WriteAllTextAsync(_axrOptionsPath, _axrOptionsContent, ct);
+            File.SetLastAccessTimeUtc(_axrOptionsPath, _lastWriteTime.Value.UtcDateTime);
+            File.SetLastWriteTimeUtc(_axrOptionsPath, _lastWriteTime.Value.UtcDateTime);
         }
     }
 
     private string? _mcmModSettingsPath;
     private string? _axrOptionsPath;
     private string? _axrOptionsContent;
+    private DateTimeOffset? _lastWriteTime;
 }
