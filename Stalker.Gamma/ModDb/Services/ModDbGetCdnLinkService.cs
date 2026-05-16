@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.GammaInstallerServices;
+namespace Stalker.Gamma.ModDb.Services;
 
-public partial class GetDbolicalUrl(CurlUtility curlUtility)
+public partial class ModDbGetCdnLinkService(CurlUtility curlUtility)
 {
     public async Task<string?> GetDbolicalUrlAsync(string moddbMirrorUrl, CancellationToken ct)
     {

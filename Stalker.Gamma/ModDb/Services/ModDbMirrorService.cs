@@ -1,9 +1,10 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
+using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.Utilities;
+namespace Stalker.Gamma.ModDb.Services;
 
-public partial class MirrorUtility(CurlUtility curlUtility)
+public partial class ModDbMirrorService(CurlUtility curlUtility)
 {
     private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);

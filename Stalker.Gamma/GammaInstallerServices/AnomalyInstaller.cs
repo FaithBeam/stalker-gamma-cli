@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
+using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
@@ -10,7 +11,7 @@ public class AnomalyInstaller(
     GammaProgress progress,
     string downloadDirectory,
     string anomalyDir,
-    ModDbUtility modDbUtility,
+    ModDbService modDbService,
     ArchiveUtility archiveUtility
 ) : IAnomalyInstaller
 {
@@ -26,7 +27,7 @@ public class AnomalyInstaller(
     private readonly GammaProgress _progress = progress;
     private readonly string _downloadDirectory = downloadDirectory;
     private readonly string _anomalyDir = anomalyDir;
-    private readonly ModDbUtility _modDbUtility = modDbUtility;
+    private readonly ModDbService _modDbService = modDbService;
     private readonly ArchiveUtility _archiveUtility = archiveUtility;
     public string DownloadPath => Path.Join(_downloadDirectory, ArchiveName);
     public string DownloadPathZstd => Path.Join(_downloadDirectory, ArchiveNameZstd);
@@ -49,7 +50,7 @@ public class AnomalyInstaller(
                 )
             )
             {
-                await _modDbUtility.GetModDbLinkCurl(
+                await _modDbService.GetModDbLinkCurl(
                     StalkerAnomalyUrl,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),

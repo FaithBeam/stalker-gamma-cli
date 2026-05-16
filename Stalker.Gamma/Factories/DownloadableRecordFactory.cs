@@ -1,7 +1,10 @@
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
+using Stalker.Gamma.ModDb.Models;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
+using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
+using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
 namespace Stalker.Gamma.Factories;
 
@@ -46,11 +49,11 @@ public interface IDownloadableRecordFactory
 public class DownloadableRecordFactory(
     IHttpClientFactory httpClientFactory,
     GammaProgress gammaProgress,
-    ModDbUtility modDbUtility,
+    ModDbService modDbService,
     ArchiveUtility archiveUtility,
     GitUtility gitUtility,
     GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
-    GetModDbAddonMetadata getModDbAddonMetadata
+    ModDbGetAddonMetadataService modDbGetAddonMetadataService
 ) : IDownloadableRecordFactory
 {
     public IDownloadableRecord CreateSkippedRecord(IDownloadableRecord record) =>
@@ -65,7 +68,7 @@ public class DownloadableRecordFactory(
             gammaProgress,
             downloadDirectory,
             anomalyDir,
-            modDbUtility,
+            modDbService,
             archiveUtility
         );
 
@@ -187,9 +190,9 @@ public class DownloadableRecordFactory(
                 gammaDir,
                 archiveUtility,
                 gammaProgress,
-                modDbUtility,
+                modDbService,
                 getCanonicalLinkFromModDbStartLink,
-                getModDbAddonMetadata
+                modDbGetAddonMetadataService
             );
             return true;
         }
@@ -270,7 +273,7 @@ public class DownloadableRecordFactory(
                 outputDirName,
                 instructions,
                 archiveUtility,
-                modDbUtility
+                modDbService
             );
             return true;
         }

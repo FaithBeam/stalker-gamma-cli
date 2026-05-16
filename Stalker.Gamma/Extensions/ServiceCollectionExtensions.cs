@@ -7,6 +7,10 @@ using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
+using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
+using ModDbGetCdnLinkService = Stalker.Gamma.ModDb.Services.ModDbGetCdnLinkService;
+using ModDbMirrorService = Stalker.Gamma.ModDb.Services.ModDbMirrorService;
+using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
 namespace Stalker.Gamma.Extensions;
 
@@ -36,14 +40,14 @@ public static class ServiceCollectionExtensions
             .AddScoped<TarUtility>()
             .AddScoped<UnzipUtility>()
             .AddScoped<GitUtility>()
-            .AddScoped<ModDbUtility>()
-            .AddScoped<MirrorUtility>()
+            .AddScoped<ModDbService>()
+            .AddScoped<ModDbMirrorService>()
             .AddScoped<CurlUtility>()
-            .AddScoped<GetDbolicalUrl>()
+            .AddScoped<ModDbGetCdnLinkService>()
             .AddScoped<PreserveMcmSettings>()
             .AddScoped<PreserveUserLtxSettingsService>()
             .AddScoped<GetCanonicalLinkFromModDbStartLink>()
-            .AddScoped<GetModDbAddonMetadata>()
+            .AddScoped<ModDbGetAddonMetadataService>()
             .AddScoped<IGetStalkerModsFromLocal, GetStalkerModsFromLocal>()
             .AddScoped<ISeparatorsFactory, SeparatorsFactory>()
             .AddScoped<IGetStalkerModsFromApi, GetStalkerModsFromApi>()

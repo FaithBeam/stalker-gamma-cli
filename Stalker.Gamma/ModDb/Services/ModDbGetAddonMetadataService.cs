@@ -1,12 +1,12 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using Stalker.Gamma.Models;
+using Stalker.Gamma.ModDb.Models;
 using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.GammaInstallerServices;
+namespace Stalker.Gamma.ModDb.Services;
 
-public partial class GetModDbAddonMetadata(CurlUtility curlUtility)
+public partial class ModDbGetAddonMetadataService(CurlUtility curlUtility)
 {
     private readonly CurlUtility _curlUtility = curlUtility;
 

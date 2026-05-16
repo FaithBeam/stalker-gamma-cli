@@ -1,14 +1,14 @@
 using System.Text.RegularExpressions;
 using Polly;
 using Polly.Retry;
-using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.Utilities;
+namespace Stalker.Gamma.ModDb.Services;
 
-public partial class ModDbUtility(
-    MirrorUtility mirrorUtility,
+public partial class ModDbService(
+    ModDbMirrorService modDbMirrorService,
     CurlUtility curlUtility,
-    GetDbolicalUrl getDbolicalUrlSvc
+    ModDbGetCdnLinkService modDbGetCdnLinkServiceSvc
 )
 {
     public async Task GetModDbLinkCurl(
@@ -114,7 +114,7 @@ public partial class ModDbUtility(
         CancellationToken ct = default
     )
     {
-        var mirrorTask = mirrorUtility.GetMirrorAsync(
+        var mirrorTask = modDbMirrorService.GetMirrorAsync(
             $"{url}/all",
             excludeMirrors: mirrorsVisited,
             invalidateCache: invalidateCache,
@@ -133,7 +133,7 @@ public partial class ModDbUtility(
 
         mirrorsVisited.Add(mirror);
 
-        return await getDbolicalUrlSvc.GetDbolicalUrlAsync(downloadLink, ct);
+        return await modDbGetCdnLinkServiceSvc.GetDbolicalUrlAsync(downloadLink, ct);
     }
 
     [GeneratedRegex("""window.location.href="(.+)";""")]
