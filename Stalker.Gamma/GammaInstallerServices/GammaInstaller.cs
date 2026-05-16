@@ -153,52 +153,38 @@ public interface IGammaInstaller
     void BuildSpecialRepoRecords(GammaInstallerArgs args);
     Task InstallAsync(GammaInstallerArgs args);
     IDownloadableRecord BuildAnomalyRecord(GammaInstallerArgs args);
+
+    Task<GammaInstaller.DiffedAddonRecords> DiffAddonRecordsAsync(GammaInstallerArgs args);
+
     Task<IList<IDownloadableRecord>> BuildUpdateGroupedAddonRecordsAsync(GammaInstallerArgs args);
 }
 
-public class GammaInstaller : IGammaInstaller
+public class GammaInstaller(
+    StalkerGammaSettings settings,
+    GammaProgress gammaProgress,
+    IDownloadModOrganizerService downloadModOrganizerService,
+    IGetStalkerModsFromApi getStalkerModsFromApi,
+    IDownloadableRecordFactory downloadableRecordFactory,
+    IModListRecordFactory modListRecordFactory,
+    ISeparatorsFactory separatorsFactory,
+    IHttpClientFactory hcf,
+    PowerShellCmdBuilder powerShellCmdBuilder,
+    IGetStalkerModsFromLocal getStalkerModsFromLocal,
+    PreserveUserLtxSettingsService preserveUserLtxSettingsService,
+    PreserveMcmSettings preserveMcmSettings
+) : IGammaInstaller
 {
-    public GammaInstaller(
-        StalkerGammaSettings settings,
-        GammaProgress gammaProgress,
-        IDownloadModOrganizerService downloadModOrganizerService,
-        IGetStalkerModsFromApi getStalkerModsFromApi,
-        IDownloadableRecordFactory downloadableRecordFactory,
-        IModListRecordFactory modListRecordFactory,
-        ISeparatorsFactory separatorsFactory,
-        IHttpClientFactory hcf,
-        PowerShellCmdBuilder powerShellCmdBuilder,
-        IGetStalkerModsFromLocal getStalkerModsFromLocal,
-        PreserveUserLtxSettingsService preserveUserLtxSettingsService,
-        PreserveMcmSettings preserveMcmSettings
-    )
-    {
-        Progress = gammaProgress;
-        Settings = settings;
-        DownloadModOrganizerService = downloadModOrganizerService;
-        _getStalkerModsFromApi = getStalkerModsFromApi;
-        _downloadableRecordFactory = downloadableRecordFactory;
-        ModListRecordFactory = modListRecordFactory;
-        SeparatorsFactory = separatorsFactory;
-        PowerShellCmdBuilder = powerShellCmdBuilder;
-        _getStalkerModsFromLocal = getStalkerModsFromLocal;
-        PreserveUserLtxSettingsService = preserveUserLtxSettingsService;
-        PreserveMcmSettings = preserveMcmSettings;
-        _hc = hcf.CreateClient();
-    }
-
-    public IGammaProgress Progress { get; }
-    protected StalkerGammaSettings Settings { get; }
-    protected IDownloadModOrganizerService DownloadModOrganizerService { get; }
-    protected IModListRecordFactory ModListRecordFactory { get; }
-    protected ISeparatorsFactory SeparatorsFactory { get; }
-    protected PowerShellCmdBuilder PowerShellCmdBuilder { get; }
-    protected PreserveUserLtxSettingsService PreserveUserLtxSettingsService { get; }
-    protected PreserveMcmSettings PreserveMcmSettings { get; }
-    private readonly IGetStalkerModsFromApi _getStalkerModsFromApi;
-    private readonly IDownloadableRecordFactory _downloadableRecordFactory;
-    private readonly IGetStalkerModsFromLocal _getStalkerModsFromLocal;
-    private readonly HttpClient _hc;
+    public IGammaProgress Progress { get; } = gammaProgress;
+    protected StalkerGammaSettings Settings { get; } = settings;
+    protected IDownloadModOrganizerService DownloadModOrganizerService { get; } =
+        downloadModOrganizerService;
+    protected IModListRecordFactory ModListRecordFactory { get; } = modListRecordFactory;
+    protected ISeparatorsFactory SeparatorsFactory { get; } = separatorsFactory;
+    protected PowerShellCmdBuilder PowerShellCmdBuilder { get; } = powerShellCmdBuilder;
+    protected PreserveUserLtxSettingsService PreserveUserLtxSettingsService { get; } =
+        preserveUserLtxSettingsService;
+    protected PreserveMcmSettings PreserveMcmSettings { get; } = preserveMcmSettings;
+    private readonly HttpClient _hc = hcf.CreateClient();
 
     public async Task<IList<IDownloadableRecord>> BuildGroupedAddonRecordsAsync(
         GammaInstallerArgs args
@@ -209,7 +195,7 @@ public class GammaInstaller : IGammaInstaller
         var addonRecords = modpackMakerRecords
             .Select(rec =>
             {
-                if (!_downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
+                if (!downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
                     return null;
                 if (dlRec is GithubRecord ghr)
                 {
@@ -221,11 +207,11 @@ public class GammaInstaller : IGammaInstaller
             .Where(x => x is not null)
             .Select(x => x!)
             .ToList();
-        return _downloadableRecordFactory
+        return downloadableRecordFactory
             .CreateGroupedDownloadableRecords(addonRecords)
             .Select(dlRec =>
                 args.SkipExtractOnHashMatch
-                    ? _downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(dlRec)
+                    ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(dlRec)
                     : dlRec
             )
             .ToList();
@@ -233,23 +219,23 @@ public class GammaInstaller : IGammaInstaller
 
     public void BuildSpecialRepoRecords(GammaInstallerArgs args)
     {
-        args.GammaLargeFilesRecord = _downloadableRecordFactory.CreateGammaLargeFilesRecord(
+        args.GammaLargeFilesRecord = downloadableRecordFactory.CreateGammaLargeFilesRecord(
             args.Gamma,
             Settings.GammaLargeFilesRepo,
             Settings.GammaLargeFilesRepoBranch
         );
         args.TeivazAnomalyGunslingerRecord =
-            _downloadableRecordFactory.CreateTeivazAnomalyGunslingerRecord(
+            downloadableRecordFactory.CreateTeivazAnomalyGunslingerRecord(
                 args.Gamma,
                 Settings.TeivazAnomalyGunslingerRepo,
                 Settings.TeivazAnomalyGunslingerRepoBranch
             );
-        args.GammaSetupRecord = _downloadableRecordFactory.CreateGammaSetupRecord(
+        args.GammaSetupRecord = downloadableRecordFactory.CreateGammaSetupRecord(
             args.Gamma,
             Settings.GammaSetupRepo,
             Settings.GammaSetupRepoBranch
         );
-        args.StalkerGammaRecord = _downloadableRecordFactory.CreateStalkerGammaRecord(
+        args.StalkerGammaRecord = downloadableRecordFactory.CreateStalkerGammaRecord(
             args.Gamma,
             args.Anomaly,
             Settings.StalkerGammaRepo,
@@ -377,11 +363,16 @@ public class GammaInstaller : IGammaInstaller
             stalkerGammaDownloadTask
         );
 
-        foreach (var brokenAddon in brokenAddons)
-        {
-            await brokenAddon.DownloadAsync(args.CancellationToken);
-            await brokenAddon.ExtractAsync(args.CancellationToken);
-        }
+        // retry broken addons
+        await Parallel.ForEachAsync(
+            brokenAddons,
+            new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
+            async (brokenAddon, _) =>
+            {
+                await brokenAddon.DownloadAsync(args.CancellationToken);
+                await brokenAddon.ExtractAsync(args.CancellationToken);
+            }
+        );
 
         await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
         await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
@@ -479,7 +470,7 @@ public class GammaInstaller : IGammaInstaller
     protected async Task<string> GetModpackMakerTxt(GammaInstallerArgs args)
     {
         return string.IsNullOrWhiteSpace(args.ModPackMakerPath)
-                ? await _getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
+                ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
             : File.Exists(args.ModPackMakerPath)
                 ? await File.ReadAllTextAsync(args.ModPackMakerPath)
             : throw new FileNotFoundException(
@@ -487,36 +478,54 @@ public class GammaInstaller : IGammaInstaller
             );
     }
 
-    public async Task<IList<IDownloadableRecord>> BuildUpdateGroupedAddonRecordsAsync(
-        GammaInstallerArgs args
-    )
+    public class DiffedAddonRecords
     {
-        var modpackMakerTxt = await _getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
+        public required List<ModPackMakerRecord> OnlineRecords { get; set; }
+        public required List<ModPackMakerRecord> AddedOrModifiedRecords { get; set; }
+        public required List<ModPackMakerRecord> LocalRecords { get; set; }
+    }
+
+    public async Task<DiffedAddonRecords> DiffAddonRecordsAsync(GammaInstallerArgs args)
+    {
+        var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
         var onlineModPackMakerRecords = ModListRecordFactory.Create(modpackMakerTxt);
-        var localRecords = await _getStalkerModsFromLocal.GetMods(args.Gamma, args.Mo2Profile);
+        var localRecords = await getStalkerModsFromLocal.GetMods(args.Gamma, args.Mo2Profile);
         var addedOrModifiedRecords = localRecords
             .Diff(onlineModPackMakerRecords)
             .Where(x => x.DiffType is DiffType.Added or DiffType.Modified)
             .Select(x => x.NewListRecord!)
             .ToList();
-        var addonRecords = addedOrModifiedRecords
-            .Select(rec =>
-                _downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec) ? dlRec : null
+        return new DiffedAddonRecords
+        {
+            LocalRecords = localRecords,
+            OnlineRecords = onlineModPackMakerRecords,
+            AddedOrModifiedRecords = addedOrModifiedRecords,
+        };
+    }
+
+    public async Task<IList<IDownloadableRecord>> BuildUpdateGroupedAddonRecordsAsync(
+        GammaInstallerArgs args
+    )
+    {
+        var diffedAddonRecords = await DiffAddonRecordsAsync(args);
+        var addonRecords = diffedAddonRecords
+            .AddedOrModifiedRecords.Select(rec =>
+                downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec) ? dlRec : null
             )
             .Where(x => x is not null)
             .Select(x => x!)
             .ToList();
-        return _downloadableRecordFactory.CreateGroupedDownloadableRecords(addonRecords).ToList();
+        return downloadableRecordFactory.CreateGroupedDownloadableRecords(addonRecords).ToList();
     }
 
     public IDownloadableRecord BuildAnomalyRecord(GammaInstallerArgs args)
     {
-        var anomalyRecord = _downloadableRecordFactory.CreateAnomalyRecord(
+        var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly
         );
         return args.SkipExtractOnHashMatch
-            ? _downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)
+            ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)
             : anomalyRecord;
     }
 

@@ -19,12 +19,11 @@ public class UpdateCmds(
     CliSettings cliSettings,
     StalkerGammaSettings stalkerGammaSettings,
     IGetStalkerModsFromApi getStalkerModsFromApi,
-    IGetStalkerModsFromLocal getStalkerModsFromLocal,
     IModListRecordFactory modListRecordFactory,
-    GammaInstaller gammaInstaller,
-    GitUtility gitUtility,
-    UtilitiesReady utilitiesReady,
     GetRemoteGitRepoCommit getRemoteGitRepoCommit,
+    GitUtility gitUtility,
+    IGammaInstaller gammaInstaller,
+    UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
 )
 {
@@ -40,63 +39,23 @@ public class UpdateCmds(
 
         try
         {
-            var gammaDownloadsPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "downloads");
-            List<string> repos =
-            [
-                "gamma_setup",
-                "gamma_large_files_v2",
-                "Stalker_GAMMA",
-                "teivaz_anomaly_gunslinger",
-            ];
-            const string repoOwner = "Grokitach";
+            var updateArgs = GammaInstallerArgs
+                .Create(
+                    _cliSettings.ActiveProfile!.Anomaly,
+                    _cliSettings.ActiveProfile!.Gamma,
+                    _cliSettings.ActiveProfile!.Cache
+                )
+                .WithCancellationToken(cancellationToken)
+                .WithMo2Profile(_cliSettings.ActiveProfile!.Mo2Profile)
+                .Build();
+            var diffed = await gammaInstaller.DiffAddonRecordsAsync(updateArgs);
 
-            var localRepos = repos
-                .Select(x => new { Name = x, Path = Path.Join(gammaDownloadsPath, $"{x}.git") })
-                .Where(repoDir => Directory.Exists(repoDir.Path))
-                .ToList();
-            var localRepoModPackMakerRecs = localRepos
-                .Select(repoDir =>
-                {
-                    var sha = gitUtility.GetLatestCommitHash(repoDir.Path);
-                    return new ModPackMakerRecord
-                    {
-                        DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
-                        AddonName = repoDir.Name,
-                        Md5ModDb = sha,
-                        ZipName = sha[..7],
-                    };
-                })
-                .ToList();
-            var remoteRepoModPackMakerRecs = localRepos
-                .ToAsyncEnumerable()
-                .Select(async repoDir =>
-                {
-                    var sha =
-                        await getRemoteGitRepoCommit.ExecuteAsync(
-                            repoOwner,
-                            repoDir.Name,
-                            cancellationToken
-                        ) ?? "N/A";
-                    return new ModPackMakerRecord
-                    {
-                        DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
-                        AddonName = repoDir.Name,
-                        Md5ModDb = sha,
-                        ZipName = sha[..7],
-                    };
-                })
-                .WithCancellation(cancellationToken);
-            var localGitRepoDiffs = await localRepoModPackMakerRecs.DiffAsync(
-                remoteRepoModPackMakerRecs
-            );
+            var localGitRepoDiffs = await GetLocalGitRepoDiffs(cancellationToken);
 
-            var localRecords = await getStalkerModsFromLocal.GetMods(
-                _cliSettings.ActiveProfile!.Gamma,
-                _cliSettings.ActiveProfile.Mo2Profile
-            );
-            var onlineRecordsTxt = await _getStalkerModsFromApi.GetModsAsync(cancellationToken);
-            var onlineRecords = _modListRecordFactory.Create(onlineRecordsTxt);
-            var diffs = localRecords.Diff(onlineRecords).Concat(localGitRepoDiffs).ToList();
+            var diffs = diffed
+                .LocalRecords.Diff(diffed.OnlineRecords)
+                .Concat(localGitRepoDiffs)
+                .ToList();
             if (diffs.Count > 0)
             {
                 var olds = diffs
@@ -173,6 +132,61 @@ public class UpdateCmds(
         {
             progressLoggingService.WriteToLogFile();
         }
+    }
+
+    private async Task<List<ModPackMakerRecordDiff>> GetLocalGitRepoDiffs(
+        CancellationToken cancellationToken
+    )
+    {
+        var gammaDownloadsPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "downloads");
+        List<string> repos =
+        [
+            "gamma_setup",
+            "gamma_large_files_v2",
+            "Stalker_GAMMA",
+            "teivaz_anomaly_gunslinger",
+        ];
+        const string repoOwner = "Grokitach";
+        var localRepos = repos
+            .Select(x => new { Name = x, Path = Path.Join(gammaDownloadsPath, $"{x}.git") })
+            .Where(repoDir => Directory.Exists(repoDir.Path))
+            .ToList();
+        var localRepoModPackMakerRecs = localRepos
+            .Select(repoDir =>
+            {
+                var sha = gitUtility.GetLatestCommitHash(repoDir.Path);
+                return new ModPackMakerRecord
+                {
+                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
+                    AddonName = repoDir.Name,
+                    Md5ModDb = sha,
+                    ZipName = sha[..7],
+                };
+            })
+            .ToList();
+        var remoteRepoModPackMakerRecs = localRepos
+            .ToAsyncEnumerable()
+            .Select(async repoDir =>
+            {
+                var sha =
+                    await getRemoteGitRepoCommit.ExecuteAsync(
+                        repoOwner,
+                        repoDir.Name,
+                        cancellationToken
+                    ) ?? "N/A";
+                return new ModPackMakerRecord
+                {
+                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
+                    AddonName = repoDir.Name,
+                    Md5ModDb = sha,
+                    ZipName = sha[..7],
+                };
+            })
+            .WithCancellation(cancellationToken);
+        var localGitRepoDiffs = await localRepoModPackMakerRecs.DiffAsync(
+            remoteRepoModPackMakerRecs
+        );
+        return localGitRepoDiffs;
     }
 
     /// <summary>

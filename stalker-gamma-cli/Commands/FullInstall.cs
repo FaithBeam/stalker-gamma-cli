@@ -16,7 +16,7 @@ public class FullInstallCmd(
     ILogger logger,
     CliSettings cliSettings,
     StalkerGammaSettings stalkerGammaSettings,
-    GammaInstaller gammaInstaller,
+    IGammaInstaller gammaInstaller,
     OfflineGammaInstaller offlineGammaInstaller,
     PowerShellCmdBuilder powerShellCmdBuilder,
     UtilitiesReady utilitiesReady,
@@ -40,10 +40,7 @@ public class FullInstallCmd(
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="debug"></param>
-    /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
-    /// <param name="stalkerAnomalyModdbUrl">Escape hatch for Stalker Anomaly</param>
-    /// <param name="stalkerAnomalyArchiveMd5">The hash of the archive downloaded from --stalker-anomaly-moddb-url</param>
     public async Task FullInstall(
         CancellationToken cancellationToken,
         bool skipGithubDownloads = false,
@@ -59,30 +56,25 @@ public class FullInstallCmd(
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
         [Hidden] bool debug = false,
-        [Hidden] string? mo2Version = null,
-        [Hidden] long progressUpdateIntervalMs = 250,
-        [Hidden] string stalkerAnomalyModdbUrl = "https://www.moddb.com/downloads/start/277404",
-        [Hidden] string stalkerAnomalyArchiveMd5 = "d6bce51a4e6d98f9610ef0aa967ba964"
+        [Hidden] long progressUpdateIntervalMs = 250
     )
     {
         LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
-        ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
+        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 
         ValidateOfflineRequirements(offline, modPackMakerPath, modListPath);
 
         InitializeSettings(
             downloadThreads,
-            cliSettings.ActiveProfile!.GammaSetupRepoUrl,
-            cliSettings.ActiveProfile.GammaSetupRepoBranch,
-            cliSettings.ActiveProfile.StalkerGammaRepoUrl,
-            cliSettings.ActiveProfile.StalkerGammaRepoBranch,
-            cliSettings.ActiveProfile.GammaLargeFilesRepoUrl,
-            cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
-            cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
-            cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
-            stalkerAnomalyModdbUrl,
-            stalkerAnomalyArchiveMd5,
+            _cliSettings.ActiveProfile!.GammaSetupRepoUrl,
+            _cliSettings.ActiveProfile.GammaSetupRepoBranch,
+            _cliSettings.ActiveProfile.StalkerGammaRepoUrl,
+            _cliSettings.ActiveProfile.StalkerGammaRepoBranch,
+            _cliSettings.ActiveProfile.GammaLargeFilesRepoUrl,
+            _cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
+            _cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
+            _cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
             out var anomaly,
             out var gamma,
             out var cache,
@@ -97,7 +89,7 @@ public class FullInstallCmd(
             cache
         );
 
-        IGammaInstaller installer = offline ? offlineGammaInstaller : gammaInstaller;
+        var installer = offline ? _offlineGammaInstaller : _gammaInstaller;
 
         SetUpLogging(
             installer,
@@ -131,12 +123,12 @@ public class FullInstallCmd(
         }
         catch (Exception e)
         {
-            progressLoggingService.WriteToLogFile();
+            _progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Install failed! {ExceptionMessage}", e.Message);
         }
         finally
         {
-            progressLoggingService.WriteToLogFile();
+            _progressLoggingService.WriteToLogFile();
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
@@ -173,32 +165,30 @@ public class FullInstallCmd(
         string gammaLargeFilesRepoBranch,
         string teivazAnomalyGunslingerRepoUrl,
         string teivazAnomalyGunslingerRepoBranch,
-        string stalkerAnomalyModdbUrl,
-        string stalkerAnomalyArchiveMd5,
         out string anomaly,
         out string gamma,
         out string cache,
         out string mo2Profile
     )
     {
-        anomaly = cliSettings.ActiveProfile!.Anomaly;
-        gamma = cliSettings.ActiveProfile!.Gamma;
-        cache = cliSettings.ActiveProfile!.Cache;
-        mo2Profile = cliSettings.ActiveProfile!.Mo2Profile;
-        var modpackMakerUrl = cliSettings.ActiveProfile!.ModPackMakerUrl;
-        var modListUrl = cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads =
-            downloadThreads ?? cliSettings.ActiveProfile!.DownloadThreads;
-        stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
-        stalkerGammaSettings.ModListUrl = modListUrl;
-        stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
-        stalkerGammaSettings.GammaSetupRepoBranch = gammaSetupRepoBranch;
-        stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
-        stalkerGammaSettings.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
-        stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
-        stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
-        stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
-        stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
+        anomaly = _cliSettings.ActiveProfile!.Anomaly;
+        gamma = _cliSettings.ActiveProfile!.Gamma;
+        cache = _cliSettings.ActiveProfile!.Cache;
+        mo2Profile = _cliSettings.ActiveProfile!.Mo2Profile;
+        var modpackMakerUrl = _cliSettings.ActiveProfile!.ModPackMakerUrl;
+        var modListUrl = _cliSettings.ActiveProfile!.ModListUrl;
+        _stalkerGammaSettings.DownloadThreads =
+            downloadThreads ?? _cliSettings.ActiveProfile!.DownloadThreads;
+        _stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
+        _stalkerGammaSettings.ModListUrl = modListUrl;
+        _stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
+        _stalkerGammaSettings.GammaSetupRepoBranch = gammaSetupRepoBranch;
+        _stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
+        _stalkerGammaSettings.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
+        _stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
+        _stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
+        _stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
+        _stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
     }
 
     private void ConfigurePowerShellSettings(
@@ -213,7 +203,7 @@ public class FullInstallCmd(
         {
             if (addFoldersToWinDefenderExclusion)
             {
-                powerShellCmdBuilder.WithWindowsDefenderExclusions(
+                _powerShellCmdBuilder.WithWindowsDefenderExclusions(
                     Path.GetFullPath(gamma),
                     Path.GetFullPath(anomaly),
                     Path.GetFullPath(cache)
@@ -221,7 +211,7 @@ public class FullInstallCmd(
             }
             if (enableLongPaths)
             {
-                powerShellCmdBuilder.WithEnableLongPaths();
+                _powerShellCmdBuilder.WithEnableLongPaths();
             }
         }
     }
@@ -255,7 +245,7 @@ public class FullInstallCmd(
             )
             .Select(x => x.EventArgs);
         gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(
-            progressLoggingService.OnProgressChangedWriteToFile
+            _progressLoggingService.OnProgressChangedWriteToFile
         );
 
         var gammaProgressObservable = Observable
@@ -294,6 +284,13 @@ public class FullInstallCmd(
 
     private readonly ILogger _logger = logger;
     private readonly UtilitiesReady _utilitiesReady = utilitiesReady;
+    private readonly CliSettings _cliSettings = cliSettings;
+    private readonly StalkerGammaSettings _stalkerGammaSettings = stalkerGammaSettings;
+    private readonly IGammaInstaller _gammaInstaller = gammaInstaller;
+    private readonly OfflineGammaInstaller _offlineGammaInstaller = offlineGammaInstaller;
+    private readonly PowerShellCmdBuilder _powerShellCmdBuilder = powerShellCmdBuilder;
+    private readonly ProgressLoggingService _progressLoggingService = progressLoggingService;
+
     private const string Informational =
         "\e[97m[{DateTime}]\e[0m "
         + "\e[96m{AddonName}\e[0m "
