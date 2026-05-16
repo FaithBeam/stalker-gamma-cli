@@ -94,8 +94,6 @@ public class OfflineGammaInstaller(
             await separator.WriteAsync(args.Gamma);
         }
 
-        var brokenAddons = new ConcurrentBag<IDownloadableRecord>();
-
         IList<IDownloadableRecord> mainBatchRecords = args.AnomalyRecord is not null
             ? [args.AnomalyRecord, .. args.GroupedAddonRecords]
             : [.. args.GroupedAddonRecords];
@@ -104,7 +102,6 @@ public class OfflineGammaInstaller(
             async () =>
                 await ProcessAddonsAsync(
                     mainBatchRecords,
-                    brokenAddons,
                     args.Minimal,
                     cancellationToken: args.CancellationToken
                 ),
@@ -146,11 +143,6 @@ public class OfflineGammaInstaller(
             gammaSetupTask,
             stalkerGammaTask
         );
-
-        foreach (var brokenAddon in brokenAddons)
-        {
-            await brokenAddon.ExtractAsync(args.CancellationToken);
-        }
 
         await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
         await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
@@ -233,7 +225,6 @@ public class OfflineGammaInstaller(
 
     protected override async Task ProcessAddonsAsync(
         IList<IDownloadableRecord> addons,
-        ConcurrentBag<IDownloadableRecord> brokenAddons,
         bool minimal = false,
         CancellationToken cancellationToken = default
     ) =>
@@ -242,20 +233,13 @@ public class OfflineGammaInstaller(
             new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
             async (grs, _) =>
             {
-                try
+                if (grs.ArchiveExists())
                 {
-                    if (grs.ArchiveExists())
+                    await grs.ExtractAsync(cancellationToken);
+                    if (minimal)
                     {
-                        await grs.ExtractAsync(cancellationToken);
-                        if (minimal)
-                        {
-                            grs.DeleteArchive();
-                        }
+                        grs.DeleteArchive();
                     }
-                }
-                catch (Exception)
-                {
-                    brokenAddons.Add(grs);
                 }
             }
         );

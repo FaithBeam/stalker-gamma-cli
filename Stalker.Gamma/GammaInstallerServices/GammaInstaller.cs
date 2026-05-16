@@ -298,8 +298,6 @@ public class GammaInstaller(
             await separator.WriteAsync(args.Gamma);
         }
 
-        var brokenAddons = new ConcurrentBag<IDownloadableRecord>();
-
         IList<IDownloadableRecord> mainBatchRecords = args.AnomalyRecord is not null
             ? [args.AnomalyRecord, .. args.GroupedAddonRecords]
             : [.. args.GroupedAddonRecords];
@@ -308,7 +306,6 @@ public class GammaInstaller(
             async () =>
                 await ProcessAddonsAsync(
                     mainBatchRecords,
-                    brokenAddons,
                     args.Minimal,
                     cancellationToken: args.CancellationToken
                 ),
@@ -362,13 +359,6 @@ public class GammaInstaller(
             gammaSetupDownloadTask,
             stalkerGammaDownloadTask
         );
-
-        // retry broken addons
-        foreach (var brokenAddon in brokenAddons)
-        {
-            await brokenAddon.DownloadAsync(args.CancellationToken);
-            await brokenAddon.ExtractAsync(args.CancellationToken);
-        }
 
         await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
         await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
@@ -527,7 +517,6 @@ public class GammaInstaller(
 
     protected virtual async Task ProcessAddonsAsync(
         IList<IDownloadableRecord> addons,
-        ConcurrentBag<IDownloadableRecord> brokenAddons,
         bool minimal = false,
         CancellationToken cancellationToken = default
     ) =>
@@ -536,22 +525,11 @@ public class GammaInstaller(
             new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
             async (grs, _) =>
             {
-                try
+                await grs.DownloadAsync(cancellationToken);
+                await grs.ExtractAsync(cancellationToken);
+                if (minimal)
                 {
-                    await grs.DownloadAsync(cancellationToken);
-                    await grs.ExtractAsync(cancellationToken);
-                    if (minimal)
-                    {
-                        grs.DeleteArchive();
-                    }
-                }
-                catch (ModDbBotDetectedException)
-                {
-                    throw;
-                }
-                catch (Exception)
-                {
-                    brokenAddons.Add(grs);
+                    grs.DeleteArchive();
                 }
             }
         );

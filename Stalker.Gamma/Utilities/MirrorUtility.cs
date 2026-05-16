@@ -5,41 +5,28 @@ namespace Stalker.Gamma.Utilities;
 
 public partial class MirrorUtility(CurlUtility curlUtility)
 {
-    private static FrozenSet<string>? _availableMirrors;
+    private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);
 
     public async Task<string> GetMirrorAsync(
         string mirrorUrl,
         bool invalidateCache = false,
         CancellationToken cancellationToken = default,
-        params string[] excludeMirrors
+        params IEnumerable<string> excludeMirrors
     )
     {
         await Lock.WaitAsync(cancellationToken);
         try
         {
-            if (_availableMirrors is null || _availableMirrors.Count == 0 || invalidateCache)
-            {
-                _availableMirrors = await GetMirrorsAsync(mirrorUrl, cancellationToken);
-            }
+            _mirrors =
+                _mirrors is null || _mirrors.Count == 0 || invalidateCache
+                    ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
+                    : _mirrors;
 
-            var orderedAvailableMirrors = _availableMirrors
+            return _mirrors
                 .Where(mirror => excludeMirrors.All(em => !mirror.Contains(em)))
                 .OrderBy(_ => Guid.NewGuid())
-                .ToList();
-
-            if (orderedAvailableMirrors.Count == 0)
-            {
-                throw new NoMirrorsAvailableException(
-                    $"""
-                    No mirrors available for {mirrorUrl}
-                    This occurs when Moddb's servers are overloaded.
-                    Try again later.
-                    """
-                );
-            }
-
-            return orderedAvailableMirrors.First();
+                .First();
         }
         catch (Exception e)
         {
