@@ -12,4 +12,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Resilience" Version="10.6.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LibCurlImpersonate\LibCurlImpersonate.csproj" />
+  </ItemGroup>
 </Project>

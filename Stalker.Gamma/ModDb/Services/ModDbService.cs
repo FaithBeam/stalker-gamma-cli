@@ -72,7 +72,7 @@ public partial class ModDbService(
                     parentPath.Create();
                 }
 
-                return await curlService.DownloadFileAsync(
+                await curlService.DownloadFileAsync(
                     diabolicalLink,
                     parentPath?.FullName ?? "./",
                     Path.GetFileName(output),
