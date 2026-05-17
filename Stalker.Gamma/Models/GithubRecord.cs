@@ -1,4 +1,5 @@
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Models;
@@ -14,7 +15,7 @@ public class GithubRecord(
     string outputDirName,
     IList<string> instructions,
     IHttpClientFactory hcf,
-    ArchiveUtility archiveUtility
+    ArchiveService archiveService
 ) : IDownloadableRecord
 {
     public string Name { get; } = name;
@@ -29,7 +30,7 @@ public class GithubRecord(
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
     private readonly string _outputDirName = outputDirName;
-    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    private readonly ArchiveService _archiveService = archiveService;
     public bool Download { get; set; } = true;
 
     public async Task DownloadAsync(CancellationToken cancellationToken)
@@ -78,7 +79,7 @@ public class GithubRecord(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await _archiveUtility.ExtractAsync(
+            await _archiveService.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
                 pct => OnProgress(GammaProgressType.Extract, pct),

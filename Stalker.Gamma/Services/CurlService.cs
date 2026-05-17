@@ -2,10 +2,12 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services.Models;
+using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.Utilities;
+namespace Stalker.Gamma.Services;
 
-public partial class CurlUtility(StalkerGammaSettings settings)
+public partial class CurlService(StalkerGammaSettings settings)
 {
     public async Task<StdOutStdErrOutput> GetHeadersAsync(
         string url,
@@ -84,6 +86,19 @@ public partial class CurlUtility(StalkerGammaSettings settings)
         );
         if (exitCode != 0)
         {
+            if (exitCode == 35)
+            {
+                throw new CurlTlsConnectErrorException(
+                    $"""
+                    Error executing curl command
+                    {string.Join(' ', args)}
+                    StdOut: {stdOut}
+                    StdErr: {stdErr}
+                    Exit Code: {exitCode}
+                    """
+                );
+            }
+
             throw new CurlServiceException(
                 $"""
                 Error executing curl command
@@ -112,14 +127,13 @@ public partial class CurlUtility(StalkerGammaSettings settings)
 
 public class ModDbBotDetectedException(string msg) : Exception(msg);
 
-public class CurlServiceException : Exception
-{
-    public CurlServiceException(string message)
-        : base(message) { }
+public class CurlServiceException(string message) : Exception(message);
 
-    public CurlServiceException(string message, Exception innerException)
-        : base(message, innerException) { }
-}
+/// <summary>
+/// Exit code 35
+/// </summary>
+/// <param name="message"></param>
+public class CurlTlsConnectErrorException(string message) : Exception(message);
 
 internal static class ArgumentsBuilderExtensions
 {

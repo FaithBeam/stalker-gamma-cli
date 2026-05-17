@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 using GetReleaseByTagCtx = Stalker.Gamma.ModOrganizer.DownloadModOrganizer.Entities.Github.GetReleaseByTagCtx;
 
@@ -29,7 +30,7 @@ public interface IDownloadModOrganizerService
 
 public class DownloadModOrganizerService(
     IHttpClientFactory hcf,
-    ArchiveUtility archiveUtility,
+    ArchiveService archiveService,
     GammaProgress gammaProgress,
     StalkerGammaSettings settings
 ) : IDownloadModOrganizerService
@@ -82,7 +83,7 @@ public class DownloadModOrganizerService(
             }
         }
 
-        await archiveUtility.ExtractAsync(
+        await archiveService.ExtractAsync(
             mo2ArchivePath,
             extractPath,
             pct =>

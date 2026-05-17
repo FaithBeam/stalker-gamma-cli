@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
@@ -16,14 +17,14 @@ public class ModDbRecord(
     string gammaDir,
     string outputDirName,
     IList<string> instructions,
-    ArchiveUtility archiveUtility,
+    ArchiveService archiveService,
     ModDbService modDbService
 ) : IDownloadableRecord
 {
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
     private readonly string _outputDirName = outputDirName;
-    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    private readonly ArchiveService _archiveService = archiveService;
     private readonly ModDbService _modDbService = modDbService;
     public string Name { get; } = name;
     private string Url { get; } = url;
@@ -50,7 +51,7 @@ public class ModDbRecord(
                 || !Path.Exists(DownloadPath)
             )
             {
-                await _modDbService.GetModDbLinkCurl(
+                await _modDbService.DownloadAddonAsync(
                     Url,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
@@ -85,7 +86,7 @@ public class ModDbRecord(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await _archiveUtility.ExtractAsync(
+            await _archiveService.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
                 pct => OnProgress(GammaProgressType.Extract, pct),

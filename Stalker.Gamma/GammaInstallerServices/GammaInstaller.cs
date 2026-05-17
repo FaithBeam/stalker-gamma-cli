@@ -196,7 +196,9 @@ public class GammaInstaller(
             .Select(rec =>
             {
                 if (!downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
+                {
                     return null;
+                }
                 if (dlRec is GithubRecord ghr)
                 {
                     ghr.Download = args.DownloadGithubArchives;
@@ -214,6 +216,7 @@ public class GammaInstaller(
                     ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(dlRec)
                     : dlRec
             )
+            .Shuffle() // randomize the order addons are downloaded
             .ToList();
     }
 

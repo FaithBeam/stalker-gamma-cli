@@ -1,10 +1,11 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
 using Stalker.Gamma.Utilities;
+using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.ModDb.Services;
 
-public partial class ModDbMirrorService(CurlUtility curlUtility)
+public partial class ModDbMirrorService(CurlService curlService)
 {
     private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);
@@ -50,7 +51,7 @@ public partial class ModDbMirrorService(CurlUtility curlUtility)
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await curlUtility.GetStringAsync(mirrorUrl, cancellationToken);
+        var mirrorsHtml = await curlService.GetStringAsync(mirrorUrl, cancellationToken);
         if (mirrorsHtml.Contains("Just a moment..."))
         {
             throw new CloudflareChallengeException(

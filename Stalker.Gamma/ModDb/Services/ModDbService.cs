@@ -1,17 +1,17 @@
 using System.Text.RegularExpressions;
 using Polly;
 using Polly.Retry;
-using Stalker.Gamma.Utilities;
+using Stalker.Gamma.Services;
 
 namespace Stalker.Gamma.ModDb.Services;
 
 public partial class ModDbService(
     ModDbMirrorService modDbMirrorService,
-    CurlUtility curlUtility,
+    CurlService curlService,
     ModDbGetCdnLinkService modDbGetCdnLinkServiceSvc
 )
 {
-    public async Task GetModDbLinkCurl(
+    public async Task DownloadAddonAsync(
         string url,
         string output,
         Action<double> onProgress,
@@ -72,7 +72,7 @@ public partial class ModDbService(
                     parentPath.Create();
                 }
 
-                return await curlUtility.DownloadFileAsync(
+                return await curlService.DownloadFileAsync(
                     diabolicalLink,
                     parentPath?.FullName ?? "./",
                     Path.GetFileName(output),
@@ -120,7 +120,7 @@ public partial class ModDbService(
             invalidateCache: invalidateCache,
             cancellationToken: ct
         );
-        var getContentTask = curlUtility.GetStringAsync(url, ct);
+        var getContentTask = curlService.GetStringAsync(url, ct);
         var results = await Task.WhenAll(mirrorTask, getContentTask);
 
         var (mirror, content) = (results[0], results[1]);
@@ -133,7 +133,7 @@ public partial class ModDbService(
 
         mirrorsVisited.Add(mirror);
 
-        return await modDbGetCdnLinkServiceSvc.GetDbolicalUrlAsync(downloadLink, ct);
+        return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, ct);
     }
 
     [GeneratedRegex("""window.location.href="(.+)";""")]

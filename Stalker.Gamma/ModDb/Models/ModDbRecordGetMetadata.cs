@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
 using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
@@ -13,7 +14,7 @@ public class ModDbRecordGetMetadata(
     List<string> instructions,
     string outputDirName,
     string gammaDir,
-    ArchiveUtility archiveUtility,
+    ArchiveService archiveService,
     GammaProgress gammaProgress,
     ModDbService modDbService,
     GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
@@ -48,7 +49,7 @@ public class ModDbRecordGetMetadata(
                 || !Path.Exists(DownloadPath)
             )
             {
-                await _modDbService.GetModDbLinkCurl(
+                await _modDbService.DownloadAddonAsync(
                     Url,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
@@ -83,7 +84,7 @@ public class ModDbRecordGetMetadata(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await _archiveUtility.ExtractAsync(
+            await _archiveService.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
                 pct => OnProgress(GammaProgressType.Extract, pct),
@@ -146,7 +147,7 @@ public class ModDbRecordGetMetadata(
 
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
-    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    private readonly ArchiveService _archiveService = archiveService;
     private readonly ModDbService _modDbService = modDbService;
     private readonly GetCanonicalLinkFromModDbStartLink _getCanonicalLinkFromModDbStartLink =
         getCanonicalLinkFromModDbStartLink;

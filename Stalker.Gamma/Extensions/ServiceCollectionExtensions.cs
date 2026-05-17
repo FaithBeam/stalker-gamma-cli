@@ -7,10 +7,12 @@ using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
+using CurlService = Stalker.Gamma.Services.CurlService;
 using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
 using ModDbGetCdnLinkService = Stalker.Gamma.ModDb.Services.ModDbGetCdnLinkService;
 using ModDbMirrorService = Stalker.Gamma.ModDb.Services.ModDbMirrorService;
 using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
+using SevenZipService = Stalker.Gamma.Services.SevenZipService;
 
 namespace Stalker.Gamma.Extensions;
 
@@ -35,14 +37,14 @@ public static class ServiceCollectionExtensions
             );
         s.AddSingleton<StalkerGammaSettings>().AddSingleton<GammaProgress, GammaProgress>();
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
-            .AddScoped<ArchiveUtility>()
-            .AddScoped<SevenZipUtility>()
-            .AddScoped<TarUtility>()
-            .AddScoped<UnzipUtility>()
-            .AddScoped<GitUtility>()
+            .AddScoped<ArchiveService>()
+            .AddScoped<SevenZipService>()
+            .AddScoped<TarService>()
+            .AddScoped<UnzipService>()
+            .AddScoped<GitService>()
             .AddScoped<ModDbService>()
             .AddScoped<ModDbMirrorService>()
-            .AddScoped<CurlUtility>()
+            .AddScoped<CurlService>()
             .AddScoped<ModDbGetCdnLinkService>()
             .AddScoped<PreserveMcmSettings>()
             .AddScoped<PreserveUserLtxSettingsService>()

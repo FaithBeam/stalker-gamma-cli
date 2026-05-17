@@ -3,16 +3,17 @@ using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Stalker.Gamma.ModDb.Models;
 using Stalker.Gamma.Utilities;
+using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.ModDb.Services;
 
-public partial class ModDbGetAddonMetadataService(CurlUtility curlUtility)
+public partial class ModDbGetAddonMetadataService(CurlService curlService)
 {
-    private readonly CurlUtility _curlUtility = curlUtility;
+    private readonly CurlService _curlService = curlService;
 
     public async Task<ModDbPageMetadata> GetAsync(string modDbAddonUrl, CancellationToken ct)
     {
-        var addonHtml = await _curlUtility.GetStringAsync(modDbAddonUrl, ct);
+        var addonHtml = await _curlService.GetStringAsync(modDbAddonUrl, ct);
         try
         {
             var htmlDoc = new HtmlDocument();

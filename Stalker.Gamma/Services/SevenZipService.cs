@@ -1,10 +1,12 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services.Models;
+using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.Utilities;
+namespace Stalker.Gamma.Services;
 
-public partial class SevenZipUtility(StalkerGammaSettings settings)
+public partial class SevenZipService(StalkerGammaSettings settings)
 {
     public async Task<StdOutStdErrOutput> ExtractAsync(
         string archivePath,

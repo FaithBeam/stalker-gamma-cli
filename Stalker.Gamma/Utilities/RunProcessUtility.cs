@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Stalker.Gamma.Utilities;
 
-public static partial class RunProcessUtility
+public static class RunProcessUtility
 {
     public static async Task<int> RunProcessAsync(
         string fileName,
