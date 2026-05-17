@@ -31,8 +31,9 @@ public class UpdateCmds(
     /// Check for updates
     /// </summary>
     [Command("check")]
-    public async Task CheckUpdates(CancellationToken cancellationToken = default)
+    public async Task<int> CheckUpdates(CancellationToken cancellationToken = default)
     {
+        var statusCode = 0;
         LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
@@ -127,11 +128,13 @@ public class UpdateCmds(
         {
             progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Update check failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
         }
         finally
         {
             progressLoggingService.WriteToLogFile();
         }
+        return statusCode;
     }
 
     private async Task<List<ModPackMakerRecordDiff>> GetLocalGitRepoDiffs(
@@ -198,7 +201,7 @@ public class UpdateCmds(
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="progressUpdateIntervalMs"></param>
-    public async Task Apply(
+    public async Task<int> Apply(
         CancellationToken cancellationToken,
         bool verbose = false,
         bool minimal = false,
@@ -207,6 +210,8 @@ public class UpdateCmds(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
+        var statusCode = 0;
+
         LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
@@ -240,6 +245,7 @@ public class UpdateCmds(
         {
             progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Update failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
         }
         finally
         {
@@ -247,6 +253,8 @@ public class UpdateCmds(
             gammaWriteFileDisposable.Dispose();
             gammaProgressDisposable.Dispose();
         }
+
+        return statusCode;
     }
 
     private void InitializeSettings(
