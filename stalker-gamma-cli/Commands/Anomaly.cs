@@ -37,7 +37,7 @@ public class AnomalyInstallCmd(
     /// <returns>
     /// </returns>
     [Command("install")]
-    public async Task AnomalyInstall(
+    public async Task<int> AnomalyInstall(
         CancellationToken cancellationToken,
         bool verbose = false,
         [Hidden] long progressUpdateIntervalMs = 250
@@ -54,6 +54,8 @@ public class AnomalyInstallCmd(
             );
             Environment.Exit(1);
         }
+
+        var statusCode = 0;
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
@@ -86,10 +88,16 @@ public class AnomalyInstallCmd(
             await anomalyInstaller.ExtractAsync(cancellationToken);
             _logger.Information("Anomaly install complete");
         }
+        catch (Exception e)
+        {
+            _logger.Error(e, "Anomaly install failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
+        }
         finally
         {
             gammaProgressDisposable.Dispose();
         }
+        return statusCode;
     }
 
     /// <summary>
@@ -99,7 +107,7 @@ public class AnomalyInstallCmd(
     /// A cancellation token that can be used to abort the operation.
     /// </param>
     [Command("check")]
-    public async Task CheckAnomaly(CancellationToken cancellationToken)
+    public async Task<int> CheckAnomaly(CancellationToken cancellationToken)
     {
         if (!utilitiesReady.IsReady)
         {
@@ -112,6 +120,8 @@ public class AnomalyInstallCmd(
             );
             Environment.Exit(1);
         }
+
+        var statusCode = 0;
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
@@ -136,6 +146,8 @@ public class AnomalyInstallCmd(
         var actual = await GetActualHashes(cancellationToken, anomaly);
         var longestPath = checksums.MaxBy(x => x.Path.Length).Path.Length + 5;
         await ValidateChecksums(checksums, actual, longestPath);
+
+        return statusCode;
     }
 
     /// <summary>

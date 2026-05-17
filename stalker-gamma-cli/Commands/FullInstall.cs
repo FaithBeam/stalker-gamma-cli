@@ -41,7 +41,7 @@ public class FullInstallCmd(
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="debug"></param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
-    public async Task FullInstall(
+    public async Task<int> FullInstall(
         CancellationToken cancellationToken,
         bool skipGithubDownloads = false,
         bool skipExtractOnHashMatch = false,
@@ -59,6 +59,7 @@ public class FullInstallCmd(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
+        var statusCode = 0;
         LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
@@ -125,6 +126,7 @@ public class FullInstallCmd(
         {
             _progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Install failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
         }
         finally
         {
@@ -133,6 +135,8 @@ public class FullInstallCmd(
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
         }
+
+        return statusCode;
     }
 
     private static void ValidateOfflineRequirements(
