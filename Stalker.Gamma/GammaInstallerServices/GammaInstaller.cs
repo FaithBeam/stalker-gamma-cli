@@ -305,14 +305,13 @@ public class GammaInstaller(
             ? [args.AnomalyRecord, .. args.GroupedAddonRecords]
             : [.. args.GroupedAddonRecords];
 
-        var mainBatch = Task.Run(
-            async () =>
-                await ProcessAddonsAsync(
-                    mainBatchRecords,
-                    args.Minimal,
-                    cancellationToken: args.CancellationToken
-                ),
-            args.CancellationToken
+        ConcurrentBag<IDownloadableRecord> brokenAddons = [];
+
+        var mainBatch = ProcessAddonsAsync(
+            mainBatchRecords,
+            brokenAddons,
+            args.Minimal,
+            cancellationToken: args.CancellationToken
         );
         var teivazDlTask = Task.Run(
             async () =>
@@ -362,6 +361,12 @@ public class GammaInstaller(
             gammaSetupDownloadTask,
             stalkerGammaDownloadTask
         );
+
+        foreach (var brokenAddon in brokenAddons)
+        {
+            await brokenAddon.DownloadAsync(args.CancellationToken);
+            await brokenAddon.ExtractAsync(args.CancellationToken);
+        }
 
         await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
         await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
@@ -520,6 +525,7 @@ public class GammaInstaller(
 
     protected virtual async Task ProcessAddonsAsync(
         IList<IDownloadableRecord> addons,
+        ConcurrentBag<IDownloadableRecord> brokenAddons,
         bool minimal = false,
         CancellationToken cancellationToken = default
     ) =>
@@ -528,11 +534,18 @@ public class GammaInstaller(
             new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
             async (grs, _) =>
             {
-                await grs.DownloadAsync(cancellationToken);
-                await grs.ExtractAsync(cancellationToken);
-                if (minimal)
+                try
                 {
-                    grs.DeleteArchive();
+                    await grs.DownloadAsync(cancellationToken);
+                    await grs.ExtractAsync(cancellationToken);
+                    if (minimal)
+                    {
+                        grs.DeleteArchive();
+                    }
+                }
+                catch (Exception)
+                {
+                    brokenAddons.Add(grs);
                 }
             }
         );

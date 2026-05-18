@@ -5,7 +5,7 @@ namespace LibCurlImpersonate;
 
 internal static partial class LibCurl
 {
-    private const string Lib = "libcurl-impersonate.4.8.0.dylib";
+    private const string Lib = "libcurl-impersonate";
 
     static LibCurl()
     {
@@ -15,10 +15,9 @@ internal static partial class LibCurl
             {
                 if (name != Lib)
                     return IntPtr.Zero;
-                string fileName =
+                var fileName =
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "libcurl-impersonate.dll"
-                    : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
-                        ? "libcurl-impersonate.4.8.0.dylib"
+                    : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "libcurl-impersonate.dylib"
                     : "libcurl-impersonate.so";
                 return NativeLibrary.Load(fileName, assembly, searchPath);
             }
@@ -130,6 +129,23 @@ internal static partial class LibCurl
         [MarshalAs(UnmanagedType.FunctionPtr)] XferInfoCallback value
     );
 
+    [LibraryImport(Lib, EntryPoint = "curl_easy_getinfo")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    private static partial int getinfo_long_impl(
+        IntPtr h,
+        int info,
+        nint _2,
+        nint _3,
+        nint _4,
+        nint _5,
+        nint _6,
+        nint _7,
+        out long value
+    );
+
+    internal static int curl_easy_getinfo_long(IntPtr h, int info, out long value) =>
+        getinfo_long_impl(h, info, 0, 0, 0, 0, 0, 0, out value);
+
     internal static int curl_easy_setopt_str(IntPtr h, int opt, string v) =>
         setopt_str_impl(h, opt, 0, 0, 0, 0, 0, 0, v);
 
@@ -170,6 +186,10 @@ internal static partial class LibCurl
     internal const int CURLOPT_NOPROGRESS = 43;
     internal const int CURLOPT_XFERINFOFUNCTION = 20219;
     internal const int CURLOPT_XFERINFODATA = 10057;
+    internal const int CURLOPT_HTTP_VERSION = 84;
+    internal const long CURL_HTTP_VERSION_3 = 30;
+    internal const int CURLINFO_HTTP_VERSION = 0x200000 + 46;
+    internal const int CURLINFO_SPEED_DOWNLOAD_T = 0x600000 + 9;
     internal const int CURLE_OK = 0;
     internal const int CURLE_ABORTED_BY_CALLBACK = 42;
 }

@@ -51,7 +51,7 @@ build:
 	# copy dependency artifacts to stalker-gamma-cli
 	mkdir $(STALKER_RESOURCES_DIR)
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
-	cp $(CURL_BUILD_DIR)/libcurl-impersonate.4.8.0.dylib $(STALKER_GAMMA_BUILD_DIR)/
+	cp $(CURL_BUILD_DIR)/libcurl-impersonate.4.8.0.dylib $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.dylib
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 

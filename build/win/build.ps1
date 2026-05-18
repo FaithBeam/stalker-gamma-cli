@@ -46,20 +46,6 @@ $cacertSplat = @{
 Invoke-WebRequest @cacertSplat
 #endregion
 
-#region dotnet-install
-if (-not (Get-Command dotnet)) {
-    $dotnetInstallPath = Join-Path $buildDir "dotnet-install.ps1"
-    Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile $dotnetInstallPath
-
-    # Install the SDK version required (targeting net10.0 as per project info)
-    & $dotnetInstallPath -Channel 10.0 -InstallDir (Join-Path $buildDir ".dotnet")
-
-    # Add the local dotnet to the current session path
-    $env:PATH = "$(Join-Path $buildDir ".dotnet");$env:PATH"
-    $env:DOTNET_ROOT = "$(Join-Path $buildDir ".dotnet")"
-    #endregion
-}
-
 #region stalker-gamma-cli
 $stalkerCliDir = Join-Path $buildDir "stalker-gamma-cli"
 $pathToProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli") "stalker-gamma-cli.csproj")
@@ -71,9 +57,9 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
-Get-ChildItem -Path (Join-Path $curlDir "bin") -File | Where-Object {$_.Extension -ne '.bat'} | ForEach-Object {Copy-Item $_.FullName $stalkerCliResourceDir }
-Move-Item (Join-Path $stalkerCliResourceDir "curl-impersonate.exe") (Join-Path $stalkerCliResourceDir "curl.exe")
-Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliResourceDir "cacert.pem")
+Get-ChildItem -Path (Join-Path $curlDir "bin") -File | Where-Object {$_.Extension -ne '.bat'} | ForEach-Object {Copy-Item $_.FullName $stalkerCliDir }
+#Move-Item (Join-Path $stalkerCliResourceDir "libcurl-impersonate.dll") (Join-Path $stalkerCliResourceDir "curl.exe")
+Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
 

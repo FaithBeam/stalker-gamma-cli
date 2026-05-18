@@ -7,7 +7,11 @@ public class CurlService
     public Task<Dictionary<string, string>> GetHeadersAsync(
         string url,
         CancellationToken cancellationToken = default
-    ) => Task.Run(() => CurlHttp.GetHeaders(url, cancellationToken), cancellationToken);
+    ) =>
+        Task.Run(
+            () => CurlHttp.GetHeaders(url, http3: true, ct: cancellationToken),
+            cancellationToken
+        );
 
     public Task DownloadFileAsync(
         string url,
@@ -21,14 +25,16 @@ public class CurlService
                 CurlHttp.DownloadFile(
                     url,
                     Path.Join(pathToDownloads, fileName),
-                    onProgress,
-                    cancellationToken
+                    overwrite: true,
+                    http3: true,
+                    onProgress: onProgress,
+                    ct: cancellationToken
                 ),
             cancellationToken
         );
 
     public Task<string> GetStringAsync(string url, CancellationToken cancellationToken = default) =>
-        Task.Run(() => CurlHttp.Fetch(url), cancellationToken);
+        Task.Run(() => CurlHttp.Fetch(url, http3: true, ct: cancellationToken), cancellationToken);
 
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.

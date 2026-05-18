@@ -3,11 +3,30 @@ using System.Text;
 
 namespace LibCurlImpersonate;
 
-public static class CurlHttp
+public class CurlHttp : IDisposable
 {
     static CurlHttp() => LibCurl.curl_global_init(LibCurl.CURL_GLOBAL_DEFAULT);
 
-    public static string Fetch(string url, CancellationToken ct = default)
+    public static IEnumerable<string> FetchLines(
+        string url,
+        Action<double>? onSpeed = null,
+        bool http3 = false,
+        Action<string>? onHttpVersion = null,
+        CancellationToken ct = default
+    )
+    {
+        using var reader = new StringReader(Fetch(url, onSpeed, http3, onHttpVersion, ct));
+        while (reader.ReadLine() is { } line)
+            yield return line;
+    }
+
+    public static string Fetch(
+        string url,
+        Action<double>? onSpeed = null,
+        bool http3 = false,
+        Action<string>? onHttpVersion = null,
+        CancellationToken ct = default
+    )
     {
         IntPtr handle = LibCurl.curl_easy_init();
         if (handle == IntPtr.Zero)
@@ -15,7 +34,7 @@ public static class CurlHttp
 
         var sb = new StringBuilder();
         var writePin = GCHandle.Alloc(sb);
-        var xferPin = InstallXferCallback(handle, ct);
+        var xferPin = InstallXferCallback(handle, ct, onSpeed: onSpeed);
         try
         {
             LibCurl.curl_easy_impersonate(handle, Impersonation, 1);
@@ -29,6 +48,12 @@ public static class CurlHttp
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_FOLLOWLOCATION, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, "cacert.pem");
+            if (http3)
+                LibCurl.curl_easy_setopt_long(
+                    handle,
+                    LibCurl.CURLOPT_HTTP_VERSION,
+                    LibCurl.CURL_HTTP_VERSION_3
+                );
 
             int code = LibCurl.curl_easy_perform(handle);
             if (code == LibCurl.CURLE_ABORTED_BY_CALLBACK)
@@ -38,6 +63,7 @@ public static class CurlHttp
                     $"curl_easy_perform returned error code {code}"
                 );
 
+            ReportHttpVersion(handle, onHttpVersion);
             return sb.ToString();
         }
         finally
@@ -52,6 +78,9 @@ public static class CurlHttp
     public static void DownloadFile(
         string url,
         string path,
+        bool overwrite = true,
+        bool http3 = false,
+        Action<string>? onHttpVersion = null,
         Action<double>? onProgress = null,
         CancellationToken ct = default
     )
@@ -60,7 +89,11 @@ public static class CurlHttp
         if (handle == IntPtr.Zero)
             throw new InvalidOperationException("curl_easy_init failed");
 
-        using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+        using var fs = new FileStream(
+            path,
+            overwrite ? FileMode.Create : FileMode.CreateNew,
+            FileAccess.Write
+        );
         var writePin = GCHandle.Alloc(fs);
         var xferPin = InstallXferCallback(handle, ct, onProgress);
         try
@@ -76,6 +109,12 @@ public static class CurlHttp
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_FOLLOWLOCATION, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, "cacert.pem");
+            if (http3)
+                LibCurl.curl_easy_setopt_long(
+                    handle,
+                    LibCurl.CURLOPT_HTTP_VERSION,
+                    LibCurl.CURL_HTTP_VERSION_3
+                );
 
             int code = LibCurl.curl_easy_perform(handle);
             if (code == LibCurl.CURLE_ABORTED_BY_CALLBACK)
@@ -84,6 +123,8 @@ public static class CurlHttp
                 throw new InvalidOperationException(
                     $"curl_easy_perform returned error code {code}"
                 );
+
+            ReportHttpVersion(handle, onHttpVersion);
         }
         finally
         {
@@ -94,7 +135,12 @@ public static class CurlHttp
         }
     }
 
-    public static Dictionary<string, string> GetHeaders(string url, CancellationToken ct = default)
+    public static Dictionary<string, string> GetHeaders(
+        string url,
+        bool http3 = false,
+        Action<string>? onHttpVersion = null,
+        CancellationToken ct = default
+    )
     {
         IntPtr handle = LibCurl.curl_easy_init();
         if (handle == IntPtr.Zero)
@@ -115,6 +161,12 @@ public static class CurlHttp
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_NOBODY, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, "cacert.pem");
+            if (http3)
+                LibCurl.curl_easy_setopt_long(
+                    handle,
+                    LibCurl.CURLOPT_HTTP_VERSION,
+                    LibCurl.CURL_HTTP_VERSION_3
+                );
 
             int code = LibCurl.curl_easy_perform(handle);
             if (code == LibCurl.CURLE_ABORTED_BY_CALLBACK)
@@ -124,6 +176,7 @@ public static class CurlHttp
                     $"curl_easy_perform returned error code {code}"
                 );
 
+            ReportHttpVersion(handle, onHttpVersion);
             return headers;
         }
         finally
@@ -135,15 +188,33 @@ public static class CurlHttp
         }
     }
 
+    private static void ReportHttpVersion(IntPtr handle, Action<string>? cb)
+    {
+        if (cb is null)
+            return;
+        LibCurl.curl_easy_getinfo_long(handle, LibCurl.CURLINFO_HTTP_VERSION, out long v);
+        cb(
+            v switch
+            {
+                10 => "HTTP/1.0",
+                11 => "HTTP/1.1",
+                20 => "HTTP/2",
+                30 => "HTTP/3",
+                _ => $"HTTP/?",
+            }
+        );
+    }
+
     // Installs CURLOPT_XFERINFOFUNCTION for cancellation and optional progress reporting.
     // Skipped entirely when neither is needed to avoid the NOPROGRESS overhead.
     private static GCHandle InstallXferCallback(
         IntPtr handle,
         CancellationToken ct,
-        Action<double>? onProgress = null
+        Action<double>? onProgress = null,
+        Action<double>? onSpeed = null
     )
     {
-        if (!ct.CanBeCanceled && onProgress is null)
+        if (!ct.CanBeCanceled && onProgress is null && onSpeed is null)
             return default;
 
         LibCurl.XferInfoCallback cb = (_, total, now, _, _) =>
@@ -152,6 +223,15 @@ public static class CurlHttp
                 return 1;
             if (onProgress is not null && total > 0)
                 onProgress(now / (double)total);
+            if (onSpeed is not null)
+            {
+                LibCurl.curl_easy_getinfo_long(
+                    handle,
+                    LibCurl.CURLINFO_SPEED_DOWNLOAD_T,
+                    out long bps
+                );
+                onSpeed(bps);
+            }
             return 0;
         };
         var pin = GCHandle.Alloc(cb);
@@ -192,7 +272,7 @@ public static class CurlHttp
         return total;
     }
 
-    public static void GlobalCleanup()
+    public void Dispose()
     {
         LibCurl.curl_global_cleanup();
     }
@@ -201,6 +281,7 @@ public static class CurlHttp
     [
         "chrome145",
         "chrome142",
+        // "firefox147",
         "safari2601",
     ];
 
