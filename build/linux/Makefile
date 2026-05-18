@@ -6,7 +6,7 @@ ROOT = $(realpath ../../)
 
 BUILD_DIR = $(CUR_DIR)/build
 
-CURL_IMPERSONATE_VERSION = v1.5.1
+CURL_IMPERSONATE_VERSION = v2.0.0a1
 ifeq ($(ARCH),x64)
     CURL_ARCH := x86_64
 else ifeq ($(ARCH),arm64)
@@ -58,7 +58,7 @@ build:
 	# copy dependency artifacts to stalker-gamma-cli
 	mkdir $(STALKER_RESOURCES_DIR)
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
-	cp $(CURL_BUILD_DIR)/libcurl-impersonate.4.8.0.so $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.so
+	cp $(CURL_BUILD_DIR)/libcurl-impersonate.so.4.8.0 $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.so
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
