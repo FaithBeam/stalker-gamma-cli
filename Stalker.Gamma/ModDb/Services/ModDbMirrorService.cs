@@ -36,6 +36,7 @@ public partial class ModDbMirrorService(CurlService curlService)
                 $"""
                 Error getting mirror
                 Mirror URL: {mirrorUrl}
+                Exception Message: {e.Message}
                 """,
                 e
             );
