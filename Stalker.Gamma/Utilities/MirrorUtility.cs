@@ -47,6 +47,7 @@ public partial class MirrorUtility(CurlUtility curlUtility)
                 $"""
                 Error getting mirror
                 Mirror URL: {mirrorUrl}
+                Exception Message: {e.Message}
                 """,
                 e
             );
