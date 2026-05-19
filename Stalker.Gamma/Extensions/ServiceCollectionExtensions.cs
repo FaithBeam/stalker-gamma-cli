@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
     {
         s.AddHttpClient()
             .AddHttpClient(
-                "githubDlArchive",
+                "dlAddon",
                 client =>
                 {
                     client.DefaultRequestHeaders.Add("User-Agent", "stalker-gamma-clone/1.0");
@@ -34,7 +34,8 @@ public static class ServiceCollectionExtensions
                     EnableMultipleHttp2Connections = true,
                     AutomaticDecompression = DecompressionMethods.None,
                 }
-            );
+            )
+            .AddStandardResilienceHandler();
         s.AddSingleton<StalkerGammaSettings>().AddSingleton<GammaProgress, GammaProgress>();
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
             .AddScoped<ArchiveService>()

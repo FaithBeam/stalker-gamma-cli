@@ -75,66 +75,6 @@ public class CurlHttp : IDisposable
         }
     }
 
-    public static void DownloadFile(
-        string url,
-        string path,
-        bool overwrite = true,
-        bool http3 = false,
-        Action<string>? onHttpVersion = null,
-        Action<double>? onProgress = null,
-        CancellationToken ct = default
-    )
-    {
-        IntPtr handle = LibCurl.curl_easy_init();
-        if (handle == IntPtr.Zero)
-            throw new InvalidOperationException("curl_easy_init failed");
-
-        using var fs = new FileStream(
-            path,
-            overwrite ? FileMode.Create : FileMode.CreateNew,
-            FileAccess.Write
-        );
-        var writePin = GCHandle.Alloc(fs);
-        var xferPin = InstallXferCallback(handle, ct, onProgress);
-        try
-        {
-            LibCurl.curl_easy_impersonate(handle, Impersonation, 1);
-            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_ACCEPT_ENCODING, "");
-            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_URL, url);
-            LibCurl.curl_easy_setopt_cb(handle, LibCurl.CURLOPT_WRITEFUNCTION, OnWriteFile);
-            LibCurl.curl_easy_setopt_ptr(
-                handle,
-                LibCurl.CURLOPT_WRITEDATA,
-                GCHandle.ToIntPtr(writePin)
-            );
-            LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_FOLLOWLOCATION, 1L);
-            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, "cacert.pem");
-            if (http3)
-                LibCurl.curl_easy_setopt_long(
-                    handle,
-                    LibCurl.CURLOPT_HTTP_VERSION,
-                    LibCurl.CURL_HTTP_VERSION_3
-                );
-
-            int code = LibCurl.curl_easy_perform(handle);
-            if (code == LibCurl.CURLE_ABORTED_BY_CALLBACK)
-                ct.ThrowIfCancellationRequested();
-            if (code != LibCurl.CURLE_OK)
-                throw new InvalidOperationException(
-                    $"curl_easy_perform returned error code {code}"
-                );
-
-            ReportHttpVersion(handle, onHttpVersion);
-        }
-        finally
-        {
-            writePin.Free();
-            if (xferPin.IsAllocated)
-                xferPin.Free();
-            LibCurl.curl_easy_cleanup(handle);
-        }
-    }
-
     public static Dictionary<string, string> GetHeaders(
         string url,
         bool http3 = false,

@@ -1,8 +1,9 @@
 using LibCurlImpersonate;
+using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Services;
 
-public class CurlService
+public class CurlService(IHttpClientFactory hcf)
 {
     public Task<Dictionary<string, string>> GetHeadersAsync(
         string url,
@@ -13,25 +14,22 @@ public class CurlService
             cancellationToken
         );
 
-    public Task DownloadFileAsync(
+    public async Task DownloadFileAsync(
         string url,
         string pathToDownloads,
         string fileName,
         Action<double>? onProgress = null,
         CancellationToken cancellationToken = default
-    ) =>
-        Task.Run(
-            () =>
-                CurlHttp.DownloadFile(
-                    url,
-                    Path.Join(pathToDownloads, fileName),
-                    overwrite: true,
-                    http3: true,
-                    onProgress: onProgress,
-                    ct: cancellationToken
-                ),
+    )
+    {
+        await DownloadFileFast.DownloadAsync(
+            _dlAddonHc,
+            url,
+            Path.Join(pathToDownloads, fileName),
+            onProgress,
             cancellationToken
         );
+    }
 
     public Task<string> GetStringAsync(string url, CancellationToken cancellationToken = default) =>
         Task.Run(() => CurlHttp.Fetch(url, http3: true, ct: cancellationToken), cancellationToken);
@@ -40,6 +38,8 @@ public class CurlService
     /// Whether curl service found curl-impersonate-win.exe and can execute.
     /// </summary>
     public bool Ready => true;
+
+    private readonly HttpClient _dlAddonHc = hcf.CreateClient("dlAddon");
 }
 
 public class ModDbBotDetectedException(string msg) : Exception(msg);
