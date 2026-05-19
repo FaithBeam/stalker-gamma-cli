@@ -57,8 +57,8 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
-Get-ChildItem -Path (Join-Path $curlDir "bin") -File | Where-Object {$_.Extension -ne '.bat'} | ForEach-Object {Copy-Item $_.FullName $stalkerCliDir }
-#Move-Item (Join-Path $stalkerCliResourceDir "libcurl-impersonate.dll") (Join-Path $stalkerCliResourceDir "curl.exe")
+#Get-ChildItem -Path (Join-Path $curlDir "bin") -File | Where-Object {$_.Extension -ne '.bat'} | ForEach-Object {Copy-Item $_.FullName $stalkerCliDir }
+Move-Item (Join-Path (Join-Path $curlDir "bin") "libcurl-impersonate.dll") $stalkerCliDir
 Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
