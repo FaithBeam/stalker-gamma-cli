@@ -61,10 +61,6 @@ public class AnomalyInstallCmd(
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         var cache = _cliSettings.ActiveProfile!.Cache;
         var resourcesPath = Path.Join(Path.GetDirectoryName(AppContext.BaseDirectory), "resources");
-        stalkerGammaSettings.PathToCurl = Path.Join(
-            resourcesPath,
-            OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate"
-        );
         stalkerGammaSettings.PathTo7Z = Path.Join(
             resourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"

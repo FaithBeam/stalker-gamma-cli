@@ -7,6 +7,12 @@ public class CurlHttp : IDisposable
 {
     static CurlHttp() => LibCurl.curl_global_init(LibCurl.CURL_GLOBAL_DEFAULT);
 
+    private static readonly string CurDir = Path.Join(
+        Path.GetDirectoryName(AppContext.BaseDirectory)
+    );
+
+    private static readonly string PathToCacert = Path.Join(CurDir, "cacert.pem");
+
     public static IEnumerable<string> FetchLines(
         string url,
         Action<double>? onSpeed = null,
@@ -47,7 +53,7 @@ public class CurlHttp : IDisposable
                 GCHandle.ToIntPtr(writePin)
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_FOLLOWLOCATION, 1L);
-            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, "cacert.pem");
+            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, PathToCacert);
             if (http3)
                 LibCurl.curl_easy_setopt_long(
                     handle,
@@ -100,7 +106,7 @@ public class CurlHttp : IDisposable
                 GCHandle.ToIntPtr(headerPin)
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_NOBODY, 1L);
-            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, "cacert.pem");
+            LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, PathToCacert);
             if (http3)
                 LibCurl.curl_easy_setopt_long(
                     handle,

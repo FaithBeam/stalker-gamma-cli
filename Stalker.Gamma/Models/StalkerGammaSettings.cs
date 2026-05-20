@@ -21,6 +21,5 @@ public class StalkerGammaSettings
     public int DownloadThreads { get; set; } = 2;
     public string PathToUnzip = "unzip";
     public string PathTo7Z = OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
-    public string PathToCurl = OperatingSystem.IsWindows() ? "curl.exe" : "curl-impersonate";
     public string PathToTar = "tar";
 }
