@@ -1,10 +1,11 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using Stalker.Gamma.Proxies;
+using Stalker.Gamma.Utilities;
+using CurlService = Stalker.Gamma.Services.CurlService;
 
-namespace Stalker.Gamma.Utilities;
+namespace Stalker.Gamma.ModDb.Services;
 
-public partial class MirrorUtility(PythonApiProxy pythonApiProxy)
+public partial class ModDbMirrorService(CurlService curlService)
 {
     private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);
@@ -35,6 +36,7 @@ public partial class MirrorUtility(PythonApiProxy pythonApiProxy)
                 $"""
                 Error getting mirror
                 Mirror URL: {mirrorUrl}
+                Exception Message: {e.Message}
                 """,
                 e
             );
@@ -50,7 +52,7 @@ public partial class MirrorUtility(PythonApiProxy pythonApiProxy)
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await pythonApiProxy.GetStringAsync(mirrorUrl, cancellationToken);
+        var mirrorsHtml = await curlService.GetStringAsync(mirrorUrl, cancellationToken);
         if (mirrorsHtml.Contains("Just a moment..."))
         {
             throw new CloudflareChallengeException(
@@ -62,7 +64,7 @@ public partial class MirrorUtility(PythonApiProxy pythonApiProxy)
                 """
             );
         }
-        var matches = HrefRx().Matches(mirrorsHtml);
+        var matches = AvailableMirrors().Matches(mirrorsHtml);
         var matchSet = matches
             .Select(m =>
                 m.Groups["href"]
@@ -86,8 +88,10 @@ public partial class MirrorUtility(PythonApiProxy pythonApiProxy)
     }
 
     [GeneratedRegex("""<a href="(?<href>.+)" id="downloadon">*?""")]
-    private static partial Regex HrefRx();
+    private static partial Regex AvailableMirrors();
 }
+
+public class NoMirrorsAvailableException(string msg) : Exception(msg);
 
 public class CloudflareChallengeException(string msg) : Exception(msg);
 

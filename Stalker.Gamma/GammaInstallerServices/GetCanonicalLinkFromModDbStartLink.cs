@@ -1,10 +1,11 @@
 ﻿using HtmlAgilityPack;
-using Stalker.Gamma.Proxies;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
+using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
-public class GetCanonicalLinkFromModDbStartLink(PythonApiProxy pythonApiProxy)
+public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
 {
     public async Task<string> GetCanonicalLinkAsync(
         string modDbStartLink,
@@ -14,7 +15,7 @@ public class GetCanonicalLinkFromModDbStartLink(PythonApiProxy pythonApiProxy)
         string? htmlContent = null;
         try
         {
-            htmlContent = await _pythonApiProxy.GetStringAsync(modDbStartLink, ct);
+            htmlContent = await _curlService.GetStringAsync(modDbStartLink, ct);
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
             var linkNode = htmlDoc.DocumentNode.SelectSingleNode("//link[@rel='canonical']");
@@ -38,7 +39,7 @@ public class GetCanonicalLinkFromModDbStartLink(PythonApiProxy pythonApiProxy)
         }
     }
 
-    private readonly PythonApiProxy _pythonApiProxy = pythonApiProxy;
+    private readonly CurlService _curlService = curlService;
 }
 
 public class CanonicalLinkNotFoundException(string msg) : Exception(msg);

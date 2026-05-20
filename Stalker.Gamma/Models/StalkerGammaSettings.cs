@@ -2,7 +2,8 @@ namespace Stalker.Gamma.Models;
 
 public class StalkerGammaSettings
 {
-    public string ModpackMakerList { get; set; } = "https://stalker-gamma.com/api/list";
+    public string ModpackMakerList { get; set; } =
+        "https://stalker-gamma.com/api/client/v1/mods/list";
     public string? ModListUrl { get; set; }
     public string GammaLargeFilesRepo { get; set; } =
         "https://github.com/Grokitach/gamma_large_files_v2";

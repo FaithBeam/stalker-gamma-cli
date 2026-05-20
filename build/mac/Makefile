@@ -6,9 +6,17 @@ ROOT = $(realpath ../../)
 
 BUILD_DIR = $(CUR_DIR)/build
 
-DOTNET_INSTALL_URL = https://dot.net/v1/dotnet-install.sh
-DOTNET_INSTALL_SCRIPT_PATH = $(BUILD_DIR)/dotnet-install.sh
-DOTNET_INSTALL_PATH = $(BUILD_DIR)/.dotnet
+CURL_IMPERSONATE_VERSION = v2.0.0a1
+ifeq ($(ARCH),x64)
+    CURL_ARCH := x86_64
+else ifeq ($(ARCH),arm64)
+    CURL_ARCH := arm64
+else
+    CURL_ARCH := unknown
+endif
+CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
+CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-macos.tar.gz
+CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).arm64-macos.tar.gz
 
 7Z_VERSION = 2501
 7Z_BUILD_DIR = $(BUILD_DIR)/7zip
@@ -19,25 +27,18 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
-PYTHON_API_DIR = $(ROOT)/python-api
-PYINSTALLER_DIST_DIR = $(BUILD_DIR)/pyinstaller-dist
-
 build:
 	mkdir $(BUILD_DIR)
+
+	# curl-impersonate
+	mkdir $(CURL_BUILD_DIR)
+	curl -Lo $(CURL_IMPERSONATE_ARCHIVE) $(CURL_IMPERSONATE_DL_URL)
+	tar -xvzf $(CURL_IMPERSONATE_ARCHIVE) -C $(CURL_BUILD_DIR)
 
 	# 7zip
 	mkdir $(7Z_BUILD_DIR)
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
-	
-	# dotnet-install
-	if ! command -v dotnet &> /dev/null; then \
-	    curl $(DOTNET_INSTALL_URL) -Lo $(DOTNET_INSTALL_SCRIPT_PATH); \
-	    chmod +x $(DOTNET_INSTALL_SCRIPT_PATH); \
-	    $(DOTNET_INSTALL_SCRIPT_PATH) -Channel 10.0 -InstallDir $(DOTNET_INSTALL_PATH); \
-	    export PATH=$(DOTNET_INSTALL_PATH):$$PATH; \
-	    export DOTNET_ROOT=$(DOTNET_INSTALL_PATH); \
-	fi
 	
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
@@ -47,13 +48,11 @@ build:
 	rm $(STALKER_GAMMA_BUILD_DIR)/*.pdb
 	rm -rf $(STALKER_GAMMA_BUILD_DIR)/*.dSYM
 
-	# build python-api cloudscraper executable
-	pyinstaller --distpath $(PYINSTALLER_DIST_DIR) $(PYTHON_API_DIR)/main.spec
-
 	# copy dependency artifacts to stalker-gamma-cli
 	mkdir $(STALKER_RESOURCES_DIR)
+	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
+	cp $(CURL_BUILD_DIR)/libcurl-impersonate.4.8.0.dylib $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.dylib
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
-	cp $(PYINSTALLER_DIST_DIR)/cloudscraper $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:

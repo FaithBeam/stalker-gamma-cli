@@ -1,6 +1,6 @@
 namespace Stalker.Gamma.Utilities;
 
-public class EnvChecker
+public static class EnvChecker
 {
     public static bool IsInPath(string exeName)
     {

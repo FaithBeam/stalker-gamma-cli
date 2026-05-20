@@ -1,19 +1,19 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using Stalker.Gamma.Models;
-using Stalker.Gamma.Proxies;
+using Stalker.Gamma.ModDb.Models;
 using Stalker.Gamma.Utilities;
+using CurlService = Stalker.Gamma.Services.CurlService;
 
-namespace Stalker.Gamma.GammaInstallerServices;
+namespace Stalker.Gamma.ModDb.Services;
 
-public partial class GetModDbAddonMetadata(PythonApiProxy pythonApiProxy)
+public partial class ModDbGetAddonMetadataService(CurlService curlService)
 {
-    private readonly PythonApiProxy _pythonApiProxy = pythonApiProxy;
+    private readonly CurlService _curlService = curlService;
 
     public async Task<ModDbPageMetadata> GetAsync(string modDbAddonUrl, CancellationToken ct)
     {
-        var addonHtml = await _pythonApiProxy.GetStringAsync(modDbAddonUrl, ct);
+        var addonHtml = await _curlService.GetStringAsync(modDbAddonUrl, ct);
         try
         {
             var htmlDoc = new HtmlDocument();

@@ -20,6 +20,7 @@ public class Config(ILogger logger, CliSettings cliSettings)
             return;
         }
 
+        _logger.Information("Settings Path: {Path}", CliSettings.SettingsPath);
         _logger.Information("{Profile}", foundProfile.ToString());
     }
 
@@ -79,10 +80,10 @@ public class Config(ILogger logger, CliSettings cliSettings)
         string cache,
         string name = "gamma",
         string mo2Profile = "G.A.M.M.A",
-        string modPackMakerUrl = "https://stalker-gamma.com/api/list",
+        string modPackMakerUrl = "https://stalker-gamma.com/api/client/v1/mods/list",
         string modListUrl =
             "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt",
-        [Range(1, 20)] int downloadThreads = 2,
+        [Range(1, 20)] int downloadThreads = 4,
         string gammaSetupRepoUrl = "https://github.com/Grokitach/gamma_setup",
         string gammaSetupRepoBranch = "main",
         string stalkerGammaRepoUrl = "https://github.com/Grokitach/Stalker_GAMMA",

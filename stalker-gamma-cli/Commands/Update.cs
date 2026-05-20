@@ -9,6 +9,7 @@ using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Commands;
@@ -20,10 +21,10 @@ public class UpdateCmds(
     StalkerGammaSettings stalkerGammaSettings,
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IModListRecordFactory modListRecordFactory,
-    GammaInstaller gammaInstaller,
-    GitUtility gitUtility,
-    UtilitiesReady utilitiesReady,
     GetRemoteGitRepoCommit getRemoteGitRepoCommit,
+    GitService gitService,
+    IGammaInstaller gammaInstaller,
+    UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
 )
 {
@@ -31,12 +32,116 @@ public class UpdateCmds(
     /// Check for updates
     /// </summary>
     [Command("check")]
-    public async Task CheckUpdates(CancellationToken cancellationToken = default)
+    public async Task<int> CheckUpdates(CancellationToken cancellationToken = default)
     {
-        await LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
+        var statusCode = 0;
+        LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
 
+        try
+        {
+            var updateArgs = GammaInstallerArgs
+                .Create(
+                    _cliSettings.ActiveProfile!.Anomaly,
+                    _cliSettings.ActiveProfile!.Gamma,
+                    _cliSettings.ActiveProfile!.Cache
+                )
+                .WithCancellationToken(cancellationToken)
+                .WithMo2Profile(_cliSettings.ActiveProfile!.Mo2Profile)
+                .Build();
+            var diffed = await gammaInstaller.DiffAddonRecordsAsync(updateArgs);
+
+            var localGitRepoDiffs = await GetLocalGitRepoDiffs(cancellationToken);
+
+            var diffs = diffed
+                .LocalRecords.Diff(diffed.OnlineRecords)
+                .Concat(localGitRepoDiffs)
+                .ToList();
+            if (diffs.Count > 0)
+            {
+                var olds = diffs
+                    .Where(x =>
+                        x.OldListRecord is not null
+                        && !string.IsNullOrWhiteSpace(x.OldListRecord.AddonName)
+                    )
+                    .Select(x => x.OldListRecord!);
+                var news = diffs
+                    .Where(x =>
+                        x.NewListRecord is not null
+                        && !string.IsNullOrWhiteSpace(x.NewListRecord.AddonName)
+                    )
+                    .Select(x => x.NewListRecord!);
+                var joined = olds.Concat(news).ToList();
+                var padRightAddonName =
+                    joined.MaxBy(x => x.AddonName!.Length)!.AddonName!.Length + 5;
+                var padRightOldZipName =
+                    diffs
+                        .MaxBy(x => x.OldListRecord?.ZipName?.Length)
+                        ?.OldListRecord?.ZipName?.Length
+                    ?? 3;
+                var padRightStatus = nameof(DiffType.Modified).Length;
+
+                _logger.Information("Updates available: {NumberUpdates}", diffs.Count);
+
+                foreach (var diff in diffs)
+                {
+                    if (diff.DiffType == DiffType.Modified)
+                    {
+                        _logger.Information(
+                            "{Status}: {AddonName} {OldZipName} -> {NewZipName}",
+                            diff.DiffType.ToString().PadRight(padRightStatus),
+                            diff.OldListRecord!.AddonName!.PadRight(padRightAddonName),
+                            diff.OldListRecord.ZipName!.PadRight(padRightOldZipName),
+                            diff.NewListRecord!.ZipName
+                        );
+                    }
+                    else
+                    {
+                        _logger.Information(
+                            "{Status}: {AddonName} {OldZipName} -> {NewZipName}",
+                            diff.DiffType.ToString().PadRight(padRightStatus),
+                            diff.DiffType switch
+                            {
+                                DiffType.Added =>
+                                    $"{diff.NewListRecord?.AddonName ?? diff.NewListRecord?.DlLink ?? "N/A"}".PadRight(
+                                        padRightAddonName
+                                    ),
+                                DiffType.Removed => diff.OldListRecord?.AddonName?.PadRight(
+                                    padRightAddonName
+                                ),
+                                _ => throw new ArgumentOutOfRangeException(),
+                            },
+                            $"{diff.OldListRecord?.ZipName ?? "N/A"}".PadRight(padRightOldZipName),
+                            $"{diff.NewListRecord?.ZipName ?? "N/A"}"
+                        );
+                    }
+                }
+
+                _logger.Information("To apply updates, run `stalker-gamma update apply`");
+            }
+            else
+            {
+                _logger.Information("No updates found");
+            }
+        }
+        catch (Exception e)
+        {
+            progressLoggingService.WriteToLogFile();
+            _logger.Error(e, "Update check failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
+        }
+        finally
+        {
+            progressLoggingService.WriteToLogFile();
+        }
+        return statusCode;
+    }
+
+    private async Task<List<ModPackMakerRecordDiff>> GetLocalGitRepoDiffs(
+        CancellationToken cancellationToken
+    )
+    {
         var gammaDownloadsPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "downloads");
         List<string> repos =
         [
@@ -46,7 +151,6 @@ public class UpdateCmds(
             "teivaz_anomaly_gunslinger",
         ];
         const string repoOwner = "Grokitach";
-
         var localRepos = repos
             .Select(x => new { Name = x, Path = Path.Join(gammaDownloadsPath, $"{x}.git") })
             .Where(repoDir => Directory.Exists(repoDir.Path))
@@ -54,7 +158,7 @@ public class UpdateCmds(
         var localRepoModPackMakerRecs = localRepos
             .Select(repoDir =>
             {
-                var sha = gitUtility.GetLatestCommitHash(repoDir.Path);
+                var sha = gitService.GetLatestCommitHash(repoDir.Path);
                 return new ModPackMakerRecord
                 {
                     DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
@@ -86,86 +190,7 @@ public class UpdateCmds(
         var localGitRepoDiffs = await localRepoModPackMakerRecs.DiffAsync(
             remoteRepoModPackMakerRecs
         );
-
-        var localModPackMakerPath = Path.Join(
-            _cliSettings.ActiveProfile!.Gamma,
-            "profiles",
-            _cliSettings.ActiveProfile.Mo2Profile,
-            "modpack_maker_list.json"
-        );
-
-        var localRecords = File.Exists(localModPackMakerPath)
-            ? JsonSerializer.Deserialize(
-                await File.ReadAllTextAsync(localModPackMakerPath, cancellationToken),
-                jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
-            ) ?? []
-            : [];
-        var onlineRecordsTxt = await _getStalkerModsFromApi.GetModsAsync(cancellationToken);
-        var onlineRecords = _modListRecordFactory.Create(onlineRecordsTxt);
-        var diffs = localRecords.Diff(onlineRecords).Concat(localGitRepoDiffs).ToList();
-        if (diffs.Count > 0)
-        {
-            var olds = diffs
-                .Where(x =>
-                    x.OldListRecord is not null
-                    && !string.IsNullOrWhiteSpace(x.OldListRecord.AddonName)
-                )
-                .Select(x => x.OldListRecord!);
-            var news = diffs
-                .Where(x =>
-                    x.NewListRecord is not null
-                    && !string.IsNullOrWhiteSpace(x.NewListRecord.AddonName)
-                )
-                .Select(x => x.NewListRecord!);
-            var joined = olds.Concat(news).ToList();
-            var padRightAddonName = joined.MaxBy(x => x.AddonName!.Length)!.AddonName!.Length + 5;
-            var padRightOldZipName =
-                diffs.MaxBy(x => x.OldListRecord?.ZipName?.Length)?.OldListRecord?.ZipName?.Length
-                ?? 3;
-            var padRightStatus = nameof(DiffType.Modified).Length;
-
-            _logger.Information("Updates available: {NumberUpdates}", diffs.Count);
-
-            foreach (var diff in diffs)
-            {
-                if (diff.DiffType == DiffType.Modified)
-                {
-                    _logger.Information(
-                        "{Status}: {AddonName} {OldZipName} -> {NewZipName}",
-                        diff.DiffType.ToString().PadRight(padRightStatus),
-                        diff.OldListRecord!.AddonName!.PadRight(padRightAddonName),
-                        diff.OldListRecord.ZipName!.PadRight(padRightOldZipName),
-                        diff.NewListRecord!.ZipName
-                    );
-                }
-                else
-                {
-                    _logger.Information(
-                        "{Status}: {AddonName} {OldZipName} -> {NewZipName}",
-                        diff.DiffType.ToString().PadRight(padRightStatus),
-                        diff.DiffType switch
-                        {
-                            DiffType.Added =>
-                                $"{diff.NewListRecord?.AddonName ?? diff.NewListRecord?.DlLink ?? "N/A"}".PadRight(
-                                    padRightAddonName
-                                ),
-                            DiffType.Removed => diff.OldListRecord?.AddonName?.PadRight(
-                                padRightAddonName
-                            ),
-                            _ => throw new ArgumentOutOfRangeException(),
-                        },
-                        $"{diff.OldListRecord?.ZipName ?? "N/A"}".PadRight(padRightOldZipName),
-                        $"{diff.NewListRecord?.ZipName ?? "N/A"}"
-                    );
-                }
-            }
-
-            _logger.Information("To apply updates, run `stalker-gamma update apply`");
-        }
-        else
-        {
-            _logger.Information("No updates found");
-        }
+        return localGitRepoDiffs;
     }
 
     /// <summary>
@@ -176,19 +201,19 @@ public class UpdateCmds(
     /// <param name="minimal"></param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
-    /// <param name="mo2Version"></param>
     /// <param name="progressUpdateIntervalMs"></param>
-    public async Task Apply(
+    public async Task<int> Apply(
         CancellationToken cancellationToken,
         bool verbose = false,
         bool minimal = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
-        [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
-        await LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
+        var statusCode = 0;
+
+        LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 
@@ -203,27 +228,25 @@ public class UpdateCmds(
 
         try
         {
-            await gammaInstaller.UpdateAsync(
-                new InstallUpdatesArgs
-                {
-                    Gamma = gamma,
-                    Anomaly = anomaly,
-                    Cache = cache,
-                    CancellationToken = cancellationToken,
-                    Mo2Profile = mo2Profile,
-                    Mo2Version = mo2Version,
-                    Minimal = minimal,
-                    PreserveUserLtx = preserveUserSettings,
-                    PreserveMcmSettings = preserveMcmSettings,
-                }
-            );
+            var updateArgs = GammaInstallerArgs
+                .Create(anomaly, gamma, cache)
+                .WithCancellationToken(cancellationToken)
+                .WithMo2Profile(mo2Profile)
+                .WithMinimal(minimal)
+                .WithPreserveUserLtx(preserveUserSettings)
+                .WithPreserveMcmSettings(preserveMcmSettings)
+                .Build();
+            updateArgs.GroupedAddonRecords =
+                await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);
+            gammaInstaller.BuildSpecialRepoRecords(updateArgs);
+            await gammaInstaller.InstallAsync(updateArgs);
             _logger.Information("Update finished");
         }
         catch (Exception e)
         {
             progressLoggingService.WriteToLogFile();
-            _logger.Error(e, "Update failed");
-            throw;
+            _logger.Error(e, "Update failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
         }
         finally
         {
@@ -231,6 +254,8 @@ public class UpdateCmds(
             gammaWriteFileDisposable.Dispose();
             gammaProgressDisposable.Dispose();
         }
+
+        return statusCode;
     }
 
     private void InitializeSettings(

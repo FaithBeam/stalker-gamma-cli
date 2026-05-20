@@ -21,11 +21,7 @@ public class GetStalkerModsFromLocal : IGetStalkerModsFromLocal
         if (!File.Exists(pathToModPackMakerList))
         {
             throw new GetStalkerModsFromLocalException(
-                $"""
-                Error reading modpack_maker_list.json at {pathToModPackMakerList}.
-                File not found.
-                You need to have ran command `full-install` at least once to be able to update.
-                """
+                $"{pathToModPackMakerList} file not found, please run `full-install` and let it complete to generate this file. You can then perform `update check` and `update apply`"
             );
         }
 

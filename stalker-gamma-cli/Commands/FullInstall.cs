@@ -16,7 +16,8 @@ public class FullInstallCmd(
     ILogger logger,
     CliSettings cliSettings,
     StalkerGammaSettings stalkerGammaSettings,
-    GammaInstaller gammaInstaller,
+    IGammaInstaller gammaInstaller,
+    OfflineGammaInstaller offlineGammaInstaller,
     PowerShellCmdBuilder powerShellCmdBuilder,
     UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
@@ -39,9 +40,8 @@ public class FullInstallCmd(
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="debug"></param>
-    /// <param name="mo2Version">The version of Mod Organizer 2 to download</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
-    public async Task FullInstall(
+    public async Task<int> FullInstall(
         CancellationToken cancellationToken,
         bool skipGithubDownloads = false,
         bool skipExtractOnHashMatch = false,
@@ -56,27 +56,26 @@ public class FullInstallCmd(
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
         [Hidden] bool debug = false,
-        [Hidden] string? mo2Version = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
-        await LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
+        var statusCode = 0;
+        LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
-        ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
+        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 
         ValidateOfflineRequirements(offline, modPackMakerPath, modListPath);
 
         InitializeSettings(
             downloadThreads,
-            cliSettings.ActiveProfile!.GammaSetupRepoUrl,
-            cliSettings.ActiveProfile.GammaSetupRepoBranch,
-            cliSettings.ActiveProfile.StalkerGammaRepoUrl,
-            cliSettings.ActiveProfile.StalkerGammaRepoBranch,
-            cliSettings.ActiveProfile.GammaLargeFilesRepoUrl,
-            cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
-            cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
-            cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
-            cliSettings.ActiveProfile.PythonApiUrl,
+            _cliSettings.ActiveProfile!.GammaSetupRepoUrl,
+            _cliSettings.ActiveProfile.GammaSetupRepoBranch,
+            _cliSettings.ActiveProfile.StalkerGammaRepoUrl,
+            _cliSettings.ActiveProfile.StalkerGammaRepoBranch,
+            _cliSettings.ActiveProfile.GammaLargeFilesRepoUrl,
+            _cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
+            _cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
+            _cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
             out var anomaly,
             out var gamma,
             out var cache,
@@ -91,7 +90,10 @@ public class FullInstallCmd(
             cache
         );
 
+        var installer = offline ? _offlineGammaInstaller : _gammaInstaller;
+
         SetUpLogging(
+            installer,
             verbose,
             debug,
             progressUpdateIntervalMs,
@@ -102,40 +104,39 @@ public class FullInstallCmd(
 
         try
         {
-            await gammaInstaller.FullInstallAsync(
-                new GammaInstallerArgs
-                {
-                    Anomaly = anomaly,
-                    Gamma = gamma,
-                    Cache = cache,
-                    Mo2Version = mo2Version,
-                    CancellationToken = cancellationToken,
-                    DownloadGithubArchives = !skipGithubDownloads,
-                    SkipExtractOnHashMatch = skipExtractOnHashMatch,
-                    Mo2Profile = mo2Profile,
-                    Minimal = minimal,
-                    Offline = offline,
-                    ModPackMakerPath = modPackMakerPath,
-                    ModListPath = modListPath,
-                    PreserveUserLtx = preserveUserSettings,
-                    PreserveMcmSettings = preserveMcmSettings,
-                }
-            );
+            var args = GammaInstallerArgs
+                .Create(anomaly, gamma, cache)
+                .WithCancellationToken(cancellationToken)
+                .WithDownloadGithubArchives(!skipGithubDownloads)
+                .WithSkipExtractOnHashMatch(skipExtractOnHashMatch)
+                .WithMo2Profile(mo2Profile)
+                .WithMinimal(minimal)
+                .WithModPackMakerPath(modPackMakerPath)
+                .WithModListPath(modListPath)
+                .WithPreserveUserLtx(preserveUserSettings)
+                .WithPreserveMcmSettings(preserveMcmSettings)
+                .Build();
+            args.GroupedAddonRecords = await installer.BuildGroupedAddonRecordsAsync(args);
+            args.AnomalyRecord = installer.BuildAnomalyRecord(args);
+            installer.BuildSpecialRepoRecords(args);
+            await installer.InstallAsync(args);
             _logger.Information("Install finished");
         }
         catch (Exception e)
         {
-            progressLoggingService.WriteToLogFile();
+            _progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Install failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
         }
         finally
         {
-            progressLoggingService.WriteToLogFile();
+            _progressLoggingService.WriteToLogFile();
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
-            gammaInstaller.Dispose();
         }
+
+        return statusCode;
     }
 
     private static void ValidateOfflineRequirements(
@@ -168,32 +169,30 @@ public class FullInstallCmd(
         string gammaLargeFilesRepoBranch,
         string teivazAnomalyGunslingerRepoUrl,
         string teivazAnomalyGunslingerRepoBranch,
-        string pythonApiUrl,
         out string anomaly,
         out string gamma,
         out string cache,
         out string mo2Profile
     )
     {
-        anomaly = cliSettings.ActiveProfile!.Anomaly;
-        gamma = cliSettings.ActiveProfile!.Gamma;
-        cache = cliSettings.ActiveProfile!.Cache;
-        mo2Profile = cliSettings.ActiveProfile!.Mo2Profile;
-        var modpackMakerUrl = cliSettings.ActiveProfile!.ModPackMakerUrl;
-        var modListUrl = cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads =
-            downloadThreads ?? cliSettings.ActiveProfile!.DownloadThreads;
-        stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
-        stalkerGammaSettings.ModListUrl = modListUrl;
-        stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
-        stalkerGammaSettings.GammaSetupRepoBranch = gammaSetupRepoBranch;
-        stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
-        stalkerGammaSettings.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
-        stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
-        stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
-        stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
-        stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
-        stalkerGammaSettings.PythonApiUrl = pythonApiUrl;
+        anomaly = _cliSettings.ActiveProfile!.Anomaly;
+        gamma = _cliSettings.ActiveProfile!.Gamma;
+        cache = _cliSettings.ActiveProfile!.Cache;
+        mo2Profile = _cliSettings.ActiveProfile!.Mo2Profile;
+        var modpackMakerUrl = _cliSettings.ActiveProfile!.ModPackMakerUrl;
+        var modListUrl = _cliSettings.ActiveProfile!.ModListUrl;
+        _stalkerGammaSettings.DownloadThreads =
+            downloadThreads ?? _cliSettings.ActiveProfile!.DownloadThreads;
+        _stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
+        _stalkerGammaSettings.ModListUrl = modListUrl;
+        _stalkerGammaSettings.GammaSetupRepo = gammaSetupRepoUrl;
+        _stalkerGammaSettings.GammaSetupRepoBranch = gammaSetupRepoBranch;
+        _stalkerGammaSettings.StalkerGammaRepo = stalkerGammaRepoUrl;
+        _stalkerGammaSettings.StalkerGammaRepoBranch = stalkerGammaRepoBranch;
+        _stalkerGammaSettings.GammaLargeFilesRepo = gammaLargeFilesRepoUrl;
+        _stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
+        _stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
+        _stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
     }
 
     private void ConfigurePowerShellSettings(
@@ -208,7 +207,7 @@ public class FullInstallCmd(
         {
             if (addFoldersToWinDefenderExclusion)
             {
-                powerShellCmdBuilder.WithWindowsDefenderExclusions(
+                _powerShellCmdBuilder.WithWindowsDefenderExclusions(
                     Path.GetFullPath(gamma),
                     Path.GetFullPath(anomaly),
                     Path.GetFullPath(cache)
@@ -216,12 +215,13 @@ public class FullInstallCmd(
             }
             if (enableLongPaths)
             {
-                powerShellCmdBuilder.WithEnableLongPaths();
+                _powerShellCmdBuilder.WithEnableLongPaths();
             }
         }
     }
 
     private void SetUpLogging(
+        IGammaInstaller installer,
         bool verbose,
         bool debug,
         long progressUpdateIntervalMs,
@@ -235,8 +235,8 @@ public class FullInstallCmd(
         {
             var gammaDbgObs = Observable
                 .FromEventPattern<GammaProgress.GammaInstallDebugProgressEventArgs>(
-                    handler => gammaInstaller.Progress.DebugProgressChanged += handler,
-                    handler => gammaInstaller.Progress.DebugProgressChanged -= handler
+                    handler => installer.Progress.DebugProgressChanged += handler,
+                    handler => installer.Progress.DebugProgressChanged -= handler
                 )
                 .Select(x => x.EventArgs);
             gammaDbgDisposable = gammaDbgObs.Subscribe(OnDebugProgressChanged);
@@ -244,18 +244,18 @@ public class FullInstallCmd(
 
         var gammaWriteFileObs = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => gammaInstaller.Progress.ProgressChanged += handler,
-                handler => gammaInstaller.Progress.ProgressChanged -= handler
+                handler => installer.Progress.ProgressChanged += handler,
+                handler => installer.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
         gammaWriteFileDisposable = gammaWriteFileObs.Subscribe(
-            progressLoggingService.OnProgressChangedWriteToFile
+            _progressLoggingService.OnProgressChangedWriteToFile
         );
 
         var gammaProgressObservable = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => gammaInstaller.Progress.ProgressChanged += handler,
-                handler => gammaInstaller.Progress.ProgressChanged -= handler
+                handler => installer.Progress.ProgressChanged += handler,
+                handler => installer.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable
@@ -288,6 +288,13 @@ public class FullInstallCmd(
 
     private readonly ILogger _logger = logger;
     private readonly UtilitiesReady _utilitiesReady = utilitiesReady;
+    private readonly CliSettings _cliSettings = cliSettings;
+    private readonly StalkerGammaSettings _stalkerGammaSettings = stalkerGammaSettings;
+    private readonly IGammaInstaller _gammaInstaller = gammaInstaller;
+    private readonly OfflineGammaInstaller _offlineGammaInstaller = offlineGammaInstaller;
+    private readonly PowerShellCmdBuilder _powerShellCmdBuilder = powerShellCmdBuilder;
+    private readonly ProgressLoggingService _progressLoggingService = progressLoggingService;
+
     private const string Informational =
         "\e[97m[{DateTime}]\e[0m "
         + "\e[96m{AddonName}\e[0m "

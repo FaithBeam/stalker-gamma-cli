@@ -1,4 +1,5 @@
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Models;
@@ -14,7 +15,7 @@ public class GithubRecord(
     string outputDirName,
     IList<string> instructions,
     IHttpClientFactory hcf,
-    ArchiveUtility archiveUtility
+    ArchiveService archiveService
 ) : IDownloadableRecord
 {
     public string Name { get; } = name;
@@ -25,11 +26,11 @@ public class GithubRecord(
     public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
     private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
-    private readonly HttpClient _hc = hcf.CreateClient("dlArchive");
+    private readonly HttpClient _hc = hcf.CreateClient("dlAddon");
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
     private readonly string _outputDirName = outputDirName;
-    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    private readonly ArchiveService _archiveService = archiveService;
     public bool Download { get; set; } = true;
 
     public async Task DownloadAsync(CancellationToken cancellationToken)
@@ -78,7 +79,7 @@ public class GithubRecord(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await _archiveUtility.ExtractAsync(
+            await _archiveService.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
                 pct => OnProgress(GammaProgressType.Extract, pct),
