@@ -94,11 +94,11 @@ public class OfflineGammaInstaller(
             await separator.WriteAsync(args.Gamma);
         }
 
-        var brokenAddons = new ConcurrentBag<IDownloadableRecord>();
-
         IList<IDownloadableRecord> mainBatchRecords = args.AnomalyRecord is not null
             ? [args.AnomalyRecord, .. args.GroupedAddonRecords]
             : [.. args.GroupedAddonRecords];
+
+        ConcurrentBag<IDownloadableRecord> brokenAddons = [];
 
         var mainBatch = Task.Run(
             async () =>
@@ -149,6 +149,7 @@ public class OfflineGammaInstaller(
 
         foreach (var brokenAddon in brokenAddons)
         {
+            await brokenAddon.DownloadAsync(args.CancellationToken);
             await brokenAddon.ExtractAsync(args.CancellationToken);
         }
 
@@ -242,20 +243,13 @@ public class OfflineGammaInstaller(
             new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
             async (grs, _) =>
             {
-                try
+                if (grs.ArchiveExists())
                 {
-                    if (grs.ArchiveExists())
+                    await grs.ExtractAsync(cancellationToken);
+                    if (minimal)
                     {
-                        await grs.ExtractAsync(cancellationToken);
-                        if (minimal)
-                        {
-                            grs.DeleteArchive();
-                        }
+                        grs.DeleteArchive();
                     }
-                }
-                catch (Exception)
-                {
-                    brokenAddons.Add(grs);
                 }
             }
         );
