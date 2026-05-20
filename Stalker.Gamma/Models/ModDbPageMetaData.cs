@@ -1,4 +1,4 @@
-namespace Stalker.Gamma.ModDb.Models;
+namespace Stalker.Gamma.Models;
 
 public class ModDbPageMetadata
 {

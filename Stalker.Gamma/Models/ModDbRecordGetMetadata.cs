@@ -1,44 +1,38 @@
 using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
-using Stalker.Gamma.Models;
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
-using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
-namespace Stalker.Gamma.ModDb.Models;
+namespace Stalker.Gamma.Models;
 
-public class ModDbRecord(
-    GammaProgress gammaProgress,
+public class ModDbRecordGetMetadata(
     string name,
-    string url,
-    string niceUrl,
-    string archiveName,
-    string? md5,
-    string gammaDir,
+    string startLink,
+    List<string> instructions,
     string outputDirName,
-    IList<string> instructions,
-    ArchiveService archiveService,
-    ModDbService modDbService
+    string gammaDir,
+    ArchiveUtility archiveUtility,
+    GammaProgress gammaProgress,
+    ModDbUtility modDbUtility,
+    GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
+    GetModDbAddonMetadata getModDbAddonMetadata
 ) : IDownloadableRecord
 {
-    private readonly GammaProgress _gammaProgress = gammaProgress;
-    private readonly string _gammaDir = gammaDir;
-    private readonly string _outputDirName = outputDirName;
-    private readonly ArchiveService _archiveService = archiveService;
-    private readonly ModDbService _modDbService = modDbService;
     public string Name { get; } = name;
-    private string Url { get; } = url;
-    private string NiceUrl { get; } = niceUrl;
-    public string ArchiveName { get; } = archiveName;
-    private string? Md5 { get; } = md5;
+    public string ArchiveName { get; set; } = null!;
     public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
-    private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
-    private IList<string> Instructions { get; } = instructions;
+    public string ExtractPath => Path.Join(_gammaDir, "mods", OutputDirName);
+    public string StartLink { get; set; } = startLink;
+    public string NiceUrl { get; set; } = null!;
+    private List<string> Instructions { get; } = instructions;
+    private string OutputDirName { get; } = outputDirName;
+    public string Url => StartLink;
+    public string Md5 { get; set; } = null!;
 
-    public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
+    public async Task DownloadAsync(CancellationToken cancellationToken)
     {
         try
         {
+            await GetModDbAddonMetadataAsync(cancellationToken);
             if (
                 Path.Exists(DownloadPath)
                     && !string.IsNullOrWhiteSpace(Md5)
@@ -51,7 +45,7 @@ public class ModDbRecord(
                 || !Path.Exists(DownloadPath)
             )
             {
-                await _modDbService.DownloadAddonAsync(
+                await _modDbUtility.GetModDbLinkCurl(
                     Url,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
@@ -73,7 +67,7 @@ public class ModDbRecord(
         }
     }
 
-    public virtual async Task ExtractAsync(CancellationToken cancellationToken = default)
+    public async Task ExtractAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -86,7 +80,7 @@ public class ModDbRecord(
 
             Directory.CreateDirectory(ExtractPath);
 
-            await _archiveService.ExtractAsync(
+            await _archiveUtility.ExtractAsync(
                 DownloadPath,
                 ExtractPath,
                 pct => OnProgress(GammaProgressType.Extract, pct),
@@ -112,20 +106,19 @@ public class ModDbRecord(
         }
     }
 
-    public bool Downloaded { get; set; }
+    private async Task GetModDbAddonMetadataAsync(CancellationToken cancellationToken)
+    {
+        var canonicalLink = await _getCanonicalLinkFromModDbStartLink.GetCanonicalLinkAsync(
+            StartLink,
+            cancellationToken
+        );
+        var metadata = await _getModDbAddonMetadata.GetAsync(canonicalLink, cancellationToken);
+        ArchiveName = metadata.Filename;
+        Md5 = metadata.Md5Hash;
+        NiceUrl = canonicalLink;
+    }
 
-    public override string ToString() =>
-        $"""
-            Name: {Name}
-            Archive Name: {ArchiveName}
-            Url: {Url}
-            NiceUrl: {NiceUrl}
-            Download Path: {DownloadPath}
-            Extract Path: {ExtractPath}
-            Md5: {Md5}
-            Downloaded: {Downloaded}
-            Instructions: {string.Join(", ", Instructions)}
-            """;
+    public bool Downloaded { get; set; }
 
     private void OnProgress(GammaProgressType operation, double pct) =>
         _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
@@ -144,7 +137,12 @@ public class ModDbRecord(
             DownloadPath = DownloadPath,
             ExtractPath = ExtractPath,
         };
-}
 
-public class ModDbRecordException(string message, Exception innerException)
-    : Exception(message, innerException);
+    private readonly GammaProgress _gammaProgress = gammaProgress;
+    private readonly string _gammaDir = gammaDir;
+    private readonly ArchiveUtility _archiveUtility = archiveUtility;
+    private readonly ModDbUtility _modDbUtility = modDbUtility;
+    private readonly GetCanonicalLinkFromModDbStartLink _getCanonicalLinkFromModDbStartLink =
+        getCanonicalLinkFromModDbStartLink;
+    private readonly GetModDbAddonMetadata _getModDbAddonMetadata = getModDbAddonMetadata;
+}

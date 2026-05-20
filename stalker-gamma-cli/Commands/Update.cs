@@ -9,7 +9,6 @@ using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Commands;
@@ -22,7 +21,7 @@ public class UpdateCmds(
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IModListRecordFactory modListRecordFactory,
     GetRemoteGitRepoCommit getRemoteGitRepoCommit,
-    GitService gitService,
+    GitUtility gitUtility,
     IGammaInstaller gammaInstaller,
     UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
@@ -158,7 +157,7 @@ public class UpdateCmds(
         var localRepoModPackMakerRecs = localRepos
             .Select(repoDir =>
             {
-                var sha = gitService.GetLatestCommitHash(repoDir.Path);
+                var sha = gitUtility.GetLatestCommitHash(repoDir.Path);
                 return new ModPackMakerRecord
                 {
                     DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",

@@ -1,30 +1,29 @@
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Utilities;
 
 public class UtilitiesReady(
-    CurlService curlService,
-    TarService tarService,
-    UnzipService unzipService,
-    SevenZipService sevenZipService
+    CurlUtility curlUtility,
+    TarUtility tarUtility,
+    UnzipUtility unzipUtility,
+    SevenZipUtility sevenZipUtility
 )
 {
     public bool IsReady =>
-        curlService.Ready
-        && GitService.Ready
-        && sevenZipService.Ready
-        && (OperatingSystem.IsWindows() || tarService.Ready)
-        && (OperatingSystem.IsWindows() || unzipService.Ready);
+        curlUtility.Ready
+        && GitUtility.Ready
+        && sevenZipUtility.Ready
+        && (OperatingSystem.IsWindows() || tarUtility.Ready)
+        && (OperatingSystem.IsWindows() || unzipUtility.Ready);
 
     public string NotReadyReason =>
         IsReady
             ? ""
             : $"""
-                Curl: {(curlService.Ready ? "Ready" : "Not Ready")}
-                Git: {(GitService.Ready ? "Ready" : "Not Ready")}
-                7z: {(sevenZipService.Ready ? "Ready" : "Not Ready")}
-                Tar: {(tarService.Ready ? "Ready" : "Not Ready")}
-                Unzip: {(unzipService.Ready ? "Ready" : "Not Ready")}
+                Curl: {(curlUtility.Ready ? "Ready" : "Not Ready")}
+                Git: {(GitUtility.Ready ? "Ready" : "Not Ready")}
+                7z: {(sevenZipUtility.Ready ? "Ready" : "Not Ready")}
+                Tar: {(tarUtility.Ready ? "Ready" : "Not Ready")}
+                Unzip: {(unzipUtility.Ready ? "Ready" : "Not Ready")}
                 """;
 }

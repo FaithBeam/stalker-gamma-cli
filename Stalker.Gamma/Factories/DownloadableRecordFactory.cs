@@ -1,11 +1,7 @@
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
-using Stalker.Gamma.ModDb.Models;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
-using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
-using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
 namespace Stalker.Gamma.Factories;
 
@@ -50,11 +46,11 @@ public interface IDownloadableRecordFactory
 public class DownloadableRecordFactory(
     IHttpClientFactory httpClientFactory,
     GammaProgress gammaProgress,
-    ArchiveService archiveService,
-    GitService gitService,
+    ModDbUtility modDbUtility,
+    ArchiveUtility archiveUtility,
+    GitUtility gitUtility,
     GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
-    ModDbGetAddonMetadataService modDbGetAddonMetadataService,
-    ModDbService modDbService
+    GetModDbAddonMetadata getModDbAddonMetadata
 ) : IDownloadableRecordFactory
 {
     public IDownloadableRecord CreateSkippedRecord(IDownloadableRecord record) =>
@@ -69,15 +65,15 @@ public class DownloadableRecordFactory(
             gammaProgress,
             downloadDirectory,
             anomalyDir,
-            modDbService,
-            archiveService
+            modDbUtility,
+            archiveUtility
         );
 
     public IDownloadableRecord CreateGammaSetupRecord(
         string gammaDir,
         string gammaSetupRepo,
         string gammaSetupBranch
-    ) => new GammaSetupRepo(gammaProgress, gammaDir, gammaSetupRepo, gammaSetupBranch, gitService);
+    ) => new GammaSetupRepo(gammaProgress, gammaDir, gammaSetupRepo, gammaSetupBranch, gitUtility);
 
     public IDownloadableRecord CreateGammaLargeFilesRecord(
         string gammaDir,
@@ -89,7 +85,7 @@ public class DownloadableRecordFactory(
             gammaDir,
             gammaLargeFilesRepo,
             gammaLargeFilesBranch,
-            gitService
+            gitUtility
         );
 
     public IDownloadableRecord CreateStalkerGammaRecord(
@@ -104,7 +100,7 @@ public class DownloadableRecordFactory(
             anomalyDir,
             stalkerGammaRepo,
             stalkerGammaBranch,
-            gitService
+            gitUtility
         );
 
     public IDownloadableRecord CreateTeivazAnomalyGunslingerRecord(
@@ -117,7 +113,7 @@ public class DownloadableRecordFactory(
             gammaDir,
             teivazAnomalyGunslingerRepo,
             teivazAnomalyGunslingerBranch,
-            gitService
+            gitUtility
         );
 
     public List<IDownloadableRecord> CreateGroupedDownloadableRecords(
@@ -189,11 +185,11 @@ public class DownloadableRecordFactory(
                 instructions,
                 outputDirName,
                 gammaDir,
-                archiveService,
+                archiveUtility,
                 gammaProgress,
-                modDbService,
+                modDbUtility,
                 getCanonicalLinkFromModDbStartLink,
-                modDbGetAddonMetadataService
+                getModDbAddonMetadata
             );
             return true;
         }
@@ -233,7 +229,7 @@ public class DownloadableRecordFactory(
                 outputDirName,
                 instructions,
                 httpClientFactory,
-                archiveService
+                archiveUtility
             );
             return true;
         }
@@ -273,8 +269,8 @@ public class DownloadableRecordFactory(
                 gammaDir,
                 outputDirName,
                 instructions,
-                archiveService,
-                modDbService
+                archiveUtility,
+                modDbUtility
             );
             return true;
         }

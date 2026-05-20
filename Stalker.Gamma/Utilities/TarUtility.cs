@@ -1,11 +1,9 @@
 using System.Text;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Services.Models;
-using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.Services;
+namespace Stalker.Gamma.Utilities;
 
-public class TarService(StalkerGammaSettings settings)
+public class TarUtility(StalkerGammaSettings settings)
 {
     public async Task ExtractAsync(
         string archivePath,

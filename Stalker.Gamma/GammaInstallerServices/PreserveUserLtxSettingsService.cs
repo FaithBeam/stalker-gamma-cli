@@ -11,7 +11,6 @@ public class PreserveUserLtxSettingsService
         if (File.Exists(_userLtxPath))
         {
             _userLtxContent = await File.ReadAllTextAsync(_userLtxPath, ct);
-            _lastWriteTime = File.GetLastWriteTimeUtc(_userLtxPath);
         }
     }
 
@@ -21,12 +20,9 @@ public class PreserveUserLtxSettingsService
             Directory.Exists(_anomalyAppDataPath)
             && !string.IsNullOrWhiteSpace(_userLtxPath)
             && !string.IsNullOrWhiteSpace(_userLtxContent)
-            && _lastWriteTime != null
         )
         {
             await File.WriteAllTextAsync(_userLtxPath, _userLtxContent, ct);
-            File.SetLastAccessTimeUtc(_userLtxPath, _lastWriteTime.Value.UtcDateTime);
-            File.SetLastWriteTimeUtc(_userLtxPath, _lastWriteTime.Value.UtcDateTime);
         }
     }
 
@@ -34,5 +30,4 @@ public class PreserveUserLtxSettingsService
     private string? _anomalyAppDataPath;
     private string? _userLtxPath;
     private string? _userLtxContent;
-    private DateTimeOffset? _lastWriteTime;
 }

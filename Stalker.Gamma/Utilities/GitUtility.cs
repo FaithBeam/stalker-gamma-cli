@@ -1,8 +1,8 @@
 using LibGit2Sharp;
 
-namespace Stalker.Gamma.Services;
+namespace Stalker.Gamma.Utilities;
 
-public partial class GitService
+public partial class GitUtility
 {
     public string GetLatestCommitHash(string pathToRepo)
     {

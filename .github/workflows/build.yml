@@ -313,57 +313,10 @@ jobs:
           path: build/win/build/stalker-gamma-cli
           compression-level: 9
           
-  cli-windows-arm64:
-    name: cli-windows-arm64
-    runs-on: windows-11-arm
-    outputs:
-      version: ${{ steps.gitversion.outputs.SemVer }}
-    env:
-      APP_NAME: stalker-gamma-gui
-      PROJECT_FOLDER: stalker-gamma-cli
-      PROJECT_NAME: stalker-gamma-cli.csproj
-      CONFIGURATION: Release
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Run Csharpier
-        run: |
-          dotnet tool restore
-          dotnet csharpier check .
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0
-        with:
-          versionSpec: "5.x"
-
-      - name: Determine Version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v0
-
-      - name: Build CLI
-        run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }} arm64
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2.4.2
-        if: github.ref_type == 'tag'
-        with:
-          files: stalker-gamma+win.arm64.zip
-          token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: stalker-gamma+win.arm64
-          path: build/win/build/stalker-gamma-cli
-          compression-level: 9
-
   update-aur:
     name: update-aur
     runs-on: ubuntu-22.04
-    needs: [update-chocolatey, cli-ubuntu-arm64, cli-ubuntu-x64]
+    needs: [cli-ubuntu-arm64, cli-ubuntu-x64]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
@@ -392,7 +345,7 @@ jobs:
   update-chocolatey:
     name: update-chocolatey
     runs-on: windows-latest
-    needs: [cli-windows, cli-windows-arm64]
+    needs: [cli-windows]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
@@ -407,7 +360,7 @@ jobs:
   update-homebrew:
     name: update-homebrew
     runs-on: ubuntu-22.04
-    needs: [update-chocolatey, cli-macos-x64, cli-macos-arm64]
+    needs: [cli-macos-x64, cli-macos-arm64]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout source repo

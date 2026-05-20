@@ -1,34 +1,45 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using Stalker.Gamma.Utilities;
-using CurlService = Stalker.Gamma.Services.CurlService;
 
-namespace Stalker.Gamma.ModDb.Services;
+namespace Stalker.Gamma.Utilities;
 
-public partial class ModDbMirrorService(CurlService curlService)
+public partial class MirrorUtility(CurlUtility curlUtility)
 {
-    private static FrozenSet<string>? _mirrors;
+    private static FrozenSet<string>? _availableMirrors;
     private static readonly SemaphoreSlim Lock = new(1);
 
     public async Task<string> GetMirrorAsync(
         string mirrorUrl,
         bool invalidateCache = false,
         CancellationToken cancellationToken = default,
-        params IEnumerable<string> excludeMirrors
+        params string[] excludeMirrors
     )
     {
         await Lock.WaitAsync(cancellationToken);
         try
         {
-            _mirrors =
-                _mirrors is null || _mirrors.Count == 0 || invalidateCache
-                    ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
-                    : _mirrors;
+            if (_availableMirrors is null || _availableMirrors.Count == 0 || invalidateCache)
+            {
+                _availableMirrors = await GetMirrorsAsync(mirrorUrl, cancellationToken);
+            }
 
-            return _mirrors
+            var orderedAvailableMirrors = _availableMirrors
                 .Where(mirror => excludeMirrors.All(em => !mirror.Contains(em)))
                 .OrderBy(_ => Guid.NewGuid())
-                .First();
+                .ToList();
+
+            if (orderedAvailableMirrors.Count == 0)
+            {
+                throw new NoMirrorsAvailableException(
+                    $"""
+                    No mirrors available for {mirrorUrl}
+                    This occurs when Moddb's servers are overloaded.
+                    Try again later.
+                    """
+                );
+            }
+
+            return orderedAvailableMirrors.First();
         }
         catch (Exception e)
         {
@@ -52,7 +63,7 @@ public partial class ModDbMirrorService(CurlService curlService)
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await curlService.GetStringAsync(mirrorUrl, cancellationToken);
+        var mirrorsHtml = await curlUtility.GetStringAsync(mirrorUrl, cancellationToken);
         if (mirrorsHtml.Contains("Just a moment..."))
         {
             throw new CloudflareChallengeException(

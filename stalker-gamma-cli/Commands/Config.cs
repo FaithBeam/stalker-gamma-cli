@@ -32,7 +32,6 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             return;
         }
 
-        _logger.Information("Settings Path: {Path}", CliSettings.SettingsPath);
         _logger.Information("{Profile}", foundProfile.ToString());
     }
 

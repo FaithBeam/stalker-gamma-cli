@@ -1,7 +1,6 @@
 using Stalker.Gamma.GammaInstallerServices;
-using Stalker.Gamma.Models;
 
-namespace Stalker.Gamma.ModDb.Models;
+namespace Stalker.Gamma.Models;
 
 public class ModDbRecordGetMetadataGroup(
     GammaProgress gammaProgress,

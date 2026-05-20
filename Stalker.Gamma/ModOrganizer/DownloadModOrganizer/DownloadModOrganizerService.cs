@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 using GetReleaseByTagCtx = Stalker.Gamma.ModOrganizer.DownloadModOrganizer.Entities.Github.GetReleaseByTagCtx;
 
@@ -30,7 +29,7 @@ public interface IDownloadModOrganizerService
 
 public class DownloadModOrganizerService(
     IHttpClientFactory hcf,
-    ArchiveService archiveService,
+    ArchiveUtility archiveUtility,
     GammaProgress gammaProgress,
     StalkerGammaSettings settings
 ) : IDownloadModOrganizerService
@@ -83,7 +82,7 @@ public class DownloadModOrganizerService(
             }
         }
 
-        await archiveService.ExtractAsync(
+        await archiveUtility.ExtractAsync(
             mo2ArchivePath,
             extractPath,
             pct =>
@@ -114,7 +113,7 @@ public class DownloadModOrganizerService(
         Directory.CreateDirectory(cachePath);
         Directory.CreateDirectory(extractPath);
 
-        var hc = hcf.CreateClient("dlAddon");
+        var hc = hcf.CreateClient("githubDlArchive");
         var getReleaseByTagResponse = await hc.GetAsync(
             $"https://api.github.com/repos/ModOrganizer2/modorganizer/releases/tags/{version}",
             cancellationToken

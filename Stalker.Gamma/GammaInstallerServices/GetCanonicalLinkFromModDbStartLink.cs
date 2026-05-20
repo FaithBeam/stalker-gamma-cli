@@ -1,11 +1,9 @@
 ﻿using HtmlAgilityPack;
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
-using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
-public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
+public class GetCanonicalLinkFromModDbStartLink(CurlUtility curlUtility)
 {
     public async Task<string> GetCanonicalLinkAsync(
         string modDbStartLink,
@@ -15,7 +13,7 @@ public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
         string? htmlContent = null;
         try
         {
-            htmlContent = await _curlService.GetStringAsync(modDbStartLink, ct);
+            htmlContent = await _curlUtility.GetStringAsync(modDbStartLink, ct);
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
             var linkNode = htmlDoc.DocumentNode.SelectSingleNode("//link[@rel='canonical']");
@@ -39,7 +37,7 @@ public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
         }
     }
 
-    private readonly CurlService _curlService = curlService;
+    private readonly CurlUtility _curlUtility = curlUtility;
 }
 
 public class CanonicalLinkNotFoundException(string msg) : Exception(msg);

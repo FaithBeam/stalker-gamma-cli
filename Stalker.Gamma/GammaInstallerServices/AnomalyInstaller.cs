@@ -1,8 +1,6 @@
 ﻿using System.Security.Cryptography;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
-using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
@@ -12,8 +10,8 @@ public class AnomalyInstaller(
     GammaProgress progress,
     string downloadDirectory,
     string anomalyDir,
-    ModDbService modDbService,
-    ArchiveService archiveService
+    ModDbUtility modDbUtility,
+    ArchiveUtility archiveUtility
 ) : IAnomalyInstaller
 {
     public string Name { get; } = "Stalker Anomaly";
@@ -28,8 +26,8 @@ public class AnomalyInstaller(
     private readonly GammaProgress _progress = progress;
     private readonly string _downloadDirectory = downloadDirectory;
     private readonly string _anomalyDir = anomalyDir;
-    private readonly ModDbService _modDbService = modDbService;
-    private readonly ArchiveService _archiveService = archiveService;
+    private readonly ModDbUtility _modDbUtility = modDbUtility;
+    private readonly ArchiveUtility _archiveUtility = archiveUtility;
     public string DownloadPath => Path.Join(_downloadDirectory, ArchiveName);
     public string DownloadPathZstd => Path.Join(_downloadDirectory, ArchiveNameZstd);
     private string ExtractPath => _anomalyDir;
@@ -51,7 +49,7 @@ public class AnomalyInstaller(
                 )
             )
             {
-                await _modDbService.DownloadAddonAsync(
+                await _modDbUtility.GetModDbLinkCurl(
                     StalkerAnomalyUrl,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
@@ -79,7 +77,7 @@ public class AnomalyInstaller(
             // TODO: This likely needs an extra extract on Windows
             if (File.Exists(DownloadPathZstd))
             {
-                await _archiveService.ExtractAsync(
+                await _archiveUtility.ExtractAsync(
                     DownloadPathZstd,
                     ExtractPath,
                     pct => OnProgress(GammaProgressType.Extract, pct),
@@ -88,7 +86,7 @@ public class AnomalyInstaller(
             }
             else
             {
-                await _archiveService.ExtractAsync(
+                await _archiveUtility.ExtractAsync(
                     DownloadPath,
                     ExtractPath,
                     pct => OnProgress(GammaProgressType.Extract, pct),
