@@ -1,4 +1,5 @@
 ﻿using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
@@ -11,7 +12,7 @@ public class StalkerGammaRepo(
     string anomalyDir,
     string url,
     string branch,
-    GitUtility gitUtility
+    GitService gitService
 ) : IStalkerGammaRepo
 {
     public string Name { get; } = "Stalker_GAMMA";
@@ -30,7 +31,7 @@ public class StalkerGammaRepo(
         {
             if (Directory.Exists(DownloadPath))
             {
-                gitUtility.FetchGitRepo(
+                gitService.FetchGitRepo(
                     DownloadPath,
                     ct: cancellationToken,
                     onProgress: pct => OnProgress(GammaProgressType.Download, pct)
@@ -38,7 +39,7 @@ public class StalkerGammaRepo(
             }
             else
             {
-                gitUtility.CloneGitRepo(
+                gitService.CloneGitRepo(
                     DownloadPath,
                     Url,
                     onProgress: pct => OnProgress(GammaProgressType.Download, pct),
@@ -70,7 +71,7 @@ public class StalkerGammaRepo(
     {
         try
         {
-            await GitUtility.ExtractAsync(
+            await GitService.ExtractAsync(
                 DownloadPath,
                 TempDir,
                 branch: Branch,

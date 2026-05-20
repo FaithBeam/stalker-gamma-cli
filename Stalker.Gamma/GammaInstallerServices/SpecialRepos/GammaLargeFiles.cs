@@ -1,4 +1,5 @@
 ﻿using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
@@ -10,7 +11,7 @@ public class GammaLargeFilesRepo(
     string gammaDir,
     string url,
     string branch,
-    GitUtility gitUtility
+    GitService gitService
 ) : IGammaLargeFilesRepo
 {
     public string Name { get; } = "gamma_large_files_v2";
@@ -22,7 +23,7 @@ public class GammaLargeFilesRepo(
     public string Branch { get; } = branch;
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly string _gammaDir = gammaDir;
-    private readonly GitUtility _gitUtility = gitUtility;
+    private readonly GitService _gitService = gitService;
     private string DestinationDir => Path.Join(_gammaDir, "mods");
 
     public virtual Task DownloadAsync(CancellationToken ct = default)
@@ -31,7 +32,7 @@ public class GammaLargeFilesRepo(
         {
             if (Directory.Exists(DownloadPath))
             {
-                _gitUtility.FetchGitRepo(
+                _gitService.FetchGitRepo(
                     DownloadPath,
                     ct: ct,
                     onProgress: pct => OnProgress(GammaProgressType.Download, pct)
@@ -39,7 +40,7 @@ public class GammaLargeFilesRepo(
             }
             else
             {
-                _gitUtility.CloneGitRepo(
+                _gitService.CloneGitRepo(
                     DownloadPath,
                     Url,
                     onProgress: pct => OnProgress(GammaProgressType.Download, pct),
@@ -71,7 +72,7 @@ public class GammaLargeFilesRepo(
     {
         try
         {
-            await GitUtility.ExtractAsync(
+            await GitService.ExtractAsync(
                 DownloadPath,
                 TempDir,
                 branch: Branch,

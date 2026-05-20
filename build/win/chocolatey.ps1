@@ -24,6 +24,9 @@ $releaseResponse = Invoke-RestMethod @getReleaseSplat
 $winAssetX64 = $releaseResponse.assets | Where-Object {$_.name -like '*+win.x64*'} | Select-Object -First 1
 $winAssetX64Sha256 = $winAssetX64.digest -replace 'sha256:', ''
 
+$winAssetArm64 = $releaseResponse.assets | Where-Object {$_.name -like '*+win.arm64*'} | Select-Object -First 1
+$winAssetArm64Sha256 = $winAssetArm64.digest -replace 'sha256:', ''
+
 #region chocolatey
 if (Get-Command choco) {
     $chocoNuspec = @"
@@ -44,8 +47,14 @@ if (Get-Command choco) {
 "@
     $chocoInstall = @"
 `$packageName = 'stalker-gamma'
-`$url         = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetX64.name)'
-`$checksum    = '$($winAssetX64Sha256)'
+
+if (`$env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+    `$url      = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetArm64.name)'
+    `$checksum = '$($winAssetArm64Sha256)'
+} else {
+    `$url      = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetX64.name)'
+    `$checksum = '$($winAssetX64Sha256)'
+}
 
 `$packageArgs = @{
   packageName   = `$packageName

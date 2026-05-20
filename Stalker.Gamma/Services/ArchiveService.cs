@@ -1,9 +1,11 @@
-namespace Stalker.Gamma.Utilities;
+using Stalker.Gamma.Utilities;
 
-public class ArchiveUtility(
-    SevenZipUtility sevenZipUtility,
-    TarUtility tarUtility,
-    UnzipUtility unzipUtility
+namespace Stalker.Gamma.Services;
+
+public class ArchiveService(
+    SevenZipService sevenZipService,
+    TarService tarService,
+    UnzipService unzipService
 )
 {
     public async Task ExtractAsync(
@@ -15,7 +17,7 @@ public class ArchiveUtility(
     {
         if (OperatingSystem.IsWindows())
         {
-            await sevenZipUtility.ExtractAsync(
+            await sevenZipService.ExtractAsync(
                 archivePath,
                 destinationDir,
                 pct,
@@ -62,9 +64,12 @@ public class ArchiveUtility(
     private readonly Dictionary<int, Func<ArchiveMappingArgs, Task>> _archiveMappings = new()
     {
         {
-            0x37,
+            // zstd
+            // linux -> 7z
+            // mac -> 7z
+            0x28,
             async args =>
-                await sevenZipUtility.ExtractAsync(
+                await sevenZipService.ExtractAsync(
                     args.ArchivePath,
                     args.DestinationDir,
                     args.Pct,
@@ -72,12 +77,28 @@ public class ArchiveUtility(
                 )
         },
         {
+            // 7z
+            // linux -> 7z
+            // mac -> 7z
+            0x37,
+            async args =>
+                await sevenZipService.ExtractAsync(
+                    args.ArchivePath,
+                    args.DestinationDir,
+                    args.Pct,
+                    cancellationToken: args.Ct
+                )
+        },
+        {
+            // zip
+            // linux -> unzip
+            // mac -> tar
             0x50,
             async args =>
             {
                 if (OperatingSystem.IsLinux())
                 {
-                    await unzipUtility.ExtractAsync(
+                    await unzipService.ExtractAsync(
                         args.ArchivePath,
                         args.DestinationDir,
                         args.Pct,
@@ -86,7 +107,7 @@ public class ArchiveUtility(
                 }
                 else
                 {
-                    await tarUtility.ExtractAsync(
+                    await tarService.ExtractAsync(
                         args.ArchivePath,
                         args.DestinationDir,
                         args.Pct,
@@ -96,9 +117,12 @@ public class ArchiveUtility(
             }
         },
         {
+            // rar
+            // linux -> 7z
+            // mac -> 7z
             0x52,
             async args =>
-                await sevenZipUtility.ExtractAsync(
+                await sevenZipService.ExtractAsync(
                     args.ArchivePath,
                     args.DestinationDir,
                     args.Pct,

@@ -1,5 +1,7 @@
-﻿param (
-    [string]$Version = "1.0.0"
+param (
+    [string]$Version = "1.0.0",
+    [ValidateSet("x64", "arm64")]
+    [string]$Arch = "x64"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,10 +20,12 @@ New-Item -Path $buildDir -ItemType Directory -Force
 
 #region 7z
 $7zDir = Join-Path $buildDir "7z"
-$7zDlPath = Join-Path $7zDir "7z25.01-zstd-x64.exe"
 New-Item -Path $7zDir -ItemType Directory -Force
+
+$7zFileName = "7z25.01-zstd-$Arch.exe"
+$7zDlPath = Join-Path $7zDir $7zFileName
 $7zDlSplat = @{
-    Uri     = "https://github.com/mcmilk/7-Zip-zstd/releases/download/v25.01-v1.5.7-R3/7z25.01-zstd-x64.exe"
+    Uri     = "https://github.com/mcmilk/7-Zip-zstd/releases/download/v25.01-v1.5.7-R3/$7zFileName"
     OutFile = $7zDlPath
 }
 Invoke-WebRequest @7zDlSplat
@@ -30,11 +34,13 @@ tar -xzf $7zDlPath -C $7zDir
 
 #region curl-impersonate
 $curlDir = Join-Path $buildDir "curl-impersonate"
-$curlVersion = "v1.5.1"
-$curlArchivePath = Join-Path $curlDir "libcurl-impersonate-$($curlVersion).x86_64-win32.tar.gz"
+$curlVersion = "v1.5.6"
+$curlTriplet = if ($Arch -eq "arm64") { "arm64-win32" } else { "x86_64-win32" }
+$curlArchiveName = "libcurl-impersonate-$($curlVersion).$curlTriplet.tar.gz"
+$curlArchivePath = Join-Path $curlDir $curlArchiveName
 New-Item -Path "$curlDir" -Type Directory -Force
 $curlImpersonateSplat = @{
-    Uri     = "https://github.com/lexiforest/curl-impersonate/releases/download/$($curlVersion)/libcurl-impersonate-$($curlVersion).x86_64-win32.tar.gz"
+    Uri     = "https://github.com/lexiforest/curl-impersonate/releases/download/$($curlVersion)/$curlArchiveName"
     OutFile = $curlArchivePath
 }
 Invoke-WebRequest @curlImpersonateSplat
@@ -46,24 +52,11 @@ $cacertSplat = @{
 Invoke-WebRequest @cacertSplat
 #endregion
 
-#region dotnet-install
-if (-not (Get-Command dotnet)) {
-    $dotnetInstallPath = Join-Path $buildDir "dotnet-install.ps1"
-    Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile $dotnetInstallPath
-
-    # Install the SDK version required (targeting net10.0 as per project info)
-    & $dotnetInstallPath -Channel 10.0 -InstallDir (Join-Path $buildDir ".dotnet")
-
-    # Add the local dotnet to the current session path
-    $env:PATH = "$(Join-Path $buildDir ".dotnet");$env:PATH"
-    $env:DOTNET_ROOT = "$(Join-Path $buildDir ".dotnet")"
-    #endregion
-}
-
 #region stalker-gamma-cli
 $stalkerCliDir = Join-Path $buildDir "stalker-gamma-cli"
 $pathToProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli") "stalker-gamma-cli.csproj")
-dotnet publish -c Release $pathToProject -o $stalkerCliDir -p:AssemblyVersion=$Version
+$dotnetRid = "win-$Arch"
+dotnet publish -c Release $pathToProject -o $stalkerCliDir -r $dotnetRid -p:AssemblyVersion=$Version
 #endregion
 
 $stalkerCliResourceDir = Join-Path $stalkerCliDir "resources"
@@ -71,13 +64,13 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
-Get-ChildItem -Path (Join-Path $curlDir "bin") -File | Where-Object {$_.Extension -ne '.bat'} | ForEach-Object {Copy-Item $_.FullName $stalkerCliResourceDir }
-Move-Item (Join-Path $stalkerCliResourceDir "curl-impersonate.exe") (Join-Path $stalkerCliResourceDir "curl.exe")
-Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliResourceDir "cacert.pem")
+Move-Item (Join-Path (Join-Path $curlDir "bin") "libcurl-impersonate.dll") $stalkerCliDir
+Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
 
-if (Test-Path stalker-gamma+win.x64.zip) {
-    Remove-Item stalker-gamma+win.x64.zip -Force
+$zipName = "stalker-gamma+win.$Arch.zip"
+if (Test-Path $zipName) {
+    Remove-Item $zipName -Force
 }
-& (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r stalker-gamma+win.x64.zip (Join-Path $stalkerCliDir "*")
+& (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r $zipName (Join-Path $stalkerCliDir "*")

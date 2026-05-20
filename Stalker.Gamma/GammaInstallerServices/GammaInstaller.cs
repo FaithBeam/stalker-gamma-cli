@@ -196,7 +196,9 @@ public class GammaInstaller(
             .Select(rec =>
             {
                 if (!downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
+                {
                     return null;
+                }
                 if (dlRec is GithubRecord ghr)
                 {
                     ghr.Download = args.DownloadGithubArchives;
@@ -214,6 +216,7 @@ public class GammaInstaller(
                     ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(dlRec)
                     : dlRec
             )
+            .Shuffle() // randomize the order addons are downloaded
             .ToList();
     }
 
@@ -298,21 +301,17 @@ public class GammaInstaller(
             await separator.WriteAsync(args.Gamma);
         }
 
-        var brokenAddons = new ConcurrentBag<IDownloadableRecord>();
-
         IList<IDownloadableRecord> mainBatchRecords = args.AnomalyRecord is not null
             ? [args.AnomalyRecord, .. args.GroupedAddonRecords]
             : [.. args.GroupedAddonRecords];
 
-        var mainBatch = Task.Run(
-            async () =>
-                await ProcessAddonsAsync(
-                    mainBatchRecords,
-                    brokenAddons,
-                    args.Minimal,
-                    cancellationToken: args.CancellationToken
-                ),
-            args.CancellationToken
+        ConcurrentBag<IDownloadableRecord> brokenAddons = [];
+
+        var mainBatch = ProcessAddonsAsync(
+            mainBatchRecords,
+            brokenAddons,
+            args.Minimal,
+            cancellationToken: args.CancellationToken
         );
         var teivazDlTask = Task.Run(
             async () =>
@@ -363,7 +362,6 @@ public class GammaInstaller(
             stalkerGammaDownloadTask
         );
 
-        // retry broken addons
         foreach (var brokenAddon in brokenAddons)
         {
             await brokenAddon.DownloadAsync(args.CancellationToken);
@@ -544,10 +542,6 @@ public class GammaInstaller(
                     {
                         grs.DeleteArchive();
                     }
-                }
-                catch (ModDbBotDetectedException)
-                {
-                    throw;
                 }
                 catch (Exception)
                 {
