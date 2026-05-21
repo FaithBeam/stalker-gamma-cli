@@ -1,16 +1,20 @@
 using System.Diagnostics;
-using System.Reactive.Subjects;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.Services;
 
-public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy pythonApiProxy)
-    : IDisposable
+public class PythonServerService : IDisposable
 {
-    public Subject<bool> ReadySubject { get; } = new();
+    public PythonServerService(StalkerGammaSettings settings, PythonApiProxy pythonApiProxy)
+    {
+        _settings = settings;
+        _pythonApiProxy = pythonApiProxy;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+        Console.CancelKeyPress += OnCancelKeyPress;
+    }
 
-    public async Task StartAsync(CancellationToken ct = default)
+    public async Task StartAsync(string host, ushort port, CancellationToken ct = default)
     {
         if (_process is not null && !_process.HasExited)
         {
@@ -20,6 +24,7 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
         _process.StartInfo = new ProcessStartInfo
         {
             FileName = PythonServerPath,
+            Arguments = $"--host {host} --port {port}",
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -28,24 +33,35 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
         _process.EnableRaisingEvents = true;
         _process.Start();
 
-        ct.Register(() => _process?.Kill());
+        ct.Register(Kill);
 
         while (!await _pythonApiProxy.Ready())
         {
             await Task.Delay(TimeSpan.FromSeconds(1), ct);
         }
-        ReadySubject.OnNext(true);
-        ReadySubject.OnCompleted();
     }
 
     public void Dispose()
     {
-        _process?.Kill();
+        Kill();
+        AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+        Console.CancelKeyPress -= OnCancelKeyPress;
     }
 
+    private void Kill()
+    {
+        var p = Interlocked.Exchange(ref _process, null);
+        if (p is { HasExited: false })
+            p.Kill();
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e) => Kill();
+    private void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e) => Kill();
+
     private Process? _process;
-    private string PythonServerPath => settings.PythonServerPath;
-    private readonly PythonApiProxy _pythonApiProxy = pythonApiProxy;
+    private readonly StalkerGammaSettings _settings;
+    private readonly PythonApiProxy _pythonApiProxy;
+    private string PythonServerPath => _settings.PythonServerPath;
 }
 
 public class PythonServerServiceException(string message) : Exception(message);
