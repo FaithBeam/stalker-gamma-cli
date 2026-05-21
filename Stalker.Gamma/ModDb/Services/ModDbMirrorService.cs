@@ -12,6 +12,7 @@ public partial class ModDbMirrorService(CurlService curlService)
 
     public async Task<string> GetMirrorAsync(
         string mirrorUrl,
+        bool useCurl = true,
         bool invalidateCache = false,
         CancellationToken cancellationToken = default,
         params IEnumerable<string> excludeMirrors
@@ -22,7 +23,7 @@ public partial class ModDbMirrorService(CurlService curlService)
         {
             _mirrors =
                 _mirrors is null || _mirrors.Count == 0 || invalidateCache
-                    ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
+                    ? await GetMirrorsAsync(mirrorUrl, useCurl, cancellationToken)
                     : _mirrors;
 
             return _mirrors
@@ -49,10 +50,15 @@ public partial class ModDbMirrorService(CurlService curlService)
 
     private async Task<FrozenSet<string>> GetMirrorsAsync(
         string mirrorUrl,
+        bool useCurl = true,
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await curlService.GetStringAsync(mirrorUrl, cancellationToken);
+        var mirrorsHtml = await curlService.GetStringAsync(
+            mirrorUrl,
+            useCurl: useCurl,
+            cancellationToken: cancellationToken
+        );
         if (mirrorsHtml.Contains("Just a moment..."))
         {
             throw new CloudflareChallengeException(

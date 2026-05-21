@@ -1,7 +1,5 @@
-using System.Buffers;
 using System.Diagnostics;
 using System.Reactive.Subjects;
-using System.Text;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Proxies;
 
@@ -30,6 +28,8 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
         _process.EnableRaisingEvents = true;
         _process.Start();
 
+        ct.Register(() => _process?.Kill());
+
         while (!await _pythonApiProxy.Ready())
         {
             await Task.Delay(TimeSpan.FromSeconds(1), ct);
@@ -41,35 +41,6 @@ public class PythonServerService(StalkerGammaSettings settings, PythonApiProxy p
     public void Dispose()
     {
         _process?.Kill();
-    }
-
-    private static async Task ReadStreamAsync(StreamReader reader, CancellationToken ct)
-    {
-        var sb = new StringBuilder();
-        var buffer = ArrayPool<char>.Shared.Rent(4096);
-        try
-        {
-            int read;
-            while ((read = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
-            {
-                ct.ThrowIfCancellationRequested();
-                for (var i = 0; i < read; i++)
-                {
-                    if (buffer[i] == '\n' || buffer[i] == '\r')
-                    {
-                        sb.Clear();
-                    }
-                    else
-                    {
-                        sb.Append(buffer[i]);
-                    }
-                }
-            }
-        }
-        finally
-        {
-            ArrayPool<char>.Shared.Return(buffer);
-        }
     }
 
     private Process? _process;

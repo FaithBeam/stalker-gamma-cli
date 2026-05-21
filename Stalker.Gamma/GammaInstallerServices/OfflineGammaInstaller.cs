@@ -22,7 +22,8 @@ public class OfflineGammaInstaller(
     PowerShellCmdBuilder powerShellCmdBuilder,
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
-    PreserveMcmSettings preserveMcmSettings
+    PreserveMcmSettings preserveMcmSettings,
+    PythonServerService pythonServerService
 )
     : GammaInstaller(
         settings,
@@ -36,7 +37,8 @@ public class OfflineGammaInstaller(
         powerShellCmdBuilder,
         getStalkerModsFromLocal,
         preserveUserLtxSettingsService,
-        preserveMcmSettings
+        preserveMcmSettings,
+        pythonServerService
     )
 {
     public override async Task InstallAsync(GammaInstallerArgs args)

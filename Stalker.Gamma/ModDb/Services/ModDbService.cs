@@ -15,6 +15,7 @@ public partial class ModDbService(
         string url,
         string output,
         Action<double> onProgress,
+        bool useCurl = true,
         CancellationToken cancellationToken = default
     )
     {
@@ -54,6 +55,7 @@ public partial class ModDbService(
                         diabolicalLink = await GetCdnLinkAsync(
                             url,
                             visitedMirrors,
+                            useCurl,
                             invalidateCache,
                             ct: innertCt
                         ),
@@ -110,17 +112,19 @@ public partial class ModDbService(
     private async Task<string?> GetCdnLinkAsync(
         string url,
         List<string> mirrorsVisited,
+        bool useCurl = true,
         bool invalidateCache = false,
         CancellationToken ct = default
     )
     {
         var mirrorTask = modDbMirrorService.GetMirrorAsync(
             $"{url}/all",
+            useCurl: useCurl,
             excludeMirrors: mirrorsVisited,
             invalidateCache: invalidateCache,
             cancellationToken: ct
         );
-        var getContentTask = curlService.GetStringAsync(url, ct);
+        var getContentTask = curlService.GetStringAsync(url, useCurl: useCurl, cancellationToken: ct);
         var results = await Task.WhenAll(mirrorTask, getContentTask);
 
         var (mirror, content) = (results[0], results[1]);
@@ -133,7 +137,7 @@ public partial class ModDbService(
 
         mirrorsVisited.Add(mirror);
 
-        return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, ct);
+        return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, useCurl: useCurl, ct: ct);
     }
 
     [GeneratedRegex("""window.location.href="(.+)";""")]

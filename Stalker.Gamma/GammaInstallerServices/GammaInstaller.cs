@@ -25,6 +25,7 @@ public class GammaInstallerArgs
     public bool Offline { get; set; }
     public bool PreserveUserLtx { get; set; }
     public bool PreserveMcmSettings { get; set; }
+    public bool UseCurl { get; set; } = true;
     public string? ModPackMakerPath { get; set; }
     public string? ModListPath { get; set; }
     public IList<IDownloadableRecord> GroupedAddonRecords { get; set; } = [];
@@ -50,6 +51,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private bool _offline;
     private bool _preserveUserLtx;
     private bool _preserveMcmSettings;
+    private bool _useCurl = true;
     private string? _modPackMakerPath;
     private string? _modListPath;
 
@@ -101,6 +103,12 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         return this;
     }
 
+    public GammaInstallerArgsBuilder WithUseCurl(bool value = true)
+    {
+        _useCurl = value;
+        return this;
+    }
+
     public GammaInstallerArgsBuilder WithModPackMakerPath(string? path)
     {
         _modPackMakerPath = path;
@@ -143,6 +151,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             ModListPath = _modListPath,
             GroupedAddonRecords = _groupedAddonRecords,
             AnomalyRecord = _anomalyRecord,
+            UseCurl = _useCurl,
         };
 }
 
@@ -171,8 +180,9 @@ public class GammaInstaller(
     PowerShellCmdBuilder powerShellCmdBuilder,
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
-    PreserveMcmSettings preserveMcmSettings
-) : IGammaInstaller
+    PreserveMcmSettings preserveMcmSettings,
+    PythonServerService pythonServerService
+) : IGammaInstaller, IDisposable
 {
     public IGammaProgress Progress { get; } = gammaProgress;
     protected StalkerGammaSettings Settings { get; } = settings;
@@ -195,7 +205,14 @@ public class GammaInstaller(
         var addonRecords = modpackMakerRecords
             .Select(rec =>
             {
-                if (!downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
+                if (
+                    !downloadableRecordFactory.TryCreate(
+                        args.Gamma,
+                        rec,
+                        out var dlRec,
+                        args.UseCurl
+                    )
+                )
                 {
                     return null;
                 }
@@ -248,6 +265,12 @@ public class GammaInstaller(
 
     public virtual async Task InstallAsync(GammaInstallerArgs args)
     {
+        Task? pythonServerStartTask = null;
+        if (!args.UseCurl)
+        {
+            pythonServerStartTask = pythonServerService.StartAsync(args.CancellationToken);
+        }
+
         args.Mo2Version = "v2.5.2";
         args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
         args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
@@ -354,6 +377,10 @@ public class GammaInstaller(
             args.CancellationToken
         );
 
+        if (!args.UseCurl && pythonServerStartTask is not null)
+        {
+            await pythonServerStartTask;
+        }
         await Task.WhenAll(
             mainBatch,
             teivazDlTask,
@@ -516,7 +543,8 @@ public class GammaInstaller(
     {
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
-            args.Anomaly
+            args.Anomaly,
+            args.UseCurl
         );
         return args.SkipExtractOnHashMatch
             ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)
@@ -549,4 +577,10 @@ public class GammaInstaller(
                 }
             }
         );
+
+    public void Dispose()
+    {
+        _hc.Dispose();
+        pythonServerService.Dispose();
+    }
 }

@@ -43,7 +43,7 @@ public class AnomalyInstallCmd(
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
-        if (!await utilitiesReady.IsReady())
+        if (!utilitiesReady.IsReady)
         {
             _logger.Error(
                 """
@@ -105,7 +105,7 @@ public class AnomalyInstallCmd(
     [Command("check")]
     public async Task<int> CheckAnomaly(CancellationToken cancellationToken)
     {
-        if (!await utilitiesReady.IsReady())
+        if (!utilitiesReady.IsReady)
         {
             _logger.Error(
                 """
