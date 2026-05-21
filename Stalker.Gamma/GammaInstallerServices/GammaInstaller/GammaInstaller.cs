@@ -111,7 +111,11 @@ public class GammaInstaller(
         Task? pythonServerStartTask = null;
         if (args.ExperimentalPythonServerSettings?.Enabled is true)
         {
-            pythonServerStartTask = pythonServerService.StartAsync(args.CancellationToken);
+            pythonServerStartTask = pythonServerService.StartAsync(
+                args.ExperimentalPythonServerSettings.Host,
+                args.ExperimentalPythonServerSettings.Port,
+                args.CancellationToken
+            );
         }
 
         args.Mo2Version = "v2.5.2";
