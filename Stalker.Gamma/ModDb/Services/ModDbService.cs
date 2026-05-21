@@ -11,6 +11,8 @@ public partial class ModDbService(
     ModDbGetCdnLinkService modDbGetCdnLinkServiceSvc
 )
 {
+    private static readonly SemaphoreSlim _lock = new(1);
+
     public async Task DownloadAddonAsync(
         string url,
         string output,
@@ -49,29 +51,40 @@ public partial class ModDbService(
         await outerRetry.ExecuteAsync(
             async ct =>
             {
-                var diabolicalResilience = BuildRetry();
-                await diabolicalResilience.ExecuteAsync(
-                    async innertCt =>
-                        diabolicalLink = await GetCdnLinkAsync(
-                            url,
-                            visitedMirrors,
-                            useCurl,
-                            invalidateCache,
-                            ct: innertCt
-                        ),
-                    ct
-                );
+                DirectoryInfo? parentPath;
 
-                // if bad mirror
-                if (string.IsNullOrWhiteSpace(diabolicalLink))
+                try
                 {
-                    throw new ModDbUtilityException("Failed to get diabolical link");
+                    await _lock.WaitAsync(ct);
+
+                    var diabolicalResilience = BuildRetry();
+                    await diabolicalResilience.ExecuteAsync(
+                        async innertCt =>
+                            diabolicalLink = await GetCdnLinkAsync(
+                                url,
+                                visitedMirrors,
+                                useCurl,
+                                invalidateCache,
+                                ct: innertCt
+                            ),
+                        ct
+                    );
+
+                    // if bad mirror
+                    if (string.IsNullOrWhiteSpace(diabolicalLink))
+                    {
+                        throw new ModDbUtilityException("Failed to get diabolical link");
+                    }
+
+                    parentPath = Directory.GetParent(output);
+                    if (parentPath is not null && !parentPath.Exists)
+                    {
+                        parentPath.Create();
+                    }
                 }
-
-                var parentPath = Directory.GetParent(output);
-                if (parentPath is not null && !parentPath.Exists)
+                finally
                 {
-                    parentPath.Create();
+                    _lock.Release();
                 }
 
                 await curlService.DownloadFileAsync(
@@ -100,10 +113,7 @@ public partial class ModDbService(
                             not null => ValueTask.FromResult(true),
                             _ => ValueTask.FromResult(false),
                         },
-                    OnRetry = args =>
-                    {
-                        return ValueTask.CompletedTask;
-                    },
+                    OnRetry = args => ValueTask.CompletedTask,
                 }
             )
             .Build();
@@ -124,7 +134,11 @@ public partial class ModDbService(
             invalidateCache: invalidateCache,
             cancellationToken: ct
         );
-        var getContentTask = curlService.GetStringAsync(url, useCurl: useCurl, cancellationToken: ct);
+        var getContentTask = curlService.GetStringAsync(
+            url,
+            useCurl: useCurl,
+            cancellationToken: ct
+        );
         var results = await Task.WhenAll(mirrorTask, getContentTask);
 
         var (mirror, content) = (results[0], results[1]);

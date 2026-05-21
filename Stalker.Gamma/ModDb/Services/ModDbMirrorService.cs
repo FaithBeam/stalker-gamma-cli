@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using Stalker.Gamma.Utilities;
 using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.ModDb.Services;
