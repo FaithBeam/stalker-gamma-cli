@@ -9,164 +9,7 @@ using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.GammaInstallerServices;
-
-public class GammaInstallerArgs
-{
-    public required string Anomaly { get; set; }
-    public required string Gamma { get; set; }
-    public required string Cache { get; set; }
-    public string? Mo2Version { get; set; }
-    public bool DownloadGithubArchives { get; set; } = true;
-    public bool SkipExtractOnHashMatch { get; set; }
-    public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
-    public string Mo2Profile { get; set; } = "G.A.M.M.A";
-    public bool Minimal { get; set; }
-    public bool Offline { get; set; }
-    public bool PreserveUserLtx { get; set; }
-    public bool PreserveMcmSettings { get; set; }
-    public bool UseCurl { get; set; } = true;
-    public string? ModPackMakerPath { get; set; }
-    public string? ModListPath { get; set; }
-    public IList<IDownloadableRecord> GroupedAddonRecords { get; set; } = [];
-    public IDownloadableRecord? AnomalyRecord { get; set; }
-    public IDownloadableRecord? GammaLargeFilesRecord { get; set; }
-    public IDownloadableRecord? TeivazAnomalyGunslingerRecord { get; set; }
-    public IDownloadableRecord? GammaSetupRecord { get; set; }
-    public IDownloadableRecord? StalkerGammaRecord { get; set; }
-
-    public static GammaInstallerArgsBuilder Create(string anomaly, string gamma, string cache) =>
-        new(anomaly, gamma, cache);
-}
-
-public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cache)
-{
-    private bool _downloadGithubArchives = true;
-    private bool _skipExtractOnHashMatch;
-    private IList<IDownloadableRecord> _groupedAddonRecords = [];
-    private IDownloadableRecord? _anomalyRecord;
-    private CancellationToken _cancellationToken = CancellationToken.None;
-    private string _mo2Profile = "G.A.M.M.A";
-    private bool _minimal;
-    private bool _offline;
-    private bool _preserveUserLtx;
-    private bool _preserveMcmSettings;
-    private bool _useCurl = true;
-    private string? _modPackMakerPath;
-    private string? _modListPath;
-
-    public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
-    {
-        _cancellationToken = ct;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithDownloadGithubArchives(bool value = true)
-    {
-        _downloadGithubArchives = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithSkipExtractOnHashMatch(bool value = true)
-    {
-        _skipExtractOnHashMatch = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithMo2Profile(string profile)
-    {
-        _mo2Profile = profile;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithMinimal(bool value = true)
-    {
-        _minimal = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithOffline(bool value = true)
-    {
-        _offline = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithPreserveUserLtx(bool value = true)
-    {
-        _preserveUserLtx = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithPreserveMcmSettings(bool value = true)
-    {
-        _preserveMcmSettings = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithUseCurl(bool value = true)
-    {
-        _useCurl = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithModPackMakerPath(string? path)
-    {
-        _modPackMakerPath = path;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithModListPath(string? path)
-    {
-        _modListPath = path;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithGroupedAddonRecords(IList<IDownloadableRecord> records)
-    {
-        _groupedAddonRecords = records;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithAnomalyRecord(IDownloadableRecord? record)
-    {
-        _anomalyRecord = record;
-        return this;
-    }
-
-    public GammaInstallerArgs Build() =>
-        new()
-        {
-            Anomaly = anomaly,
-            Gamma = gamma,
-            Cache = cache,
-            DownloadGithubArchives = _downloadGithubArchives,
-            SkipExtractOnHashMatch = _skipExtractOnHashMatch,
-            CancellationToken = _cancellationToken,
-            Mo2Profile = _mo2Profile,
-            Minimal = _minimal,
-            Offline = _offline,
-            PreserveUserLtx = _preserveUserLtx,
-            PreserveMcmSettings = _preserveMcmSettings,
-            ModPackMakerPath = _modPackMakerPath,
-            ModListPath = _modListPath,
-            GroupedAddonRecords = _groupedAddonRecords,
-            AnomalyRecord = _anomalyRecord,
-            UseCurl = _useCurl,
-        };
-}
-
-public interface IGammaInstaller
-{
-    IGammaProgress Progress { get; }
-    Task<IList<IDownloadableRecord>> BuildGroupedAddonRecordsAsync(GammaInstallerArgs args);
-    void BuildSpecialRepoRecords(GammaInstallerArgs args);
-    Task InstallAsync(GammaInstallerArgs args);
-    IDownloadableRecord BuildAnomalyRecord(GammaInstallerArgs args);
-
-    Task<GammaInstaller.DiffedAddonRecords> DiffAddonRecordsAsync(GammaInstallerArgs args);
-
-    Task<IList<IDownloadableRecord>> BuildUpdateGroupedAddonRecordsAsync(GammaInstallerArgs args);
-}
+namespace Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 
 public class GammaInstaller(
     StalkerGammaSettings settings,
@@ -210,7 +53,7 @@ public class GammaInstaller(
                         args.Gamma,
                         rec,
                         out var dlRec,
-                        args.UseCurl
+                        useCurl: !(args.ExperimentalPythonServerSettings?.Enabled ?? false)
                     )
                 )
                 {
@@ -266,7 +109,7 @@ public class GammaInstaller(
     public virtual async Task InstallAsync(GammaInstallerArgs args)
     {
         Task? pythonServerStartTask = null;
-        if (!args.UseCurl)
+        if (args.ExperimentalPythonServerSettings?.Enabled is true)
         {
             pythonServerStartTask = pythonServerService.StartAsync(args.CancellationToken);
         }
@@ -377,7 +220,10 @@ public class GammaInstaller(
             args.CancellationToken
         );
 
-        if (!args.UseCurl && pythonServerStartTask is not null)
+        if (
+            args.ExperimentalPythonServerSettings?.Enabled is true
+            && pythonServerStartTask is not null
+        )
         {
             await pythonServerStartTask;
         }
@@ -544,7 +390,7 @@ public class GammaInstaller(
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly,
-            args.UseCurl
+            useCurl: !(args.ExperimentalPythonServerSettings?.Enabled ?? false)
         );
         return args.SkipExtractOnHashMatch
             ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)

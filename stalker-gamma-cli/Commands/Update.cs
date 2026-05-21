@@ -8,6 +8,7 @@ using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;

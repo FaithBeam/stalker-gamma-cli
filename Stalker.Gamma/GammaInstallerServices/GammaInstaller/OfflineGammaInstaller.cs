@@ -8,7 +8,7 @@ using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.GammaInstallerServices;
+namespace Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 
 public class OfflineGammaInstaller(
     StalkerGammaSettings settings,

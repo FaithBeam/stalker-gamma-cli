@@ -38,24 +38,34 @@ public class Config(ILogger logger, CliSettings cliSettings)
             Environment.Exit(1);
         }
 
-        if (
-            !foundProfile.TrySet(setting, value, out var error) && !string.IsNullOrWhiteSpace(error)
-        )
+        if (foundProfile.TrySet(setting, value, out var error))
         {
-            _logger.Error("{Error}", error);
-            Environment.Exit(1);
+            await cliSettings.SaveAsync();
+            _logger.Information(
+                "Profile {Profile} updated with {Setting}={Value}",
+                foundProfile.ProfileName,
+                setting,
+                value
+            );
         }
-        await cliSettings.SaveAsync();
-        _logger.Information(
-            "Profile {Profile} updated with {Setting}={Value}",
-            foundProfile.ProfileName,
-            setting,
-            value
-        );
+
+        if (cliSettings.ExperimentalModDbSettings.TrySet(setting, value, out error))
+        {
+            await cliSettings.SaveAsync();
+            _logger.Information(
+                "ExpermientalModSettings updated with {Setting}={Value}",
+                setting,
+                value
+            );
+            return;
+        }
+
+        _logger.Error("{Error}", error);
+        Environment.Exit(1);
     }
 
     /// <summary>
-    /// Create settings file
+    /// Create the settings file
     /// </summary>
     /// <param name="name">The name of the profile to create</param>
     /// <param name="anomaly">The path to anomaly install</param>

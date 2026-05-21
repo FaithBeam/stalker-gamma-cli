@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;

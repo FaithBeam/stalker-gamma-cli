@@ -10,6 +10,8 @@ public class CliSettings
 
     public List<CliProfile> Profiles { get; set; } = [];
 
+    public ExperimentalModDbSettings ExperimentalModDbSettings { get; set; } = new();
+
     public async Task<string?> SaveAsync()
     {
         if (!Directory.Exists(_appDataPath))

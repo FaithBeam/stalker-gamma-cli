@@ -6,6 +6,7 @@ using stalker_gamma_cli.Models;
 using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 
@@ -27,16 +28,15 @@ public class FullInstallCmd(
     /// This will install/update Anomaly and all GAMMA addons. This will take ~150GB.
     /// </summary>
     /// <param name="cancellationToken"></param>
-    /// <param name="skipGithubDownloads">Disable downloading github addons. They will still download if these archives do not exist.</param>
+    /// <param name="skipGithubDownloads">Disable downloading GitHub addons. They will still download if these archives do not exist.</param>
     /// <param name="skipExtractOnHashMatch">Skip extracting archives when their MD5 hashes match</param>
     /// <param name="addFoldersToWinDefenderExclusion">(Windows) Add the anomaly, gamma, and cache folders to the Windows Defender Exclusion list</param>
     /// <param name="enableLongPaths">(Windows) Enable long paths</param>
     /// <param name="verbose">More verbose logging</param>
     /// <param name="minimal">Delete cache files after extracting. Could be useful for space-constrained devices but increases the chance of installation failure and will make updates much slower. This will take about ~100GB.</param>
-    /// <param name="offline">Perform an offline install from cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
+    /// <param name="offline">Perform an offline installation from a cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
-    /// <param name="experimentalModdbDownloader">Use an experimental ModDb downloader instead of curl-impersonate. May help with retrieving addons from ModDb.</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
@@ -53,7 +53,6 @@ public class FullInstallCmd(
         bool offline = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
-        bool experimentalModdbDownloader = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
@@ -117,7 +116,9 @@ public class FullInstallCmd(
                 .WithModListPath(modListPath)
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
-                .WithUseCurl(!experimentalModdbDownloader)
+                .WithExperimentalPythonServerSettings(
+                    _cliSettings.ExperimentalModDbSettings.ToServerSettings()
+                )
                 .Build();
             args.GroupedAddonRecords = await installer.BuildGroupedAddonRecordsAsync(args);
             args.AnomalyRecord = installer.BuildAnomalyRecord(args);
