@@ -37,6 +37,7 @@ public class FullInstallCmd(
     /// <param name="offline">Perform an offline installation from a cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
+    /// <param name="experimentalPythonServer">Use experimental python server when contacting moddb</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
@@ -53,6 +54,7 @@ public class FullInstallCmd(
         bool offline = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
+        bool experimentalPythonServer = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
@@ -116,6 +118,7 @@ public class FullInstallCmd(
                 .WithModListPath(modListPath)
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
+                .WithUseExperimentalPythonServer(experimentalPythonServer)
                 .WithExperimentalPythonServerSettings(
                     _cliSettings.ExperimentalModDbSettings.ToServerSettings()
                 )

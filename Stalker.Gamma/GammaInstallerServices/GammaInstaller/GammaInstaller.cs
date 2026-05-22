@@ -53,7 +53,7 @@ public class GammaInstaller(
                         args.Gamma,
                         rec,
                         out var dlRec,
-                        useCurl: !(args.ExperimentalPythonServerSettings?.Enabled ?? false)
+                        useCurl: !args.UseExperimentalPythonServer
                     )
                 )
                 {
@@ -109,7 +109,10 @@ public class GammaInstaller(
     public virtual async Task InstallAsync(GammaInstallerArgs args)
     {
         Task? pythonServerStartTask = null;
-        if (args.ExperimentalPythonServerSettings?.Enabled is true)
+        if (
+            args is
+            { UseExperimentalPythonServer: true, ExperimentalPythonServerSettings: not null }
+        )
         {
             pythonServerStartTask = pythonServerService.StartAsync(
                 args.ExperimentalPythonServerSettings.Host,
@@ -224,10 +227,7 @@ public class GammaInstaller(
             args.CancellationToken
         );
 
-        if (
-            args.ExperimentalPythonServerSettings?.Enabled is true
-            && pythonServerStartTask is not null
-        )
+        if (args.UseExperimentalPythonServer && pythonServerStartTask is not null)
         {
             await pythonServerStartTask;
         }
@@ -394,7 +394,7 @@ public class GammaInstaller(
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly,
-            useCurl: !(args.ExperimentalPythonServerSettings?.Enabled ?? false)
+            useCurl: !args.UseExperimentalPythonServer
         );
         return args.SkipExtractOnHashMatch
             ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)

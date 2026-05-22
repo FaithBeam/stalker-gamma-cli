@@ -16,6 +16,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private bool _preserveMcmSettings;
     private string? _modPackMakerPath;
     private string? _modListPath;
+    private bool _useExperimentalPythonServer;
     private ExperimentalPythonServerSettings? _experimentalPythonServerSettings;
 
     public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
@@ -63,6 +64,12 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     public GammaInstallerArgsBuilder WithPreserveMcmSettings(bool value = true)
     {
         _preserveMcmSettings = value;
+        return this;
+    }
+
+    public GammaInstallerArgsBuilder WithUseExperimentalPythonServer(bool value = false)
+    {
+        _useExperimentalPythonServer = value;
         return this;
     }
 
@@ -116,6 +123,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             ModListPath = _modListPath,
             GroupedAddonRecords = _groupedAddonRecords,
             AnomalyRecord = _anomalyRecord,
+            UseExperimentalPythonServer = _useExperimentalPythonServer,
             ExperimentalPythonServerSettings = _experimentalPythonServerSettings,
         };
 }

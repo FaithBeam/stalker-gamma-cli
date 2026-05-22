@@ -8,7 +8,6 @@ public partial class ExperimentalModDbSettingsCtx : JsonSerializerContext;
 
 public class ExperimentalModDbSettings
 {
-    public bool ExperimentalModDbLogicEnabled { get; set; } = false;
     public string Host { get; set; } = "127.0.0.1";
     public ushort Port { get; set; } = 8000;
 
@@ -17,10 +16,6 @@ public class ExperimentalModDbSettings
         error = null;
         switch (setting.ToLowerInvariant())
         {
-            case "experimentalmoddblogicenabled":
-                ExperimentalModDbLogicEnabled = bool.Parse(value);
-                return true;
-
             case "host":
                 Host = value;
                 return true;
@@ -42,10 +37,5 @@ public class ExperimentalModDbSettings
     }
 
     public ExperimentalPythonServerSettings ToServerSettings() =>
-        new()
-        {
-            Enabled = ExperimentalModDbLogicEnabled,
-            Host = Host,
-            Port = Port,
-        };
+        new() { Host = Host, Port = Port };
 }
