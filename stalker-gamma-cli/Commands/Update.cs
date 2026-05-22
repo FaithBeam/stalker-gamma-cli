@@ -202,6 +202,7 @@ public class UpdateCmds(
     /// <param name="minimal"></param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
+    /// <param name="experimentalPythonServer">Use an experimental python server when connecting to moddb for addons</param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task<int> Apply(
         CancellationToken cancellationToken,
@@ -209,6 +210,7 @@ public class UpdateCmds(
         bool minimal = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
+        bool experimentalPythonServer = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -236,6 +238,10 @@ public class UpdateCmds(
                 .WithMinimal(minimal)
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
+                .WithUseExperimentalPythonServer(experimentalPythonServer)
+                .WithExperimentalPythonServerSettings(
+                    _cliSettings.ExperimentalModDbSettings.ToServerSettings()
+                )
                 .Build();
             updateArgs.GroupedAddonRecords =
                 await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);
