@@ -11,7 +11,11 @@ namespace Stalker.Gamma.Factories;
 
 public interface IDownloadableRecordFactory
 {
-    IDownloadableRecord CreateAnomalyRecord(string downloadDirectory, string anomalyDir, bool useCurl = true);
+    IDownloadableRecord CreateAnomalyRecord(
+        string downloadDirectory,
+        string anomalyDir,
+        bool useCurl = true
+    );
     IDownloadableRecord CreateGammaSetupRecord(
         string gammaDir,
         string gammaSetupRepo,
@@ -65,7 +69,11 @@ public class DownloadableRecordFactory(
         IDownloadableRecord record
     ) => new SkipExtractWhenNotDownloadedRecord(gammaProgress, record);
 
-    public IDownloadableRecord CreateAnomalyRecord(string downloadDirectory, string anomalyDir, bool useCurl = true) =>
+    public IDownloadableRecord CreateAnomalyRecord(
+        string downloadDirectory,
+        string anomalyDir,
+        bool useCurl = true
+    ) =>
         new AnomalyInstaller(
             gammaProgress,
             downloadDirectory,
@@ -155,7 +163,14 @@ public class DownloadableRecordFactory(
             return true;
         }
 
-        if (TryParseModDbGetMetadataRecord(gammaDir, record, useCurl, out var modDbGetMetadataRecord))
+        if (
+            TryParseModDbGetMetadataRecord(
+                gammaDir,
+                record,
+                useCurl,
+                out var modDbGetMetadataRecord
+            )
+        )
         {
             downloadableRecord = modDbGetMetadataRecord;
             return true;
