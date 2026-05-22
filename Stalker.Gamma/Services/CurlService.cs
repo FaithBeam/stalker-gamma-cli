@@ -1,18 +1,27 @@
 using LibCurlImpersonate;
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Services;
 
-public class CurlService(IHttpClientFactory hcf)
+public class CurlService(IHttpClientFactory hcf, PythonApiProxy pythonApiProxy)
 {
-    public Task<Dictionary<string, string>> GetHeadersAsync(
+    private readonly PythonApiProxy _pythonApiProxy = pythonApiProxy;
+
+    public async Task<Dictionary<string, string>> GetHeadersAsync(
         string url,
+        bool useCurl,
         CancellationToken cancellationToken = default
     ) =>
-        Task.Run(
-            () => CurlHttp.GetHeaders(url, http3: true, ct: cancellationToken),
-            cancellationToken
-        );
+        useCurl
+            ? await Task.Run(
+                () => CurlHttp.GetHeaders(url, http3: true, ct: cancellationToken),
+                cancellationToken
+            )
+            : (await _pythonApiProxy.GetHeadersAsync(url, cancellationToken)).ToDictionary(
+                x => x.Key,
+                x => x.Value.ToString()!
+            );
 
     public async Task DownloadFileAsync(
         string url,
@@ -31,8 +40,17 @@ public class CurlService(IHttpClientFactory hcf)
         );
     }
 
-    public Task<string> GetStringAsync(string url, CancellationToken cancellationToken = default) =>
-        Task.Run(() => CurlHttp.Fetch(url, http3: true, ct: cancellationToken), cancellationToken);
+    public async Task<string> GetStringAsync(
+        string url,
+        bool useCurl,
+        CancellationToken cancellationToken = default
+    ) =>
+        useCurl
+            ? await Task.Run(
+                () => CurlHttp.Fetch(url, http3: true, ct: cancellationToken),
+                cancellationToken
+            )
+            : await _pythonApiProxy.GetStringAsync(url, cancellationToken);
 
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.

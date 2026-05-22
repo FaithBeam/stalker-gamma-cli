@@ -151,17 +151,6 @@ public class AnomalyInstallCmd(
     /// </summary>
     public void PurgeShaderCache()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomalyAppDataShadersDir = Path.Join(
             _cliSettings.ActiveProfile!.Anomaly,
@@ -185,17 +174,6 @@ public class AnomalyInstallCmd(
     /// </summary>
     public void DeleteReshade()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomalyBinDir = Path.Join(_cliSettings.ActiveProfile!.Anomaly, "bin");
         List<string> reshadeFiles =

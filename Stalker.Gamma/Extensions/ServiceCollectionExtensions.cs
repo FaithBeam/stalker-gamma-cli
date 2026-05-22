@@ -2,11 +2,12 @@ using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Services;
-using Stalker.Gamma.Utilities;
 using CurlService = Stalker.Gamma.Services.CurlService;
 using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
 using ModDbGetCdnLinkService = Stalker.Gamma.ModDb.Services.ModDbGetCdnLinkService;
@@ -39,6 +40,8 @@ public static class ServiceCollectionExtensions
         s.AddSingleton<StalkerGammaSettings>().AddSingleton<GammaProgress, GammaProgress>();
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
             .AddScoped<ArchiveService>()
+            .AddScoped<PythonApiClientFactory>()
+            .AddSingleton<PythonServerService>()
             .AddScoped<SevenZipService>()
             .AddScoped<TarService>()
             .AddScoped<UnzipService>()
@@ -48,6 +51,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<CurlService>()
             .AddScoped<ModDbGetCdnLinkService>()
             .AddScoped<PreserveMcmSettings>()
+            .AddScoped<PythonApiProxy>()
             .AddScoped<PreserveUserLtxSettingsService>()
             .AddScoped<GetCanonicalLinkFromModDbStartLink>()
             .AddScoped<ModDbGetAddonMetadataService>()

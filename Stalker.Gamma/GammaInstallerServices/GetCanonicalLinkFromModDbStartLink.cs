@@ -9,13 +9,18 @@ public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
 {
     public async Task<string> GetCanonicalLinkAsync(
         string modDbStartLink,
+        bool useCurl = true,
         CancellationToken ct = default
     )
     {
         string? htmlContent = null;
         try
         {
-            htmlContent = await _curlService.GetStringAsync(modDbStartLink, ct);
+            htmlContent = await _curlService.GetStringAsync(
+                modDbStartLink,
+                useCurl: useCurl,
+                cancellationToken: ct
+            );
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
             var linkNode = htmlDoc.DocumentNode.SelectSingleNode("//link[@rel='canonical']");

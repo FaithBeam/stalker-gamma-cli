@@ -31,6 +31,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Run Csharpier
         run: |
           dotnet tool restore
@@ -47,7 +52,7 @@ jobs:
 
       - name: Make Build
         run: make build -C build/linux VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
-        
+
       - name: Download appimagetool
         run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -Lo appimagetool-aarch64.AppImage
 
@@ -101,6 +106,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Run Csharpier
         run: |
           dotnet tool restore
@@ -117,7 +127,7 @@ jobs:
 
       - name: Make Build
         run: make build -C build/linux VERSION=${{ steps.gitversion.outputs.AssemblySemFileVer }} ARCH=${{ env.ARCHITECTURE }}
-        
+
       - name: Download appimagetool
         run: curl https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage -Lo appimagetool-aarch64.AppImage
         
@@ -169,6 +179,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
 
       - name: Run Csharpier
         run: |
@@ -230,6 +245,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Run Csharpier
         run: |
           dotnet tool restore
@@ -282,6 +302,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Run Csharpier
         run: |
           dotnet tool restore
@@ -298,7 +323,7 @@ jobs:
 
       - name: Build CLI
         run: build/win/build.bat ${{ steps.gitversion.outputs.SemVer }}
-        
+
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
@@ -328,6 +353,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
 
       - name: Run Csharpier
         run: |
@@ -370,7 +400,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Generate PKGBUILD
         run: |
           PATH_TO_PKGBUILD="PKGBUILD"
@@ -399,7 +434,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-        
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
         run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
@@ -419,7 +459,12 @@ jobs:
           repository: FaithBeam/homebrew-stalker-gamma
           token: ${{ secrets.HOMEBREW_REPO_TOKEN }}
           path: homebrew-stalker-gamma
-          
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.4'
+
       - name: Update Homebrew Cask
         run: |
           PATH_TO_CASK="homebrew-stalker-gamma/Casks/stalker-gamma.rb"

@@ -11,9 +11,17 @@ public partial class ModDbGetAddonMetadataService(CurlService curlService)
 {
     private readonly CurlService _curlService = curlService;
 
-    public async Task<ModDbPageMetadata> GetAsync(string modDbAddonUrl, CancellationToken ct)
+    public async Task<ModDbPageMetadata> GetAsync(
+        string modDbAddonUrl,
+        bool useCurl = true,
+        CancellationToken ct = default
+    )
     {
-        var addonHtml = await _curlService.GetStringAsync(modDbAddonUrl, ct);
+        var addonHtml = await _curlService.GetStringAsync(
+            modDbAddonUrl,
+            useCurl: useCurl,
+            cancellationToken: ct
+        );
         try
         {
             var htmlDoc = new HtmlDocument();

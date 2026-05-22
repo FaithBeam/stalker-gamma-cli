@@ -5,10 +5,11 @@ using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
-namespace Stalker.Gamma.GammaInstallerServices;
+namespace Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 
 public class OfflineGammaInstaller(
     StalkerGammaSettings settings,
@@ -22,7 +23,9 @@ public class OfflineGammaInstaller(
     PowerShellCmdBuilder powerShellCmdBuilder,
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
-    PreserveMcmSettings preserveMcmSettings
+    PreserveMcmSettings preserveMcmSettings,
+    PythonServerService pythonServerService,
+    PythonApiProxy pythonApiProxy
 )
     : GammaInstaller(
         settings,
@@ -36,7 +39,9 @@ public class OfflineGammaInstaller(
         powerShellCmdBuilder,
         getStalkerModsFromLocal,
         preserveUserLtxSettingsService,
-        preserveMcmSettings
+        preserveMcmSettings,
+        pythonServerService,
+        pythonApiProxy
     )
 {
     public override async Task InstallAsync(GammaInstallerArgs args)

@@ -11,7 +11,11 @@ namespace Stalker.Gamma.Factories;
 
 public interface IDownloadableRecordFactory
 {
-    IDownloadableRecord CreateAnomalyRecord(string downloadDirectory, string anomalyDir);
+    IDownloadableRecord CreateAnomalyRecord(
+        string downloadDirectory,
+        string anomalyDir,
+        bool useCurl = true
+    );
     IDownloadableRecord CreateGammaSetupRecord(
         string gammaDir,
         string gammaSetupRepo,
@@ -37,7 +41,8 @@ public interface IDownloadableRecordFactory
     bool TryCreate(
         string gammaDir,
         ModPackMakerRecord record,
-        out IDownloadableRecord? downloadableRecord
+        out IDownloadableRecord? downloadableRecord,
+        bool useCurl = true
     );
 
     List<IDownloadableRecord> CreateGroupedDownloadableRecords(IList<IDownloadableRecord> records);
@@ -64,13 +69,18 @@ public class DownloadableRecordFactory(
         IDownloadableRecord record
     ) => new SkipExtractWhenNotDownloadedRecord(gammaProgress, record);
 
-    public IDownloadableRecord CreateAnomalyRecord(string downloadDirectory, string anomalyDir) =>
+    public IDownloadableRecord CreateAnomalyRecord(
+        string downloadDirectory,
+        string anomalyDir,
+        bool useCurl = true
+    ) =>
         new AnomalyInstaller(
             gammaProgress,
             downloadDirectory,
             anomalyDir,
             modDbService,
-            archiveService
+            archiveService,
+            useCurl
         );
 
     public IDownloadableRecord CreateGammaSetupRecord(
@@ -141,18 +151,26 @@ public class DownloadableRecordFactory(
     public bool TryCreate(
         string gammaDir,
         ModPackMakerRecord record,
-        out IDownloadableRecord? downloadableRecord
+        out IDownloadableRecord? downloadableRecord,
+        bool useCurl = true
     )
     {
         downloadableRecord = null;
 
-        if (TryParseModDbRecord(gammaDir, record, out var modDbRecord))
+        if (TryParseModDbRecord(gammaDir, record, useCurl, out var modDbRecord))
         {
             downloadableRecord = modDbRecord;
             return true;
         }
 
-        if (TryParseModDbGetMetadataRecord(gammaDir, record, out var modDbGetMetadataRecord))
+        if (
+            TryParseModDbGetMetadataRecord(
+                gammaDir,
+                record,
+                useCurl,
+                out var modDbGetMetadataRecord
+            )
+        )
         {
             downloadableRecord = modDbGetMetadataRecord;
             return true;
@@ -170,6 +188,7 @@ public class DownloadableRecordFactory(
     private bool TryParseModDbGetMetadataRecord(
         string gammaDir,
         ModPackMakerRecord record,
+        bool useCurl,
         out ModDbRecordGetMetadata? downloadableRecord
     )
     {
@@ -193,7 +212,8 @@ public class DownloadableRecordFactory(
                 gammaProgress,
                 modDbService,
                 getCanonicalLinkFromModDbStartLink,
-                modDbGetAddonMetadataService
+                modDbGetAddonMetadataService,
+                useCurl
             );
             return true;
         }
@@ -244,6 +264,7 @@ public class DownloadableRecordFactory(
     private bool TryParseModDbRecord(
         string gammaDir,
         ModPackMakerRecord record,
+        bool useCurl,
         out ModDbRecord? downloadableRecord
     )
     {
@@ -274,7 +295,8 @@ public class DownloadableRecordFactory(
                 outputDirName,
                 instructions,
                 archiveService,
-                modDbService
+                modDbService,
+                useCurl
             );
             return true;
         }

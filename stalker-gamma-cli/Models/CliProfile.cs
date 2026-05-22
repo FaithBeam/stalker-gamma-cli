@@ -27,6 +27,7 @@ public partial class CliProfile
     public string TeivazAnomalyGunslingerRepoUrl { get; set; } =
         "https://github.com/Grokitach/teivaz_anomaly_gunslinger";
     public string TeivazAnomalyGunslingerRepoBranch { get; set; } = "main";
+    public string PythonApiUrl { get; set; } = "http://localhost:8000";
 
     public override string ToString() =>
         $"""
@@ -45,6 +46,7 @@ public partial class CliProfile
             GammaLargeFilesRepoBranch: {GammaLargeFilesRepoBranch}
             TeivazAnomalyGunslingerRepoUrl: {TeivazAnomalyGunslingerRepoUrl}
             TeivazAnomalyGunslingerRepoBranch: {TeivazAnomalyGunslingerRepoBranch}
+            PythonApiUrl: {PythonApiUrl}
             ModListUrl: {ModListUrl}
             Active: {Active}
             """;
@@ -167,6 +169,11 @@ public partial class CliProfile
                 }
 
                 DownloadThreads = threads;
+                error = null;
+                return true;
+
+            case "pythonapiurl":
+                PythonApiUrl = value;
                 error = null;
                 return true;
 

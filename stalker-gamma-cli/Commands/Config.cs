@@ -2,29 +2,17 @@ using System.ComponentModel.DataAnnotations;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
-using stalker_gamma_cli.Utilities;
 
 namespace stalker_gamma_cli.Commands;
 
 [RegisterCommands("config")]
-public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady utilitiesReady)
+public class Config(ILogger logger, CliSettings cliSettings)
 {
     /// <summary>
     /// Print the currently active profile settings.
     /// </summary>
     public void Info()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.Active);
         if (foundProfile is null)
         {
@@ -43,17 +31,6 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="value">The value of the setting to set</param>
     public async Task Set([Argument] string setting, [Argument] string value)
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.Active);
         if (foundProfile is null)
         {
@@ -61,24 +38,34 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             Environment.Exit(1);
         }
 
-        if (
-            !foundProfile.TrySet(setting, value, out var error) && !string.IsNullOrWhiteSpace(error)
-        )
+        if (foundProfile.TrySet(setting, value, out var error))
         {
-            _logger.Error("{Error}", error);
-            Environment.Exit(1);
+            await cliSettings.SaveAsync();
+            _logger.Information(
+                "Profile {Profile} updated with {Setting}={Value}",
+                foundProfile.ProfileName,
+                setting,
+                value
+            );
         }
-        await cliSettings.SaveAsync();
-        _logger.Information(
-            "Profile {Profile} updated with {Setting}={Value}",
-            foundProfile.ProfileName,
-            setting,
-            value
-        );
+
+        if (cliSettings.ExperimentalModDbSettings.TrySet(setting, value, out error))
+        {
+            await cliSettings.SaveAsync();
+            _logger.Information(
+                "ExpermientalModSettings updated with {Setting}={Value}",
+                setting,
+                value
+            );
+            return;
+        }
+
+        _logger.Error("{Error}", error);
+        Environment.Exit(1);
     }
 
     /// <summary>
-    /// Create settings file
+    /// Create the settings file
     /// </summary>
     /// <param name="name">The name of the profile to create</param>
     /// <param name="anomaly">The path to anomaly install</param>
@@ -96,6 +83,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="gammaLargeFilesRepoBranch">The gamma_large_files repo branch or commit sha</param>
     /// <param name="teivazAnomalyGunslingerRepoUrl">The teivaz_anomaly_gunslinger repo url</param>
     /// <param name="teivazAnomalyGunslingerRepoBranch">The teivaz_anomaly_gunslinger repo branch or commit sha</param>
+    /// <param name="pythonApiUrl">Url to the host python api</param>
     public async Task Create(
         string anomaly,
         string gamma,
@@ -114,21 +102,10 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
         string gammaLargeFilesRepoBranch = "main",
         string teivazAnomalyGunslingerRepoUrl =
             "https://github.com/Grokitach/teivaz_anomaly_gunslinger",
-        string teivazAnomalyGunslingerRepoBranch = "main"
+        string teivazAnomalyGunslingerRepoBranch = "main",
+        string pythonApiUrl = "http://localhost:8000"
     )
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
         foreach (var profile in cliSettings.Profiles)
         {
             profile.Active = false;
@@ -159,6 +136,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
                 GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch,
                 TeivazAnomalyGunslingerRepoUrl = teivazAnomalyGunslingerRepoUrl,
                 TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch,
+                PythonApiUrl = pythonApiUrl,
             };
             await newProfile.SetActiveAsync();
             cliSettings.Profiles.Add(newProfile);
@@ -181,6 +159,7 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
             foundProfile.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
             foundProfile.TeivazAnomalyGunslingerRepoUrl = teivazAnomalyGunslingerRepoUrl;
             foundProfile.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
+            foundProfile.PythonApiUrl = pythonApiUrl;
             await foundProfile.SetActiveAsync();
         }
         await cliSettings.SaveAsync();
@@ -199,18 +178,6 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// </summary>
     public void List()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
         foreach (var profile in cliSettings.Profiles)
         {
             _logger.Information(
@@ -227,18 +194,6 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     [Command("")]
     public void GetActive()
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.Active);
         if (foundProfile is null)
         {
@@ -256,18 +211,6 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="name">Name of the profile to delete</param>
     public async Task Delete([Argument] string name)
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {
@@ -294,18 +237,6 @@ public class Config(ILogger logger, CliSettings cliSettings, UtilitiesReady util
     /// <param name="name">The name of the profile to set as active</param>
     public async Task Use([Argument] string name)
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
         var foundProfile = cliSettings.Profiles.FirstOrDefault(x => x.ProfileName == name);
         if (foundProfile is null)
         {
