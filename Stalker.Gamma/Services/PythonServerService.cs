@@ -1,20 +1,18 @@
 using System.Diagnostics;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.Services;
 
 public class PythonServerService : IDisposable
 {
-    public PythonServerService(StalkerGammaSettings settings, PythonApiProxy pythonApiProxy)
+    public PythonServerService(StalkerGammaSettings settings)
     {
         _settings = settings;
-        _pythonApiProxy = pythonApiProxy;
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         Console.CancelKeyPress += OnCancelKeyPress;
     }
 
-    public async Task StartAsync(string host, ushort port, CancellationToken ct = default)
+    public void Start(string host, ushort port, CancellationToken ct = default)
     {
         if (_process is not null && !_process.HasExited)
         {
@@ -27,18 +25,11 @@ public class PythonServerService : IDisposable
             Arguments = $"--host {host} --port {port}",
             UseShellExecute = false,
             CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
         };
         _process.EnableRaisingEvents = true;
         _process.Start();
 
         ct.Register(Kill);
-
-        while (!await _pythonApiProxy.Ready())
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1), ct);
-        }
     }
 
     public void Dispose()
@@ -56,11 +47,11 @@ public class PythonServerService : IDisposable
     }
 
     private void OnProcessExit(object? sender, EventArgs e) => Kill();
+
     private void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e) => Kill();
 
     private Process? _process;
     private readonly StalkerGammaSettings _settings;
-    private readonly PythonApiProxy _pythonApiProxy;
     private string PythonServerPath => _settings.PythonServerPath;
 }
 

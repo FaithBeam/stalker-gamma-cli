@@ -6,6 +6,7 @@ using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
+using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 
@@ -24,7 +25,8 @@ public class GammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    PythonServerService pythonServerService
+    PythonServerService pythonServerService,
+    PythonApiProxy pythonApiProxy
 ) : IGammaInstaller, IDisposable
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -108,17 +110,21 @@ public class GammaInstaller(
 
     public virtual async Task InstallAsync(GammaInstallerArgs args)
     {
-        Task? pythonServerStartTask = null;
         if (
             args is
             { UseExperimentalPythonServer: true, ExperimentalPythonServerSettings: not null }
         )
         {
-            pythonServerStartTask = pythonServerService.StartAsync(
+            pythonServerService.Start(
                 args.ExperimentalPythonServerSettings.Host,
                 args.ExperimentalPythonServerSettings.Port,
                 args.CancellationToken
             );
+
+            while (!await pythonApiProxy.Ready())
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
+            }
         }
 
         args.Mo2Version = "v2.5.2";
@@ -227,10 +233,6 @@ public class GammaInstaller(
             args.CancellationToken
         );
 
-        if (args.UseExperimentalPythonServer && pythonServerStartTask is not null)
-        {
-            await pythonServerStartTask;
-        }
         await Task.WhenAll(
             mainBatch,
             teivazDlTask,
