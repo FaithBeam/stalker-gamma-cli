@@ -22,9 +22,7 @@ public class TarService(StalkerGammaSettings settings)
         );
     }
 
-    public bool Ready =>
-        File.Exists(settings.PathToTar)
-        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "tar.exe" : "tar");
+    public bool Ready => ExecutablePath is not null;
 
     private async Task<StdOutStdErrOutput> ExecuteTarCmdAsync(
         string[] args,
@@ -35,9 +33,14 @@ public class TarService(StalkerGammaSettings settings)
     {
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
+        var executablePath =
+            ExecutablePath
+            ?? throw new TarUtilityException(
+                $"Could not find {settings.PathToTar} or {DefaultExecutableName}."
+            );
 
         var exitCode = await RunProcessUtility.RunProcessAsync(
-            settings.PathToTar,
+            executablePath,
             args,
             onStdout: line => stdOut.AppendLine(line),
             onStderr: line => stdErr.AppendLine(line),
@@ -64,6 +67,12 @@ public class TarService(StalkerGammaSettings settings)
 
         return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
+
+    private static string DefaultExecutableName =>
+        OperatingSystem.IsWindows() ? "tar.exe" : "tar";
+
+    private string? ExecutablePath =>
+        ExecutableResolver.Resolve(settings.PathToTar, DefaultExecutableName);
 }
 
 public class TarUtilityException : Exception
