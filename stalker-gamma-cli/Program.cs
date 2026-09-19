@@ -56,6 +56,10 @@ public static class Program
                             $"Unable to deserialize settings file {CliSettings.SettingsPath}"
                         )
                     : new CliSettings();
+                if (settings.MigrateObsoleteModPackMakerUrls())
+                {
+                    settings.SaveAsync().GetAwaiter().GetResult();
+                }
                 log.Verbose(
                     "Settings: {Settings}",
                     JsonSerializer.Serialize(
