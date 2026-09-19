@@ -7,6 +7,9 @@ public interface IDownloadableRecord
     public string Name { get; }
     public string ArchiveName { get; }
     string DownloadPath { get; }
+
+    /// <summary>ModDB page, GitHub release, or other download link, if known.</summary>
+    string? DownloadLink => null;
     public Task DownloadAsync(CancellationToken cancellationToken);
     public Task ExtractAsync(CancellationToken cancellationToken);
     public bool Downloaded { get; }

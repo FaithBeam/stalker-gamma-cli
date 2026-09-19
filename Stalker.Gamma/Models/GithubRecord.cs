@@ -20,6 +20,7 @@ public class GithubRecord(
 {
     public string Name { get; } = name;
     private string Url { get; } = url;
+    public string? DownloadLink => Url;
     private string NiceUrl { get; } = niceUrl;
     public string ArchiveName { get; } = archiveName;
     private string? Md5 { get; } = md5;

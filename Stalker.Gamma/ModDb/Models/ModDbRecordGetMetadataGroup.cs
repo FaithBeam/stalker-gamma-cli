@@ -11,6 +11,7 @@ public class ModDbRecordGetMetadataGroup(
     public string Name => _modDbRecords.First().Name;
     public string ArchiveName => _modDbRecords.First().ArchiveName;
     public string DownloadPath => _modDbRecords.First().DownloadPath;
+    public string? DownloadLink => _modDbRecords.First().DownloadLink;
     private string StartLink => _modDbRecords.First().StartLink;
     private string Md5 => _modDbRecords.First().Md5;
 

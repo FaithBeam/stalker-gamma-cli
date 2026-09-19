@@ -13,6 +13,7 @@ public class SkipExtractWhenNotDownloadedRecord(
     public string Name { get; } = record.Name;
     public string ArchiveName { get; } = record.ArchiveName;
     public string DownloadPath { get; } = record.DownloadPath;
+    public string? DownloadLink => record.DownloadLink;
 
     public async Task DownloadAsync(CancellationToken cancellationToken) =>
         await record.DownloadAsync(cancellationToken);

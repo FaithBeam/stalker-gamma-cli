@@ -241,11 +241,7 @@ public class GammaInstaller(
             stalkerGammaDownloadTask
         );
 
-        foreach (var brokenAddon in brokenAddons)
-        {
-            await brokenAddon.DownloadAsync(args.CancellationToken);
-            await brokenAddon.ExtractAsync(args.CancellationToken);
-        }
+        await BrokenAddonRetry.RetryAsync([.. brokenAddons], args.CancellationToken);
 
         await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
         await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
