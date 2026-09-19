@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stalker.Gamma", "Stalker.Ga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibCurlImpersonate", "LibCurlImpersonate\LibCurlImpersonate.csproj", "{9F89D840-9275-4C49-902A-931C686B1A49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stalker.Gamma.Tests", "Stalker.Gamma.Tests\Stalker.Gamma.Tests.csproj", "{A6716264-B61B-43E0-AB49-9935E5D8D00E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{9F89D840-9275-4C49-902A-931C686B1A49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F89D840-9275-4C49-902A-931C686B1A49}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9F89D840-9275-4C49-902A-931C686B1A49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6716264-B61B-43E0-AB49-9935E5D8D00E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6716264-B61B-43E0-AB49-9935E5D8D00E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6716264-B61B-43E0-AB49-9935E5D8D00E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6716264-B61B-43E0-AB49-9935E5D8D00E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

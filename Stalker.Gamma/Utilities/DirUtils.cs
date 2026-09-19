@@ -58,6 +58,11 @@ public static class DirUtils
     public static void RecursivelyDeleteDirectory(string dir, IReadOnlyList<string> doNotMatch)
     {
         var dirInfo = new DirectoryInfo(dir);
+        if (!dirInfo.Exists)
+        {
+            return;
+        }
+
         foreach (var fi in dirInfo.GetFiles(".*", SearchOption.TopDirectoryOnly))
         {
             fi.Delete();
@@ -68,8 +73,63 @@ public static class DirUtils
                 .Where(x => !doNotMatch.Contains(x.Name, StringComparer.OrdinalIgnoreCase))
         )
         {
-            d.Delete(true);
+            TryDeleteDirectoryTree(d.FullName);
         }
+    }
+
+    // ponytail: retry/swallow leftover ENOTEMPTY so extract cleanup cannot abort full-install;
+    // upgrade: log a non-fatal warning once the CLI has an extract-warning channel
+    private static void TryDeleteDirectoryTree(string path)
+    {
+        const int maxAttempts = 8;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            if (!Directory.Exists(path))
+            {
+                return;
+            }
+
+            try
+            {
+                DeleteDirectorySnapshot(path);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (attempt == maxAttempts)
+                {
+                    return;
+                }
+
+                NormalizePermissions(path);
+                Thread.Sleep(25 * attempt);
+            }
+        }
+    }
+
+    private static void DeleteDirectorySnapshot(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            return;
+        }
+
+        // Snapshot first: POSIX readdir+unlink can skip entries and then rmdir
+        // throws "Directory not empty" (issue #8 on large leftover FOMOD trees).
+        foreach (var file in Directory.GetFiles(path))
+        {
+            var fi = new FileInfo(file);
+            fi.IsReadOnly = false;
+            fi.Attributes &= ~FileAttributes.ReadOnly;
+            fi.Delete();
+        }
+
+        foreach (var child in Directory.GetDirectories(path))
+        {
+            DeleteDirectorySnapshot(child);
+        }
+
+        Directory.Delete(path);
     }
 
     public static void CopyDirectory(
