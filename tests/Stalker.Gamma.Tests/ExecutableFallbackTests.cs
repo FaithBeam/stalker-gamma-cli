@@ -305,7 +305,26 @@ public sealed class ExecutableFallbackTests
         public string ExecutablePath { get; }
         public string OutputPath { get; }
 
-        public void Dispose() => Directory.Delete(DirectoryPath, recursive: true);
+        public void Dispose()
+        {
+            const int maxAttempts = 20;
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    Directory.Delete(DirectoryPath, recursive: true);
+                    return;
+                }
+                catch (Exception ex)
+                    when (
+                        attempt < maxAttempts
+                        && (ex is IOException || ex is UnauthorizedAccessException)
+                    )
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(50));
+                }
+            }
+        }
 
         private static string GetSourceExecutable()
         {
