@@ -50,6 +50,35 @@ public sealed class GetStalkerModsFromApiTests
         Assert.Equal(GitHubListBody, result);
     }
 
+    [Theory]
+    [InlineData(
+        "https://example.com/custom-modpack-maker-list.txt",
+        HttpStatusCode.InternalServerError
+    )]
+    [InlineData("https://example.com/custom-modpack-maker-list.txt", HttpStatusCode.NotFound)]
+    public async Task DoesNotFallBackWhenCustomUrlIsUnavailable(
+        string configuredUrl,
+        HttpStatusCode statusCode
+    )
+    {
+        var requested = new List<string>();
+        using var handler = new ScriptedHandler(request =>
+        {
+            requested.Add(request.RequestUri!.AbsoluteUri);
+            return new HttpResponseMessage(statusCode);
+        });
+        var api = new GetStalkerModsFromApi(
+            new StalkerGammaSettings { ModpackMakerList = configuredUrl },
+            new HandlerHttpClientFactory(handler)
+        );
+
+        await Assert.ThrowsAsync<GetStalkerModsFromApiException>(() =>
+            api.GetModsAsync(configuredUrl, TestContext.Current.CancellationToken)
+        );
+
+        Assert.Equal([configuredUrl], requested);
+    }
+
     private static bool IsObsoleteOfficialList(Uri? uri) =>
         uri is not null
         && uri.Host.Equals("stalker-gamma.com", StringComparison.OrdinalIgnoreCase)

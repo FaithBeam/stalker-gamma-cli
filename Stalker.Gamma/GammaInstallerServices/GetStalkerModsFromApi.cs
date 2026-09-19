@@ -43,13 +43,7 @@ public class GetStalkerModsFromApi(StalkerGammaSettings settings, IHttpClientFac
 
     private static bool ShouldFallback(string modPackMakerListUrl, HttpRequestException exception)
     {
-        if (
-            string.Equals(
-                modPackMakerListUrl,
-                ModPackMakerUrls.Default,
-                StringComparison.OrdinalIgnoreCase
-            )
-        )
+        if (!ModPackMakerUrls.IsObsoleteOfficialListUrl(modPackMakerListUrl))
         {
             return false;
         }
