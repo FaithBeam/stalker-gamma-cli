@@ -10,6 +10,15 @@ public static class CreateSymbolicLinkUtility
         PowerShellCmdBuilder powerShellCmdBuilder
     )
     {
+        if (
+            Directory.Exists(path)
+            && !IsSymbolicLink(path)
+            && !Directory.EnumerateFileSystemEntries(path).Any()
+        )
+        {
+            Directory.Delete(path);
+        }
+
         if (!Directory.Exists(path))
         {
             if (OperatingSystem.IsWindows())
@@ -20,6 +29,18 @@ public static class CreateSymbolicLinkUtility
             {
                 Directory.CreateSymbolicLink(path, pathToTarget);
             }
+        }
+    }
+
+    private static bool IsSymbolicLink(string path)
+    {
+        try
+        {
+            return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }

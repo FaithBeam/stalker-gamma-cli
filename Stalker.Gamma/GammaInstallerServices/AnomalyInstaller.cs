@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using Stalker.Gamma.Models;
+﻿using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
 using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
@@ -14,7 +13,8 @@ public class AnomalyInstaller(
     string anomalyDir,
     ModDbService modDbService,
     ArchiveService archiveService,
-    bool useCurl = true
+    bool useCurl = true,
+    string? cacheDirectory = null
 ) : IAnomalyInstaller
 {
     public string Name { get; } = "Stalker Anomaly";
@@ -32,8 +32,10 @@ public class AnomalyInstaller(
     private readonly ModDbService _modDbService = modDbService;
     private readonly ArchiveService _archiveService = archiveService;
     private readonly bool _useCurl = useCurl;
-    public string DownloadPath => Path.Join(_downloadDirectory, ArchiveName);
-    public string DownloadPathZstd => Path.Join(_downloadDirectory, ArchiveNameZstd);
+    public string DownloadPath =>
+        CachedAddonArchive.Resolve(ArchiveName, _downloadDirectory, cacheDirectory);
+    public string DownloadPathZstd =>
+        CachedAddonArchive.Resolve(ArchiveNameZstd, _downloadDirectory, cacheDirectory);
     private string ExtractPath => _anomalyDir;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken = default)
@@ -41,15 +43,12 @@ public class AnomalyInstaller(
         try
         {
             if (
-                (!File.Exists(DownloadPathZstd) && !File.Exists(DownloadPath))
-                || (
-                    File.Exists(DownloadPath)
-                    && await HashUtils.HashFile(
-                        DownloadPath,
-                        HashAlgorithmName.MD5,
-                        pct => OnProgress(GammaProgressType.CheckMd5, pct),
-                        cancellationToken
-                    ) != StalkerAnomalyMd5
+                !File.Exists(DownloadPathZstd)
+                && await CachedAddonArchive.NeedsDownloadAsync(
+                    DownloadPath,
+                    StalkerAnomalyMd5,
+                    pct => OnProgress(GammaProgressType.CheckMd5, pct),
+                    cancellationToken
                 )
             )
             {

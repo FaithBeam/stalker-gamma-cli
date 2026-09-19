@@ -159,7 +159,8 @@ public abstract class PruneLogic(
                 !DownloadableRecordFactory.TryCreate(
                     CliSettings.ActiveProfile.Gamma,
                     rec,
-                    out var dlRec
+                    out var dlRec,
+                    cacheDirectory: CliSettings.ActiveProfile.Cache
                 )
                     ? null
                     : dlRec

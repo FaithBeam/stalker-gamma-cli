@@ -15,7 +15,8 @@ public class GithubRecord(
     string outputDirName,
     IList<string> instructions,
     IHttpClientFactory hcf,
-    ArchiveService archiveService
+    ArchiveService archiveService,
+    string? cacheDirectory = null
 ) : IDownloadableRecord
 {
     public string Name { get; } = name;
@@ -23,7 +24,8 @@ public class GithubRecord(
     private string NiceUrl { get; } = niceUrl;
     public string ArchiveName { get; } = archiveName;
     private string? Md5 { get; } = md5;
-    public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
+    public string DownloadPath =>
+        CachedAddonArchive.Resolve(ArchiveName, Path.Join(_gammaDir, "downloads"), cacheDirectory);
     private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
     private readonly HttpClient _hc = hcf.CreateClient("dlAddon");
@@ -37,6 +39,18 @@ public class GithubRecord(
     {
         try
         {
+            if (
+                !await CachedAddonArchive.NeedsDownloadAsync(
+                    DownloadPath,
+                    Md5,
+                    pct => OnProgress(GammaProgressType.CheckMd5, pct),
+                    cancellationToken
+                )
+            )
+            {
+                return;
+            }
+
             if (!Download && File.Exists(DownloadPath))
             {
                 return;

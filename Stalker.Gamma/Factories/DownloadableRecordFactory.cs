@@ -14,7 +14,8 @@ public interface IDownloadableRecordFactory
     IDownloadableRecord CreateAnomalyRecord(
         string downloadDirectory,
         string anomalyDir,
-        bool useCurl = true
+        bool useCurl = true,
+        string? cacheDirectory = null
     );
     IDownloadableRecord CreateGammaSetupRecord(
         string gammaDir,
@@ -42,7 +43,8 @@ public interface IDownloadableRecordFactory
         string gammaDir,
         ModPackMakerRecord record,
         out IDownloadableRecord? downloadableRecord,
-        bool useCurl = true
+        bool useCurl = true,
+        string? cacheDirectory = null
     );
 
     List<IDownloadableRecord> CreateGroupedDownloadableRecords(IList<IDownloadableRecord> records);
@@ -72,7 +74,8 @@ public class DownloadableRecordFactory(
     public IDownloadableRecord CreateAnomalyRecord(
         string downloadDirectory,
         string anomalyDir,
-        bool useCurl = true
+        bool useCurl = true,
+        string? cacheDirectory = null
     ) =>
         new AnomalyInstaller(
             gammaProgress,
@@ -80,7 +83,8 @@ public class DownloadableRecordFactory(
             anomalyDir,
             modDbService,
             archiveService,
-            useCurl
+            useCurl,
+            cacheDirectory
         );
 
     public IDownloadableRecord CreateGammaSetupRecord(
@@ -152,12 +156,13 @@ public class DownloadableRecordFactory(
         string gammaDir,
         ModPackMakerRecord record,
         out IDownloadableRecord? downloadableRecord,
-        bool useCurl = true
+        bool useCurl = true,
+        string? cacheDirectory = null
     )
     {
         downloadableRecord = null;
 
-        if (TryParseModDbRecord(gammaDir, record, useCurl, out var modDbRecord))
+        if (TryParseModDbRecord(gammaDir, record, useCurl, out var modDbRecord, cacheDirectory))
         {
             downloadableRecord = modDbRecord;
             return true;
@@ -168,7 +173,8 @@ public class DownloadableRecordFactory(
                 gammaDir,
                 record,
                 useCurl,
-                out var modDbGetMetadataRecord
+                out var modDbGetMetadataRecord,
+                cacheDirectory
             )
         )
         {
@@ -176,7 +182,7 @@ public class DownloadableRecordFactory(
             return true;
         }
 
-        if (TryParseGithubRecord(gammaDir, record, out var githubRecord))
+        if (TryParseGithubRecord(gammaDir, record, out var githubRecord, cacheDirectory))
         {
             downloadableRecord = githubRecord;
             return true;
@@ -189,7 +195,8 @@ public class DownloadableRecordFactory(
         string gammaDir,
         ModPackMakerRecord record,
         bool useCurl,
-        out ModDbRecordGetMetadata? downloadableRecord
+        out ModDbRecordGetMetadata? downloadableRecord,
+        string? cacheDirectory
     )
     {
         downloadableRecord = null;
@@ -213,7 +220,8 @@ public class DownloadableRecordFactory(
                 modDbService,
                 getCanonicalLinkFromModDbStartLink,
                 modDbGetAddonMetadataService,
-                useCurl
+                useCurl,
+                cacheDirectory
             );
             return true;
         }
@@ -223,7 +231,8 @@ public class DownloadableRecordFactory(
     private bool TryParseGithubRecord(
         string gammaDir,
         ModPackMakerRecord record,
-        out GithubRecord? downloadableRecord
+        out GithubRecord? downloadableRecord,
+        string? cacheDirectory
     )
     {
         downloadableRecord = null;
@@ -253,7 +262,8 @@ public class DownloadableRecordFactory(
                 outputDirName,
                 instructions,
                 httpClientFactory,
-                archiveService
+                archiveService,
+                cacheDirectory
             );
             return true;
         }
@@ -265,7 +275,8 @@ public class DownloadableRecordFactory(
         string gammaDir,
         ModPackMakerRecord record,
         bool useCurl,
-        out ModDbRecord? downloadableRecord
+        out ModDbRecord? downloadableRecord,
+        string? cacheDirectory
     )
     {
         downloadableRecord = null;
@@ -296,7 +307,8 @@ public class DownloadableRecordFactory(
                 instructions,
                 archiveService,
                 modDbService,
-                useCurl
+                useCurl,
+                cacheDirectory
             );
             return true;
         }
