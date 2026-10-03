@@ -29,7 +29,10 @@ $7zDlSplat = @{
     OutFile = $7zDlPath
 }
 Invoke-WebRequest @7zDlSplat
-tar -xzf $7zDlPath -C $7zDir
+# force the self-extracting 7zip exe to run as a user, bypassing UAC
+$env:__COMPAT_LAYER="RunAsInvoker"
+& $7zDlPath /S /D="$($7zDir)"
+$env:__COMPAT_LAYER=""
 #endregion
 
 #region curl-impersonate
