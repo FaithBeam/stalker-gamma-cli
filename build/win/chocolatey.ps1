@@ -89,7 +89,8 @@ foreach (`$file in `$filesToIgnore) {
 
     choco pack $chocolateyNuspecPath
 
-    choco push "stalker-gamma.$($Version).nupkg" --source https://push.chocolatey.org/ --api-key $ChocolateyApiKey
+    choco apikey --key $ChocolateyApiKey --source https://push.chocolatey.org/
+    choco push "stalker-gamma.$($Version).nupkg" --source https://push.chocolatey.org/
 } else {
     throw "choco not found in PATH"
 }
