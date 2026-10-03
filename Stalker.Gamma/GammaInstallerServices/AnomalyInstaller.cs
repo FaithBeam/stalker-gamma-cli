@@ -19,6 +19,7 @@ public class AnomalyInstaller(
 {
     public string Name { get; } = "Stalker Anomaly";
     public string ArchiveName { get; } = "Anomaly-1.5.3-Full.2.7z";
+    public string? DownloadLink => StalkerAnomalyUrl;
     public string ArchiveNameZstd => Path.ChangeExtension(ArchiveName, "tar.zst");
     protected string StalkerAnomalyUrl = "https://www.moddb.com/downloads/start/277404";
     private const string NiceUrl =

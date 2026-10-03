@@ -31,6 +31,7 @@ public class ModDbRecordGetMetadata(
     private List<string> Instructions { get; } = instructions;
     private string OutputDirName { get; } = outputDirName;
     public string Url => StartLink;
+    public string? DownloadLink => Url;
     public string Md5 { get; set; } = null!;
 
     public async Task DownloadAsync(CancellationToken cancellationToken)

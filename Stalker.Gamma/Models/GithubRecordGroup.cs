@@ -8,6 +8,7 @@ public class GithubRecordGroup(GammaProgress gammaProgress, IList<GithubRecord> 
     public string Name { get; } = githubRecords.First().Name;
     public string ArchiveName { get; } = githubRecords.First().ArchiveName;
     public string DownloadPath { get; } = githubRecords.First().DownloadPath;
+    public string? DownloadLink => GithubRecords.First().DownloadLink;
     private IList<GithubRecord> GithubRecords { get; } = githubRecords;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken) =>
