@@ -55,7 +55,8 @@ public class GammaInstaller(
                         args.Gamma,
                         rec,
                         out var dlRec,
-                        useCurl: !args.UseExperimentalPythonServer
+                        useCurl: !args.UseExperimentalPythonServer,
+                        cacheDirectory: args.Cache
                     )
                 )
                 {
@@ -383,7 +384,14 @@ public class GammaInstaller(
         var diffedAddonRecords = await DiffAddonRecordsAsync(args);
         var addonRecords = diffedAddonRecords
             .AddedOrModifiedRecords.Select(rec =>
-                downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec) ? dlRec : null
+                downloadableRecordFactory.TryCreate(
+                    args.Gamma,
+                    rec,
+                    out var dlRec,
+                    cacheDirectory: args.Cache
+                )
+                    ? dlRec
+                    : null
             )
             .Where(x => x is not null)
             .Select(x => x!)
@@ -396,7 +404,8 @@ public class GammaInstaller(
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly,
-            useCurl: !args.UseExperimentalPythonServer
+            useCurl: !args.UseExperimentalPythonServer,
+            cacheDirectory: args.Cache
         );
         return args.SkipExtractOnHashMatch
             ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)

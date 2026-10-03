@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
@@ -19,7 +18,8 @@ public class ModDbRecord(
     IList<string> instructions,
     ArchiveService archiveService,
     ModDbService modDbService,
-    bool useCurl = true
+    bool useCurl = true,
+    string? cacheDirectory = null
 ) : IDownloadableRecord
 {
     private readonly GammaProgress _gammaProgress = gammaProgress;
@@ -33,7 +33,8 @@ public class ModDbRecord(
     private string NiceUrl { get; } = niceUrl;
     public string ArchiveName { get; } = archiveName;
     private string? Md5 { get; } = md5;
-    public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
+    public string DownloadPath =>
+        CachedAddonArchive.Resolve(ArchiveName, Path.Join(_gammaDir, "downloads"), cacheDirectory);
     private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
 
@@ -42,15 +43,12 @@ public class ModDbRecord(
         try
         {
             if (
-                Path.Exists(DownloadPath)
-                    && !string.IsNullOrWhiteSpace(Md5)
-                    && await HashUtils.HashFile(
-                        DownloadPath,
-                        HashAlgorithmName.MD5,
-                        pct => OnProgress(GammaProgressType.CheckMd5, pct),
-                        cancellationToken
-                    ) != Md5
-                || !Path.Exists(DownloadPath)
+                await CachedAddonArchive.NeedsDownloadAsync(
+                    DownloadPath,
+                    Md5,
+                    pct => OnProgress(GammaProgressType.CheckMd5, pct),
+                    cancellationToken
+                )
             )
             {
                 await _modDbService.DownloadAddonAsync(
