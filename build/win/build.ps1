@@ -76,7 +76,7 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
 Copy-Item -Path (Join-Path $cloudscraperDistDir "cloudscraper.exe") -Destination $stalkerCliResourceDir -Recurse
-Move-Item (Join-Path (Join-Path $curlDir "bin") "libcurl-impersonate.dll") $stalkerCliDir
+Move-Item (Join-Path (Join-Path $curlDir "lib") "libcurl-impersonate.dll") $stalkerCliDir
 Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
