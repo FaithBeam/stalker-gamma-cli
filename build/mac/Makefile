@@ -6,7 +6,7 @@ ROOT = $(realpath ../../)
 
 BUILD_DIR = $(CUR_DIR)/build
 
-CURL_IMPERSONATE_VERSION = v2.0.0a1
+CURL_IMPERSONATE_VERSION = v2.2.3
 ifeq ($(ARCH),x64)
     CURL_ARCH := x86_64
 else ifeq ($(ARCH),arm64)
@@ -18,7 +18,7 @@ CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
 CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-macos.tar.gz
 CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).arm64-macos.tar.gz
 
-7Z_VERSION = 2501
+7Z_VERSION = 2603
 7Z_BUILD_DIR = $(BUILD_DIR)/7zip
 7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-mac.tar.xz
 7Z_DL_URL = https://7-zip.org/a/7z$(7Z_VERSION)-mac.tar.xz

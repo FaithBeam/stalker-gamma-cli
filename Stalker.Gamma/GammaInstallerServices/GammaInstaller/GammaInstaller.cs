@@ -248,9 +248,9 @@ public class GammaInstaller(
         }
 
         await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
-        await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
         await args.GammaLargeFilesRecord!.ExtractAsync(args.CancellationToken);
         await args.TeivazAnomalyGunslingerRecord!.ExtractAsync(args.CancellationToken);
+        await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
         if (args.Minimal)
         {
             args.GammaSetupRecord!.DeleteArchive();

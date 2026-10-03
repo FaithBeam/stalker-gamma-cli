@@ -41,6 +41,7 @@ public class CurlHttp : IDisposable
         var sb = new StringBuilder();
         var writePin = GCHandle.Alloc(sb);
         var xferPin = InstallXferCallback(handle, ct, onSpeed: onSpeed);
+        var errBuf = AllocErrorBuffer();
         try
         {
             LibCurl.curl_easy_impersonate(handle, Impersonation, 1);
@@ -54,6 +55,7 @@ public class CurlHttp : IDisposable
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_FOLLOWLOCATION, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, PathToCacert);
+            LibCurl.curl_easy_setopt_ptr(handle, LibCurl.CURLOPT_ERRORBUFFER, errBuf);
             if (http3)
                 LibCurl.curl_easy_setopt_long(
                     handle,
@@ -65,9 +67,7 @@ public class CurlHttp : IDisposable
             if (code == LibCurl.CURLE_ABORTED_BY_CALLBACK)
                 ct.ThrowIfCancellationRequested();
             if (code != LibCurl.CURLE_OK)
-                throw new InvalidOperationException(
-                    $"curl_easy_perform returned error code {code}"
-                );
+                throw CurlException.Create(code, url, Marshal.PtrToStringUTF8(errBuf));
 
             ReportHttpVersion(handle, onHttpVersion);
             return sb.ToString();
@@ -78,6 +78,7 @@ public class CurlHttp : IDisposable
             if (xferPin.IsAllocated)
                 xferPin.Free();
             LibCurl.curl_easy_cleanup(handle);
+            Marshal.FreeHGlobal(errBuf);
         }
     }
 
@@ -95,6 +96,7 @@ public class CurlHttp : IDisposable
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var headerPin = GCHandle.Alloc(headers);
         var xferPin = InstallXferCallback(handle, ct);
+        var errBuf = AllocErrorBuffer();
         try
         {
             LibCurl.curl_easy_impersonate(handle, Impersonation, 1);
@@ -107,6 +109,7 @@ public class CurlHttp : IDisposable
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_NOBODY, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, PathToCacert);
+            LibCurl.curl_easy_setopt_ptr(handle, LibCurl.CURLOPT_ERRORBUFFER, errBuf);
             if (http3)
                 LibCurl.curl_easy_setopt_long(
                     handle,
@@ -118,9 +121,7 @@ public class CurlHttp : IDisposable
             if (code == LibCurl.CURLE_ABORTED_BY_CALLBACK)
                 ct.ThrowIfCancellationRequested();
             if (code != LibCurl.CURLE_OK)
-                throw new InvalidOperationException(
-                    $"curl_easy_perform returned error code {code}"
-                );
+                throw CurlException.Create(code, url, Marshal.PtrToStringUTF8(errBuf));
 
             ReportHttpVersion(handle, onHttpVersion);
             return headers;
@@ -131,7 +132,16 @@ public class CurlHttp : IDisposable
             if (xferPin.IsAllocated)
                 xferPin.Free();
             LibCurl.curl_easy_cleanup(handle);
+            Marshal.FreeHGlobal(errBuf);
         }
+    }
+
+    // Buffer for CURLOPT_ERRORBUFFER; libcurl writes a detailed message here on failure.
+    private static IntPtr AllocErrorBuffer()
+    {
+        var buf = Marshal.AllocHGlobal(LibCurl.CURL_ERROR_SIZE);
+        Marshal.WriteByte(buf, 0);
+        return buf;
     }
 
     private static void ReportHttpVersion(IntPtr handle, Action<string>? cb)

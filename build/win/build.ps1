@@ -22,19 +22,22 @@ New-Item -Path $buildDir -ItemType Directory -Force
 $7zDir = Join-Path $buildDir "7z"
 New-Item -Path $7zDir -ItemType Directory -Force
 
-$7zFileName = "7z25.01-zstd-$Arch.exe"
+$7zFileName = "7z2603-$Arch.exe"
 $7zDlPath = Join-Path $7zDir $7zFileName
 $7zDlSplat = @{
-    Uri     = "https://github.com/mcmilk/7-Zip-zstd/releases/download/v25.01-v1.5.7-R3/$7zFileName"
+    Uri     = "https://github.com/ip7z/7zip/releases/download/26.03/$7zFileName"
     OutFile = $7zDlPath
 }
 Invoke-WebRequest @7zDlSplat
-tar -xzf $7zDlPath -C $7zDir
+# force the self-extracting 7zip exe to run as a user, bypassing UAC
+$env:__COMPAT_LAYER="RunAsInvoker"
+& $7zDlPath /S /D="$($7zDir)"
+$env:__COMPAT_LAYER=""
 #endregion
 
 #region curl-impersonate
 $curlDir = Join-Path $buildDir "curl-impersonate"
-$curlVersion = "v1.5.6"
+$curlVersion = "v2.2.2"
 $curlTriplet = if ($Arch -eq "arm64") { "arm64-win32" } else { "x86_64-win32" }
 $curlArchiveName = "libcurl-impersonate-$($curlVersion).$curlTriplet.tar.gz"
 $curlArchivePath = Join-Path $curlDir $curlArchiveName
@@ -76,7 +79,7 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
 Copy-Item -Path (Join-Path $cloudscraperDistDir "cloudscraper.exe") -Destination $stalkerCliResourceDir -Recurse
-Move-Item (Join-Path (Join-Path $curlDir "bin") "libcurl-impersonate.dll") $stalkerCliDir
+Move-Item (Join-Path (Join-Path $curlDir "lib") "libcurl-impersonate.dll") $stalkerCliDir
 Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
