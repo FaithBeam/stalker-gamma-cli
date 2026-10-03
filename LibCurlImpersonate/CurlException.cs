@@ -31,12 +31,14 @@ public class CurlException(int code, string url, string message)
                 "Check your internet connection and DNS settings",
             LibCurl.CURLE_COULDNT_CONNECT =>
                 "The server could not be reached; check your connection, firewall, or VPN/proxy",
-            LibCurl.CURLE_OPERATION_TIMEDOUT => "The server took too long to respond; try again later",
+            LibCurl.CURLE_OPERATION_TIMEDOUT =>
+                "The server took too long to respond; try again later",
             LibCurl.CURLE_SSL_CONNECT_ERROR =>
                 "The TLS handshake failed; antivirus or a proxy intercepting HTTPS can cause this",
             LibCurl.CURLE_PEER_FAILED_VERIFICATION =>
                 "The server's certificate could not be verified; check your system clock and any HTTPS-intercepting software",
-            LibCurl.CURLE_SSL_CACERT_BADFILE => "cacert.pem is missing or unreadable next to the executable",
+            LibCurl.CURLE_SSL_CACERT_BADFILE =>
+                "cacert.pem is missing or unreadable next to the executable",
             LibCurl.CURLE_GOT_NOTHING or LibCurl.CURLE_RECV_ERROR or LibCurl.CURLE_SEND_ERROR =>
                 "The connection was dropped; try again",
             LibCurl.CURLE_HTTP3 or LibCurl.CURLE_QUIC_CONNECT_ERROR =>
