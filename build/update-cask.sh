@@ -32,10 +32,10 @@ cask "stalker-gamma" do
 
   binary "stalker-gamma"
 
-  postflight do
-    system_command "/usr/bin/xattr",
-                   args:         ["-rd", "com.apple.quarantine", "#{staged_path}/"],
-                   print_stderr: false
+  postflight_steps do
+     on_macos do
+       run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{staged_path}}/"]
+     end
   end
 
   zap trash: ""

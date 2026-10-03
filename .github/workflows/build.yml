@@ -393,18 +393,13 @@ jobs:
   update-aur:
     name: update-aur
     runs-on: ubuntu-22.04
-    needs: [update-chocolatey, cli-ubuntu-arm64, cli-ubuntu-x64]
+    needs: [cli-ubuntu-arm64, cli-ubuntu-x64]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14.4'
 
       - name: Generate PKGBUILD
         run: |
@@ -435,11 +430,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14.4'
-
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
         run: build/win/chocolatey.bat ${{ needs.cli-windows.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
@@ -447,7 +437,7 @@ jobs:
   update-homebrew:
     name: update-homebrew
     runs-on: ubuntu-22.04
-    needs: [update-chocolatey, cli-macos-x64, cli-macos-arm64]
+    needs: [cli-macos-x64, cli-macos-arm64]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout source repo
@@ -459,11 +449,6 @@ jobs:
           repository: FaithBeam/homebrew-stalker-gamma
           token: ${{ secrets.HOMEBREW_REPO_TOKEN }}
           path: homebrew-stalker-gamma
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14.4'
 
       - name: Update Homebrew Cask
         run: |
