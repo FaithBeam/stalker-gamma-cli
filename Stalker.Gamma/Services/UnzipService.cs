@@ -19,9 +19,7 @@ public class UnzipService(StalkerGammaSettings settings)
             cancellationToken: ct
         );
 
-    public bool Ready =>
-        File.Exists(settings.PathToUnzip)
-        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "unzip.exe" : "unzip");
+    public bool Ready => ExecutablePath is not null;
 
     private async Task<StdOutStdErrOutput> ExecuteUnzipCmdAsync(
         string[] args,
@@ -32,9 +30,14 @@ public class UnzipService(StalkerGammaSettings settings)
     {
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
+        var executablePath =
+            ExecutablePath
+            ?? throw new UnzipUtilityException(
+                $"Could not find {settings.PathToUnzip} or {DefaultExecutableName}."
+            );
 
         var exitCode = await RunProcessUtility.RunProcessAsync(
-            settings.PathToUnzip,
+            executablePath,
             args,
             onStdout: line => stdOut.AppendLine(line),
             onStderr: line => stdErr.AppendLine(line),
@@ -61,6 +64,12 @@ public class UnzipService(StalkerGammaSettings settings)
 
         return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
+
+    private static string DefaultExecutableName =>
+        OperatingSystem.IsWindows() ? "unzip.exe" : "unzip";
+
+    private string? ExecutablePath =>
+        ExecutableResolver.Resolve(settings.PathToUnzip, DefaultExecutableName);
 }
 
 public class UnzipUtilityException(string message) : Exception(message);

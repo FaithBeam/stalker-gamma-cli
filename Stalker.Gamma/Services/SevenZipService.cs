@@ -29,9 +29,7 @@ public partial class SevenZipService(StalkerGammaSettings settings)
         );
     }
 
-    public bool Ready =>
-        File.Exists(PathTo7Z)
-        || EnvChecker.IsInPath(OperatingSystem.IsWindows() ? "7zz.exe" : "7zz");
+    public bool Ready => ExecutablePath is not null;
 
     private async Task<StdOutStdErrOutput> ExecuteSevenZipCmdAsync(
         string[] args,
@@ -42,9 +40,14 @@ public partial class SevenZipService(StalkerGammaSettings settings)
     {
         var stdOut = new StringBuilder();
         var stdErr = new StringBuilder();
+        var executablePath =
+            ExecutablePath
+            ?? throw new SevenZipUtilityException(
+                $"Could not find {settings.PathTo7Z} or {DefaultExecutableName}."
+            );
 
         var exitCode = await RunProcessUtility.RunProcessAsync(
-            PathTo7Z,
+            executablePath,
             args,
             onStdout: line =>
             {
@@ -71,7 +74,7 @@ public partial class SevenZipService(StalkerGammaSettings settings)
         {
             throw new SevenZipUtilityException(
                 $"""
-                Error executing {PathTo7Z}
+                Error executing {executablePath}
                 {string.Join(' ', args)}
                 StdOut: {stdOut}
                 StdErr: {stdErr}
@@ -86,7 +89,11 @@ public partial class SevenZipService(StalkerGammaSettings settings)
         return new StdOutStdErrOutput(stdOut.ToString(), stdErr.ToString());
     }
 
-    private string PathTo7Z => settings.PathTo7Z;
+    private static string DefaultExecutableName =>
+        OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
+
+    private string? ExecutablePath =>
+        ExecutableResolver.Resolve(settings.PathTo7Z, DefaultExecutableName);
 
     [GeneratedRegex(@"(\d+(\.\d+)?)\s*%", RegexOptions.Compiled)]
     private partial Regex ProgressRx();
