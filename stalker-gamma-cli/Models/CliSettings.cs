@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Stalker.Gamma.Models;
 
 namespace stalker_gamma_cli.Models;
 
@@ -11,6 +12,23 @@ public class CliSettings
     public List<CliProfile> Profiles { get; set; } = [];
 
     public ExperimentalModDbSettings ExperimentalModDbSettings { get; set; } = new();
+
+    public bool MigrateObsoleteModPackMakerUrls()
+    {
+        var changed = false;
+        foreach (var profile in Profiles)
+        {
+            if (!ModPackMakerUrls.IsObsoleteOfficialListUrl(profile.ModPackMakerUrl))
+            {
+                continue;
+            }
+
+            profile.ModPackMakerUrl = ModPackMakerUrls.Default;
+            changed = true;
+        }
+
+        return changed;
+    }
 
     public async Task<string?> SaveAsync()
     {

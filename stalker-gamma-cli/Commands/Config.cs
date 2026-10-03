@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
+using Stalker.Gamma.Models;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -90,7 +91,7 @@ public class Config(ILogger logger, CliSettings cliSettings)
         string cache,
         string name = "gamma",
         string mo2Profile = "G.A.M.M.A",
-        string modPackMakerUrl = "https://stalker-gamma.com/api/client/v1/mods/list",
+        string modPackMakerUrl = ModPackMakerUrls.Default,
         string modListUrl =
             "https://raw.githubusercontent.com/Grokitach/Stalker_GAMMA/refs/heads/main/G.A.M.M.A/modpack_data/modlist.txt",
         [Range(1, 20)] int downloadThreads = 4,
