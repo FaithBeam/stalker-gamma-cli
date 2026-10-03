@@ -22,10 +22,10 @@ New-Item -Path $buildDir -ItemType Directory -Force
 $7zDir = Join-Path $buildDir "7z"
 New-Item -Path $7zDir -ItemType Directory -Force
 
-$7zFileName = "7z25.01-zstd-$Arch.exe"
+$7zFileName = "7z2603-$Arch.exe"
 $7zDlPath = Join-Path $7zDir $7zFileName
 $7zDlSplat = @{
-    Uri     = "https://github.com/mcmilk/7-Zip-zstd/releases/download/v25.01-v1.5.7-R3/$7zFileName"
+    Uri     = "https://github.com/ip7z/7zip/releases/download/26.03/$7zFileName"
     OutFile = $7zDlPath
 }
 Invoke-WebRequest @7zDlSplat
@@ -34,7 +34,7 @@ tar -xzf $7zDlPath -C $7zDir
 
 #region curl-impersonate
 $curlDir = Join-Path $buildDir "curl-impersonate"
-$curlVersion = "v1.5.6"
+$curlVersion = "v2.2.3"
 $curlTriplet = if ($Arch -eq "arm64") { "arm64-win32" } else { "x86_64-win32" }
 $curlArchiveName = "libcurl-impersonate-$($curlVersion).$curlTriplet.tar.gz"
 $curlArchivePath = Join-Path $curlDir $curlArchiveName
