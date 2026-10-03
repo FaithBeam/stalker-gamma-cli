@@ -38,6 +38,7 @@ public class FullInstallCmd(
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
+    /// <param name="json">Format the output as JSON</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
@@ -55,6 +56,7 @@ public class FullInstallCmd(
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
+        bool json = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
@@ -100,6 +102,7 @@ public class FullInstallCmd(
             installer,
             verbose,
             debug,
+            json,
             progressUpdateIntervalMs,
             out var gammaWriteFileDisposable,
             out var gammaProgressDisposable,
@@ -231,6 +234,7 @@ public class FullInstallCmd(
         IGammaInstaller installer,
         bool verbose,
         bool debug,
+        bool json,
         long progressUpdateIntervalMs,
         out IDisposable gammaWriteFileDisposable,
         out IDisposable gammaProgressDisposable,
@@ -267,21 +271,51 @@ public class FullInstallCmd(
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable
             .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+            .Subscribe(e =>
+            {
+                switch (verbose)
+                {
+                    case true:
+                        OnProgressChangedVerbose(e);
+                        break;
+                    default:
+                        OnProgressChangedInformational(e, json);
+                        break;
+                }
+            });
     }
 
     private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
         File.AppendAllText("stalker-gamma-cli.log", $"{e.Text}{Environment.NewLine}");
 
-    private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
-        _logger.Information(
-            Informational,
-            DateTimeOffset.Now.ToString("HH:mm:ss"),
-            e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
-            e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
-            $"[{e.Complete}/{e.Total}]"
-        );
+    private void OnProgressChangedInformational(
+        GammaProgress.GammaInstallProgressEventArgs e,
+        bool json
+    )
+    {
+        if (json)
+        {
+            _logger.Information(
+                InformationalJson,
+                DateTimeOffset.Now.ToString("HH:mm:ss"),
+                e.Name,
+                e.ProgressType.GetHumanReadableString(),
+                $"{e.Progress:P2}",
+                $"[{e.Complete}/{e.Total}]"
+            );
+        }
+        else
+        {
+            _logger.Information(
+                Informational,
+                DateTimeOffset.Now.ToString("HH:mm:ss"),
+                e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
+                e.ProgressType.GetHumanReadableString().PadRight(10),
+                $"{e.Progress:P2}".PadRight(8),
+                $"[{e.Complete}/{e.Total}]"
+            );
+        }
+    }
 
     private void OnProgressChangedVerbose(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(
@@ -311,6 +345,8 @@ public class FullInstallCmd(
         + "\e[96m{Percent}\e[0m "
         + "\e[97m|\e[0m "
         + "\e[96m{CompleteTotal}\e[0m";
+    private const string InformationalJson =
+        "{DateTime} " + "{AddonName} " + "{Operation} " + "{Percent} " + "{CompleteTotal}";
     private const string Verbose =
         "{AddonName} | {Operation} | {Percent} | {CompleteTotal} | {Url}";
 }

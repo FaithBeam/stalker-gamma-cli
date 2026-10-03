@@ -16,6 +16,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private bool _preserveMcmSettings;
     private string? _modPackMakerPath;
     private string? _modListPath;
+    private bool _json;
     private string? _stalkerGammaServerUrl;
 
     public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
@@ -96,6 +97,12 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         return this;
     }
 
+    public GammaInstallerArgsBuilder WithJson(bool json)
+    {
+        _json = json;
+        return this;
+    }
+
     public GammaInstallerArgs Build() =>
         new()
         {
@@ -108,6 +115,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             Mo2Profile = _mo2Profile,
             Minimal = _minimal,
             Offline = _offline,
+            Json = _json,
             PreserveUserLtx = _preserveUserLtx,
             PreserveMcmSettings = _preserveMcmSettings,
             ModPackMakerPath = _modPackMakerPath,

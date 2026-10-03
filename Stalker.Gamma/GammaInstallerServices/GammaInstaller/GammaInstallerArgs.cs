@@ -17,6 +17,7 @@ public class GammaInstallerArgs
     public bool PreserveUserLtx { get; set; }
     public bool PreserveMcmSettings { get; set; }
     public string? StalkerGammaServerUrl { get; set; }
+    public bool Json { get; set; }
     public ExperimentalPythonServerSettings? ExperimentalPythonServerSettings { get; set; }
     public string? ModPackMakerPath { get; set; }
     public string? ModListPath { get; set; }

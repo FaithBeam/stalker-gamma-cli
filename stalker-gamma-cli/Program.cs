@@ -4,6 +4,7 @@ using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
+using Serilog.Formatting.Json;
 using Serilog.Sinks.SystemConsole.Themes;
 using stalker_gamma_cli.Models;
 using stalker_gamma_cli.Services;
@@ -23,7 +24,7 @@ public static class Program
         );
         var logPath = Path.Join(stalkerGammaLogsPath, "stalker-gamma-cli.log");
         Directory.CreateDirectory(stalkerGammaLogsPath);
-        var log = new LoggerConfiguration()
+        var loggerCfg = new LoggerConfiguration()
             .MinimumLevel.Verbose()
             .WriteTo.Logger(lc =>
                 lc.Filter.ByIncludingOnly(e => e.Level != LogEventLevel.Information)
@@ -36,13 +37,23 @@ public static class Program
                         retainedFileCountLimit: 5,
                         outputTemplate: "{Message:lj}{NewLine}{Exception}"
                     )
-            )
-            .WriteTo.Console(
+            );
+        if (args.Contains("--json"))
+        {
+            loggerCfg = loggerCfg.WriteTo.Console(
+                new JsonFormatter(renderMessage: true),
+                restrictedToMinimumLevel: LogEventLevel.Information
+            );
+        }
+        else
+        {
+            loggerCfg = loggerCfg.WriteTo.Console(
                 restrictedToMinimumLevel: LogEventLevel.Information,
                 outputTemplate: "{Message:lj}{NewLine}",
                 theme: ConsoleTheme.None
-            )
-            .CreateLogger();
+            );
+        }
+        var log = loggerCfg.CreateLogger();
         var app = ConsoleApp
             .Create()
             .ConfigureServices(services =>
