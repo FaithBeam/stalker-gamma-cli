@@ -37,7 +37,7 @@ $env:__COMPAT_LAYER=""
 
 #region curl-impersonate
 $curlDir = Join-Path $buildDir "curl-impersonate"
-$curlVersion = "v2.2.3"
+$curlVersion = "v2.2.2"
 $curlTriplet = if ($Arch -eq "arm64") { "arm64-win32" } else { "x86_64-win32" }
 $curlArchiveName = "libcurl-impersonate-$($curlVersion).$curlTriplet.tar.gz"
 $curlArchivePath = Join-Path $curlDir $curlArchiveName
