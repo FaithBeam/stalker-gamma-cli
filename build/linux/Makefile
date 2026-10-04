@@ -34,11 +34,12 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
-CLOUDSCRAPER_BUILD_DIR = $(BUILD_DIR)/cloudscraper
-CLOUDSCRAPER_SPEC = $(ROOT)/python-api/main.spec
-CLOUDSCRAPER_REQUIREMENTS = $(ROOT)/python-api/requirements.txt
-CLOUDSCRAPER_VENV = $(BUILD_DIR)/cloudscraper-venv
-CLOUDSCRAPER_PYINSTALLER = $(CLOUDSCRAPER_VENV)/bin/pyinstaller
+PYTHON_CLI_BUILD_DIR = $(BUILD_DIR)/python-cli
+PYTHON_CLI_SPEC = $(ROOT)/python-cli/main.spec
+PYTHON_CLI_REQUIREMENTS = $(ROOT)/python-cli/requirements.txt
+PYTHON_CLI_REQUIREMENTS_DEV = $(ROOT)/python-cli/requirements-dev.txt
+PYTHON_CLI_VENV = $(BUILD_DIR)/python-cli-venv
+PYTHON_CLI_PYINSTALLER = $(PYTHON_CLI_VENV)/bin/pyinstaller
 
 build:
 	mkdir $(BUILD_DIR)
@@ -53,11 +54,12 @@ build:
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
 
-	# cloudscraper
-	python3 -m venv $(CLOUDSCRAPER_VENV)
-	$(CLOUDSCRAPER_VENV)/bin/pip install -r $(CLOUDSCRAPER_REQUIREMENTS)
-	mkdir $(CLOUDSCRAPER_BUILD_DIR)
-	$(CLOUDSCRAPER_PYINSTALLER) --distpath $(CLOUDSCRAPER_BUILD_DIR) $(CLOUDSCRAPER_SPEC)
+	# python-cli
+	python3 -m venv $(PYTHON_CLI_VENV)
+	$(PYTHON_CLI_VENV)/bin/pip install -r $(PYTHON_CLI_REQUIREMENTS)
+	$(PYTHON_CLI_VENV)/bin/pip install -r $(PYTHON_CLI_REQUIREMENTS_DEV)
+	mkdir $(PYTHON_CLI_BUILD_DIR)
+	$(PYTHON_CLI_PYINSTALLER) $(ROOT)/python-cli/main.py --onedir --name=load_url --collect-all=seleniumbase --noconfirm --clean --distpath $(PYTHON_CLI_BUILD_DIR)
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
@@ -72,7 +74,7 @@ build:
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
 	cp $(CURL_BUILD_DIR)/libcurl-impersonate.so.4.8.0 $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.so
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
-	cp -r $(CLOUDSCRAPER_BUILD_DIR)/cloudscraper $(STALKER_RESOURCES_DIR)/
+	cp -r $(PYTHON_CLI_BUILD_DIR)/load_url/* $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:
