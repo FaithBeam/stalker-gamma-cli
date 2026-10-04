@@ -10,11 +10,6 @@ public class SetupUtilitiesService(StalkerGammaSettings settings)
             ResourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
         );
-
-        settings.PythonServerPath = Path.Join(
-            ResourcesPath,
-            OperatingSystem.IsWindows() ? "load_url.exe" : "load_url"
-        );
     }
 
     private static readonly string ResourcesPath = Path.Join(

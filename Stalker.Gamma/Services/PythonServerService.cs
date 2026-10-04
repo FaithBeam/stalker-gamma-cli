@@ -52,7 +52,9 @@ public class PythonServerService : IDisposable
 
     private Process? _process;
     private readonly StalkerGammaSettings _settings;
-    private string PythonServerPath => _settings.PythonServerPath;
+    private string? PythonServerBundlePath => _settings.ExperimentalPythonServer;
+    private string PythonServerPath =>
+        Path.Join(PythonServerBundlePath, _settings.PythonServerPath);
 }
 
 public class PythonServerServiceException(string message) : Exception(message);

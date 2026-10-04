@@ -210,7 +210,7 @@ public class UpdateCmds(
         bool minimal = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
-        bool experimentalPythonServer = false,
+        string? experimentalPythonServer = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {

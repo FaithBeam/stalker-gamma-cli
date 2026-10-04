@@ -50,14 +50,7 @@ public class GammaInstaller(
         var addonRecords = modpackMakerRecords
             .Select(rec =>
             {
-                if (
-                    !downloadableRecordFactory.TryCreate(
-                        args.Gamma,
-                        rec,
-                        out var dlRec,
-                        useCurl: !args.UseExperimentalPythonServer
-                    )
-                )
+                if (!downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec))
                 {
                     return null;
                 }
@@ -112,7 +105,7 @@ public class GammaInstaller(
     {
         if (
             args is
-            { UseExperimentalPythonServer: true, ExperimentalPythonServerSettings: not null }
+            { UseExperimentalPythonServer: not null, ExperimentalPythonServerSettings: not null }
         )
         {
             pythonServerService.Start(
@@ -395,8 +388,7 @@ public class GammaInstaller(
     {
         var anomalyRecord = downloadableRecordFactory.CreateAnomalyRecord(
             Path.Join(args.Gamma, "downloads"),
-            args.Anomaly,
-            useCurl: !args.UseExperimentalPythonServer
+            args.Anomaly
         );
         return args.SkipExtractOnHashMatch
             ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)

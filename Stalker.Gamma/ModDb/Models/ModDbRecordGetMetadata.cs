@@ -18,8 +18,7 @@ public class ModDbRecordGetMetadata(
     GammaProgress gammaProgress,
     ModDbService modDbService,
     GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
-    ModDbGetAddonMetadataService modDbGetAddonMetadataService,
-    bool useCurl = true
+    ModDbGetAddonMetadataService modDbGetAddonMetadataService
 ) : IDownloadableRecord
 {
     public string Name { get; } = name;
@@ -54,7 +53,6 @@ public class ModDbRecordGetMetadata(
                     Url,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
-                    useCurl: _useCurl,
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;
@@ -116,12 +114,10 @@ public class ModDbRecordGetMetadata(
     {
         var canonicalLink = await _getCanonicalLinkFromModDbStartLink.GetCanonicalLinkAsync(
             StartLink,
-            useCurl: _useCurl,
             ct: cancellationToken
         );
         var metadata = await _modDbGetAddonMetadataService.GetAsync(
             canonicalLink,
-            useCurl: _useCurl,
             ct: cancellationToken
         );
         ArchiveName = metadata.Filename;
@@ -157,5 +153,4 @@ public class ModDbRecordGetMetadata(
         getCanonicalLinkFromModDbStartLink;
     private readonly ModDbGetAddonMetadataService _modDbGetAddonMetadataService =
         modDbGetAddonMetadataService;
-    private readonly bool _useCurl = useCurl;
 }

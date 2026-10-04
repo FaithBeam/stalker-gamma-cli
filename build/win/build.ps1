@@ -55,17 +55,6 @@ $cacertSplat = @{
 Invoke-WebRequest @cacertSplat
 #endregion
 
-#region cloudscraper
-$cloudscraperVenvDir = Join-Path $buildDir "cloudscraper-venv"
-$cloudscraperDistDir = Join-Path $buildDir "cloudscraper"
-$cloudscraperSpec = Join-Path $repoRoot "python-api\main.spec"
-$cloudscraperRequirements = Join-Path $repoRoot "python-api\requirements.txt"
-python -m venv $cloudscraperVenvDir
-& (Join-Path $cloudscraperVenvDir "Scripts\pip.exe") install -r $cloudscraperRequirements
-New-Item -Path $cloudscraperDistDir -ItemType Directory -Force
-& (Join-Path $cloudscraperVenvDir "Scripts\pyinstaller.exe") --distpath $cloudscraperDistDir $cloudscraperSpec
-#endregion
-
 #region stalker-gamma-cli
 $stalkerCliDir = Join-Path $buildDir "stalker-gamma-cli"
 $pathToProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli") "stalker-gamma-cli.csproj")
@@ -78,7 +67,6 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
-Copy-Item -Path (Join-Path $cloudscraperDistDir "cloudscraper.exe") -Destination $stalkerCliResourceDir -Recurse
 Move-Item (Join-Path (Join-Path $curlDir "lib") "libcurl-impersonate.dll") $stalkerCliDir
 Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 

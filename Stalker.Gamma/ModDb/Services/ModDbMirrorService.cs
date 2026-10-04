@@ -1,17 +1,17 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using CurlService = Stalker.Gamma.Services.CurlService;
+using Stalker.Gamma.Factories;
+using Stalker.Gamma.Services;
 
 namespace Stalker.Gamma.ModDb.Services;
 
-public partial class ModDbMirrorService(CurlService curlService)
+public partial class ModDbMirrorService(NetworkServiceFactory networkServiceFactory)
 {
     private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);
 
     public async Task<string> GetMirrorAsync(
         string mirrorUrl,
-        bool useCurl = true,
         bool invalidateCache = false,
         CancellationToken cancellationToken = default,
         params IEnumerable<string> excludeMirrors
@@ -22,7 +22,7 @@ public partial class ModDbMirrorService(CurlService curlService)
         {
             _mirrors =
                 _mirrors is null || _mirrors.Count == 0 || invalidateCache
-                    ? await GetMirrorsAsync(mirrorUrl, useCurl, cancellationToken)
+                    ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
                     : _mirrors;
 
             return _mirrors
@@ -49,15 +49,12 @@ public partial class ModDbMirrorService(CurlService curlService)
 
     private async Task<FrozenSet<string>> GetMirrorsAsync(
         string mirrorUrl,
-        bool useCurl = true,
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await curlService.GetStringAsync(
-            mirrorUrl,
-            useCurl: useCurl,
-            cancellationToken: cancellationToken
-        );
+        var mirrorsHtml = await networkServiceFactory
+            .Create()
+            .GetStringAsync(mirrorUrl, cancellationToken: cancellationToken);
         if (mirrorsHtml.Contains("Just a moment..."))
         {
             throw new CloudflareChallengeException(

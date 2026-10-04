@@ -1,17 +1,17 @@
+using Stalker.Gamma.Factories;
 using Stalker.Gamma.Services;
-using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Utilities;
 
 public class UtilitiesReady(
-    CurlService curlService,
+    NetworkServiceFactory networkServiceFactory,
     TarService tarService,
     UnzipService unzipService,
     SevenZipService sevenZipService
 )
 {
     public bool IsReady =>
-        curlService.Ready
+        networkServiceFactory.Create().Ready
         && GitService.Ready
         && sevenZipService.Ready
         && (OperatingSystem.IsWindows() || tarService.Ready)
@@ -21,7 +21,7 @@ public class UtilitiesReady(
         IsReady
             ? ""
             : $"""
-                Curl: {(curlService.Ready ? "Ready" : "Not Ready")}
+                Curl: {(networkServiceFactory.Create().Ready ? "Ready" : "Not Ready")}
                 Git: {(GitService.Ready ? "Ready" : "Not Ready")}
                 7z: {(sevenZipService.Ready ? "Ready" : "Not Ready")}
                 Tar: {(tarService.Ready ? "Ready" : "Not Ready")}

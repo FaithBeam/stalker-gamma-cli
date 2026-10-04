@@ -8,7 +8,6 @@ using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Services;
-using CurlService = Stalker.Gamma.Services.CurlService;
 using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonMetadataService;
 using ModDbGetCdnLinkService = Stalker.Gamma.ModDb.Services.ModDbGetCdnLinkService;
 using ModDbMirrorService = Stalker.Gamma.ModDb.Services.ModDbMirrorService;
@@ -48,7 +47,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<GitService>()
             .AddScoped<ModDbService>()
             .AddScoped<ModDbMirrorService>()
-            .AddScoped<CurlService>()
+            .AddScoped<NetworkServiceFactory>()
             .AddScoped<ModDbGetCdnLinkService>()
             .AddScoped<PreserveMcmSettings>()
             .AddScoped<PythonApiProxy>()

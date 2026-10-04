@@ -1,30 +1,26 @@
 ﻿using HtmlAgilityPack;
+using Stalker.Gamma.Factories;
 using Stalker.Gamma.Services;
-using Stalker.Gamma.Utilities;
-using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
-public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
+public class GetCanonicalLinkFromModDbStartLink(NetworkServiceFactory networkServiceFactory)
 {
     public async Task<string> GetCanonicalLinkAsync(
         string modDbStartLink,
-        bool useCurl = true,
         CancellationToken ct = default
     )
     {
         string? htmlContent = null;
         try
         {
-            htmlContent = await _curlService.GetStringAsync(
-                modDbStartLink,
-                useCurl: useCurl,
-                cancellationToken: ct
-            );
+            htmlContent = await networkServiceFactory
+                .Create()
+                .GetStringAsync(modDbStartLink, cancellationToken: ct);
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
             var linkNode = htmlDoc.DocumentNode.SelectSingleNode("//link[@rel='canonical']");
-            var canonicalLink = linkNode.GetAttributeValue("href", string.Empty);
+            var canonicalLink = linkNode?.GetAttributeValue("href", string.Empty);
             return string.IsNullOrWhiteSpace(canonicalLink)
                 ? throw new CanonicalLinkNotFoundException(modDbStartLink)
                 : canonicalLink;
@@ -43,8 +39,6 @@ public class GetCanonicalLinkFromModDbStartLink(CurlService curlService)
             );
         }
     }
-
-    private readonly CurlService _curlService = curlService;
 }
 
 public class CanonicalLinkNotFoundException(string msg) : Exception(msg);
