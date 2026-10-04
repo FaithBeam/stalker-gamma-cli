@@ -101,10 +101,9 @@ build:
 	cp -r $(PYTHON_CLI_BUILD_DIR)/load_url/* $(STALKER_RESOURCES_DIR)/
 	# load_url looks for chrome/chrome next to itself
 	cp -r $(CHROME_BUILD_DIR)/chrome-$(CHROME_ARCH) $(STALKER_RESOURCES_DIR)/chrome
-	# load_url points SeleniumBase at chromedriver/, where UC mode expects
-	# the driver to be named uc_driver
+	# load_url points SeleniumBase at chromedriver/
 	mkdir $(STALKER_RESOURCES_DIR)/chromedriver
-	cp $(CHROME_BUILD_DIR)/chromedriver-$(CHROME_ARCH)/chromedriver $(STALKER_RESOURCES_DIR)/chromedriver/uc_driver
+	cp $(CHROME_BUILD_DIR)/chromedriver-$(CHROME_ARCH)/chromedriver $(STALKER_RESOURCES_DIR)/chromedriver/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:

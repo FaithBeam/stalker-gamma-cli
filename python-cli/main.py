@@ -151,10 +151,9 @@ def bundled_chrome():
 def bundled_driver_dir():
     """Return a "chromedriver" folder next to the executable, or None.
 
-    UC mode looks for its driver as "uc_driver" (or "uc_driver.exe") in
-    SeleniumBase's driver folder, and patches it in place on first use, so
-    the folder must be writable. If the driver's major version doesn't match
-    the browser, SeleniumBase downloads a matching one into it."""
+    SeleniumBase may write into this folder (e.g. a patched copy of the
+    driver), so it must be writable. If the driver's major version doesn't
+    match the browser, SeleniumBase downloads a matching one into it."""
     path = program_dir() / "chromedriver"
     return str(path) if path.is_dir() else None
 
@@ -378,9 +377,9 @@ def main(argv=None):
     parser.add_argument(
         "--driver-dir",
         metavar="DIR",
-        help="Writable folder holding the chromedriver to use, named "
-        "uc_driver (uc_driver.exe on Windows) (default: chromedriver/ next "
-        "to this program if present, otherwise SeleniumBase's own folder)",
+        help="Writable folder holding the chromedriver to use "
+        "(default: chromedriver/ next to this program if present, "
+        "otherwise SeleniumBase's own folder)",
     )
     args = parser.parse_args(argv)
     if args.browser_path is None and args.browser == "chrome":
