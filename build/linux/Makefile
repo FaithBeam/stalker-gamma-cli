@@ -43,6 +43,9 @@ endif
 CHROME_BUILD_DIR = $(BUILD_DIR)/chrome
 CHROME_ARCHIVE = $(CHROME_BUILD_DIR)/chrome-$(CHROME_ARCH).zip
 CHROME_DL_URL = https://storage.googleapis.com/chrome-for-testing-public/$(CHROME_VERSION)/$(CHROME_ARCH)/chrome-$(CHROME_ARCH).zip
+# chromedriver for the same Chrome version
+CHROMEDRIVER_ARCHIVE = $(CHROME_BUILD_DIR)/chromedriver-$(CHROME_ARCH).zip
+CHROMEDRIVER_DL_URL = https://storage.googleapis.com/chrome-for-testing-public/$(CHROME_VERSION)/$(CHROME_ARCH)/chromedriver-$(CHROME_ARCH).zip
 
 STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
@@ -72,6 +75,8 @@ build:
 	mkdir $(CHROME_BUILD_DIR)
 	curl -fLo $(CHROME_ARCHIVE) $(CHROME_DL_URL)
 	unzip -q $(CHROME_ARCHIVE) -d $(CHROME_BUILD_DIR)
+	curl -fLo $(CHROMEDRIVER_ARCHIVE) $(CHROMEDRIVER_DL_URL)
+	unzip -q $(CHROMEDRIVER_ARCHIVE) -d $(CHROME_BUILD_DIR)
 
 	# python-cli
 	python3 -m venv $(PYTHON_CLI_VENV)
@@ -96,6 +101,10 @@ build:
 	cp -r $(PYTHON_CLI_BUILD_DIR)/load_url/* $(STALKER_RESOURCES_DIR)/
 	# load_url looks for chrome/chrome next to itself
 	cp -r $(CHROME_BUILD_DIR)/chrome-$(CHROME_ARCH) $(STALKER_RESOURCES_DIR)/chrome
+	# load_url points SeleniumBase at chromedriver/, where UC mode expects
+	# the driver to be named uc_driver
+	mkdir $(STALKER_RESOURCES_DIR)/chromedriver
+	cp $(CHROME_BUILD_DIR)/chromedriver-$(CHROME_ARCH)/chromedriver $(STALKER_RESOURCES_DIR)/chromedriver/uc_driver
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 archive:

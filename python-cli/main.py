@@ -21,6 +21,7 @@ from fastapi import FastAPI, HTTPException, Response
 from mycdp import fetch, network
 from pydantic import BaseModel
 from seleniumbase import SB
+from seleniumbase.core.browser_launcher import override_driver_dir
 
 
 class NavigateResponseDto(BaseModel):
@@ -133,14 +134,29 @@ BUNDLED_CHROME_BINARIES = {
 }
 
 
+def program_dir():
+    base = Path(sys.executable if getattr(sys, "frozen", False) else __file__)
+    return base.resolve().parent
+
+
 def bundled_chrome():
     """Return the path of a Chrome bundled next to the executable, or None."""
     binary = BUNDLED_CHROME_BINARIES.get(sys.platform)
     if binary is None:
         return None
-    base = Path(sys.executable if getattr(sys, "frozen", False) else __file__)
-    path = base.resolve().parent / "chrome" / binary
+    path = program_dir() / "chrome" / binary
     return str(path) if path.is_file() else None
+
+
+def bundled_driver_dir():
+    """Return a "chromedriver" folder next to the executable, or None.
+
+    UC mode looks for its driver as "uc_driver" (or "uc_driver.exe") in
+    SeleniumBase's driver folder, and patches it in place on first use, so
+    the folder must be writable. If the driver's major version doesn't match
+    the browser, SeleniumBase downloads a matching one into it."""
+    path = program_dir() / "chromedriver"
+    return str(path) if path.is_dir() else None
 
 
 class Browser:
@@ -148,11 +164,12 @@ class Browser:
     thread."""
 
     def __init__(self, headless, challenge_timeout, browser="chrome",
-                 browser_path=None):
+                 browser_path=None, driver_dir=None):
         self.headless = headless
         self.challenge_timeout = challenge_timeout
         self.browser = browser
         self.browser_path = browser_path
+        self.driver_dir = driver_dir
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._context = None
         self._sb = None
@@ -166,6 +183,8 @@ class Browser:
     def _start(self):
         # SeleniumBase's CDP mode drives its own event loop on this thread.
         asyncio.set_event_loop(asyncio.new_event_loop())
+        if self.driver_dir:
+            override_driver_dir(self.driver_dir)
         self._context = SB(
             uc=True,
             test=False,
@@ -264,11 +283,11 @@ class Browser:
 
 
 def create_app(headless=False, challenge_timeout=30.0, browser="chrome",
-               browser_path=None):
+               browser_path=None, driver_dir=None):
     @asynccontextmanager
     async def lifespan(app):
         app.state.browser = Browser(
-            headless, challenge_timeout, browser, browser_path
+            headless, challenge_timeout, browser, browser_path, driver_dir
         )
         try:
             yield
@@ -356,12 +375,25 @@ def main(argv=None):
         "the auto-detected one (default: chrome/ next to this program if "
         "present, otherwise the installed Chrome)",
     )
+    parser.add_argument(
+        "--driver-dir",
+        metavar="DIR",
+        help="Writable folder holding the chromedriver to use, named "
+        "uc_driver (uc_driver.exe on Windows) (default: chromedriver/ next "
+        "to this program if present, otherwise SeleniumBase's own folder)",
+    )
     args = parser.parse_args(argv)
     if args.browser_path is None and args.browser == "chrome":
         args.browser_path = bundled_chrome()
+    if args.driver_dir is None and args.browser == "chrome":
+        args.driver_dir = bundled_driver_dir()
     uvicorn.run(
         app=create_app(
-            args.headless, args.challenge_timeout, args.browser, args.browser_path
+            args.headless,
+            args.challenge_timeout,
+            args.browser,
+            args.browser_path,
+            args.driver_dir,
         ),
         host=args.host,
         port=args.port,
