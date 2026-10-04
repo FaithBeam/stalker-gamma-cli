@@ -22,7 +22,7 @@ public class PythonServerService : IDisposable
         _process.StartInfo = new ProcessStartInfo
         {
             FileName = PythonServerPath,
-            Arguments = $"--host {host} --port {port}",
+            Arguments = $"--host {host} --port {port} --headless",
             UseShellExecute = false,
             CreateNoWindow = true,
         };

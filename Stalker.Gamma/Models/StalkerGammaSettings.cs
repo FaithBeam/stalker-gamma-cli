@@ -24,5 +24,5 @@ public class StalkerGammaSettings
     public string PathToTar = "tar";
     public string PythonApiUrl { get; set; } = "http://localhost:8000";
     public string PythonServerPath { get; set; } =
-        OperatingSystem.IsWindows() ? "cloudscraper.exe" : "cloudscraper";
+        OperatingSystem.IsWindows() ? "load_url.exe" : "load_url";
 }

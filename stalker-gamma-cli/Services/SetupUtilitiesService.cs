@@ -13,7 +13,7 @@ public class SetupUtilitiesService(StalkerGammaSettings settings)
 
         settings.PythonServerPath = Path.Join(
             ResourcesPath,
-            OperatingSystem.IsWindows() ? "cloudscraper.exe" : "cloudscraper"
+            OperatingSystem.IsWindows() ? "load_url.exe" : "load_url"
         );
     }
 

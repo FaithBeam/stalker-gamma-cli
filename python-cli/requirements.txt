@@ -1,0 +1,4 @@
+seleniumbase
+fastapi
+uvicorn
+pydantic
