@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HTTP API that loads URLs in a SeleniumBase-driven Chrome browser.
+"""HTTP API that loads URLs in a SeleniumBase-driven Chrome/Chromium browser.
 
 One browser is started at launch and reused for every request. All browser
 work runs on a single worker thread, so requests are handled one at a time.
@@ -122,11 +122,15 @@ def pass_challenge(sb, timeout, done, poll=0.5, click_every=2):
 
 
 class Browser:
-    """A long-lived Chrome in CDP mode, confined to one worker thread."""
+    """A long-lived Chrome/Chromium in CDP mode, confined to one worker
+    thread."""
 
-    def __init__(self, headless, challenge_timeout):
+    def __init__(self, headless, challenge_timeout, browser="chrome",
+                 browser_path=None):
         self.headless = headless
         self.challenge_timeout = challenge_timeout
+        self.browser = browser
+        self.browser_path = browser_path
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._context = None
         self._sb = None
@@ -144,6 +148,10 @@ class Browser:
             uc=True,
             test=False,
             headless=self.headless,
+            # A custom binary path takes precedence. Otherwise "chromium"
+            # uses SeleniumBase's own Chromium, downloading it if missing.
+            binary_location=self.browser_path,
+            use_chromium=self.browser == "chromium" and not self.browser_path,
             # Stop Chrome from first trying an https:// version of http://
             # URLs, so only the exact URL given is requested.
             disable_features="HttpsUpgrades",
@@ -233,10 +241,13 @@ class Browser:
         self._executor.shutdown(wait=False, cancel_futures=True)
 
 
-def create_app(headless=False, challenge_timeout=30.0):
+def create_app(headless=False, challenge_timeout=30.0, browser="chrome",
+               browser_path=None):
     @asynccontextmanager
     async def lifespan(app):
-        app.state.browser = Browser(headless, challenge_timeout)
+        app.state.browser = Browser(
+            headless, challenge_timeout, browser, browser_path
+        )
         try:
             yield
         finally:
@@ -308,9 +319,25 @@ def main(argv=None):
         help="Max seconds to wait for a page, including any Cloudflare "
         "challenge, before /navigate gives up (default: 30)",
     )
+    parser.add_argument(
+        "--browser",
+        choices=("chrome", "chromium"),
+        default="chrome",
+        help="Browser to drive. \"chromium\" downloads SeleniumBase's "
+        "Chromium build on first use unless --browser-path is given "
+        "(default: chrome)",
+    )
+    parser.add_argument(
+        "--browser-path",
+        metavar="PATH",
+        help="Path to a Chrome or Chromium executable to use instead of "
+        "the auto-detected one",
+    )
     args = parser.parse_args(argv)
     uvicorn.run(
-        app=create_app(args.headless, args.challenge_timeout),
+        app=create_app(
+            args.headless, args.challenge_timeout, args.browser, args.browser_path
+        ),
         host=args.host,
         port=args.port,
     )
