@@ -22,12 +22,5 @@ public class StalkerGammaSettings
     public string PathToUnzip = "unzip";
     public string PathTo7Z = OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
     public string PathToTar = "tar";
-    public string PythonApiUrl { get; set; } = "http://localhost:8000";
-
-    /// <summary>
-    /// Path to the folder containing load_url, chrome, and chrome_driver
-    /// </summary>
-    public string? ExperimentalPythonServer { get; set; }
-    public string PythonServerPath { get; set; } =
-        OperatingSystem.IsWindows() ? "load_url.exe" : "load_url";
+    public string? PythonApiUrl { get; set; }
 }

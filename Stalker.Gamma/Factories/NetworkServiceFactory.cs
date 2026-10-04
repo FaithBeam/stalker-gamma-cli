@@ -11,9 +11,5 @@ public class NetworkServiceFactory(
 )
 {
     public NetworkService Create() =>
-        new(
-            hcf,
-            pythonApiProxy,
-            useCurl: string.IsNullOrWhiteSpace(settings.ExperimentalPythonServer)
-        );
+        new(hcf, pythonApiProxy, useCurl: string.IsNullOrWhiteSpace(settings.PythonApiUrl));
 }

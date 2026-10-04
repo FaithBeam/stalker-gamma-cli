@@ -40,7 +40,6 @@ public static class ServiceCollectionExtensions
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
             .AddScoped<ArchiveService>()
             .AddScoped<PythonApiClientFactory>()
-            .AddSingleton<PythonServerService>()
             .AddScoped<SevenZipService>()
             .AddScoped<TarService>()
             .AddScoped<UnzipService>()

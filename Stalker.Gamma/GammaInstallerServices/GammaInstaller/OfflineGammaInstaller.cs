@@ -24,7 +24,6 @@ public class OfflineGammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    PythonServerService pythonServerService,
     PythonApiProxy pythonApiProxy
 )
     : GammaInstaller(
@@ -40,7 +39,6 @@ public class OfflineGammaInstaller(
         getStalkerModsFromLocal,
         preserveUserLtxSettingsService,
         preserveMcmSettings,
-        pythonServerService,
         pythonApiProxy
     )
 {

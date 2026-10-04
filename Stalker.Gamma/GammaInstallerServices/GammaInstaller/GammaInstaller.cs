@@ -25,7 +25,6 @@ public class GammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    PythonServerService pythonServerService,
     PythonApiProxy pythonApiProxy
 ) : IGammaInstaller, IDisposable
 {
@@ -108,12 +107,6 @@ public class GammaInstaller(
             { UseExperimentalPythonServer: not null, ExperimentalPythonServerSettings: not null }
         )
         {
-            pythonServerService.Start(
-                args.ExperimentalPythonServerSettings.Host,
-                args.ExperimentalPythonServerSettings.Port,
-                args.CancellationToken
-            );
-
             while (!await pythonApiProxy.Ready())
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
@@ -425,6 +418,5 @@ public class GammaInstaller(
     public void Dispose()
     {
         _hc.Dispose();
-        pythonServerService.Dispose();
     }
 }
