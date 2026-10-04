@@ -9,10 +9,12 @@ import argparse
 import asyncio
 import base64
 import multiprocessing
+import sys
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
@@ -119,6 +121,26 @@ def pass_challenge(sb, timeout, done, poll=0.5, click_every=2):
             next_click = now + click_every
         sb.sleep(poll)
     return False
+
+
+# Where a Chrome for Testing build bundled in a "chrome" folder next to this
+# executable keeps its binary, per platform.
+BUNDLED_CHROME_BINARIES = {
+    "linux": "chrome",
+    "win32": "chrome.exe",
+    "darwin": "Google Chrome for Testing.app/Contents/MacOS/"
+    "Google Chrome for Testing",
+}
+
+
+def bundled_chrome():
+    """Return the path of a Chrome bundled next to the executable, or None."""
+    binary = BUNDLED_CHROME_BINARIES.get(sys.platform)
+    if binary is None:
+        return None
+    base = Path(sys.executable if getattr(sys, "frozen", False) else __file__)
+    path = base.resolve().parent / "chrome" / binary
+    return str(path) if path.is_file() else None
 
 
 class Browser:
@@ -331,9 +353,12 @@ def main(argv=None):
         "--browser-path",
         metavar="PATH",
         help="Path to a Chrome or Chromium executable to use instead of "
-        "the auto-detected one",
+        "the auto-detected one (default: chrome/ next to this program if "
+        "present, otherwise the installed Chrome)",
     )
     args = parser.parse_args(argv)
+    if args.browser_path is None and args.browser == "chrome":
+        args.browser_path = bundled_chrome()
     uvicorn.run(
         app=create_app(
             args.headless, args.challenge_timeout, args.browser, args.browser_path
