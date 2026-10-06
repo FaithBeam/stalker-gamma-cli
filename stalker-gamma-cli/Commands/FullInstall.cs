@@ -37,7 +37,7 @@ public class FullInstallCmd(
     /// <param name="offline">Perform an offline installation from a cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
-    /// <param name="experimentalPythonServer">URL to the experimental python server when connecting to moddb for addons</param>
+    /// <param name="experimentalCamoufoxServer">URL to the experimental camoufox server when connecting to moddb for addons</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
@@ -54,7 +54,7 @@ public class FullInstallCmd(
         bool offline = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
-        string? experimentalPythonServer = null,
+        string? experimentalCamoufoxServer = null,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
@@ -79,7 +79,7 @@ public class FullInstallCmd(
             _cliSettings.ActiveProfile.GammaLargeFilesRepoBranch,
             _cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoUrl,
             _cliSettings.ActiveProfile.TeivazAnomalyGunslingerRepoBranch,
-            experimentalPythonServer,
+            experimentalCamoufoxServer,
             out var anomaly,
             out var gamma,
             out var cache,
@@ -119,10 +119,7 @@ public class FullInstallCmd(
                 .WithModListPath(modListPath)
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
-                .WithUseExperimentalPythonServer(experimentalPythonServer)
-                .WithExperimentalPythonServerSettings(
-                    _cliSettings.ExperimentalModDbSettings.ToServerSettings()
-                )
+                .WithUseExperimentalCamoufoxServer(experimentalCamoufoxServer)
                 .Build();
             args.GroupedAddonRecords = await installer.BuildGroupedAddonRecordsAsync(args);
             args.AnomalyRecord = installer.BuildAnomalyRecord(args);
@@ -177,7 +174,7 @@ public class FullInstallCmd(
         string gammaLargeFilesRepoBranch,
         string teivazAnomalyGunslingerRepoUrl,
         string teivazAnomalyGunslingerRepoBranch,
-        string? experimentalPythonServer,
+        string? experimentalCamoufoxServer,
         out string anomaly,
         out string gamma,
         out string cache,
@@ -202,7 +199,7 @@ public class FullInstallCmd(
         _stalkerGammaSettings.GammaLargeFilesRepoBranch = gammaLargeFilesRepoBranch;
         _stalkerGammaSettings.TeivazAnomalyGunslingerRepo = teivazAnomalyGunslingerRepoUrl;
         _stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch = teivazAnomalyGunslingerRepoBranch;
-        _stalkerGammaSettings.PythonApiUrl = experimentalPythonServer;
+        _stalkerGammaSettings.experimentalCamoufoxServerUrl = experimentalCamoufoxServer;
     }
 
     private void ConfigurePowerShellSettings(

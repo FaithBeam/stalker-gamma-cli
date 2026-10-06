@@ -1,0 +1,180 @@
+openapi: 3.1.1
+info:
+  title: Camoufox API
+  description: Loads pages through a Camoufox browser, solving Cloudflare
+    Turnstile challenges.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/
+paths:
+  /navigate:
+    post:
+      tags:
+        - Browser
+      summary: Navigate to a URL
+      description: Loads the URL in the browser, solving a Cloudflare Turnstile
+        challenge if one appears. With follow_redirects off, a 3xx response is
+        returned as-is with empty content.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NavigateRequestDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavigateResponseDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+        "502":
+          description: Bad Gateway
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "504":
+          description: Gateway Timeout
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /livez:
+    get:
+      tags:
+        - Health
+      summary: Liveness
+      description: The process is up and serving requests. No dependency checks.
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+  /readyz:
+    get:
+      tags:
+        - Health
+      summary: Readiness
+      description: The Camoufox container is running and the browser is connected.
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+        "503":
+          description: Service Unavailable
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    HttpValidationProblemDetails:
+      type: object
+      properties:
+        type:
+          type:
+            - "null"
+            - string
+        title:
+          type:
+            - "null"
+            - string
+        status:
+          type:
+            - "null"
+            - integer
+          format: int32
+        detail:
+          type:
+            - "null"
+            - string
+        instance:
+          type:
+            - "null"
+            - string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    NavigateRequestDto:
+      required:
+        - url
+      type: object
+      properties:
+        url:
+          type: string
+          description: Absolute http or https URL to load.
+        follow_redirects:
+          type: boolean
+          description: Follow redirects to the final page. When false, a 3xx response is
+            returned as-is.
+          default: true
+    NavigateResponseDto:
+      required:
+        - status_code
+        - url
+        - content
+        - headers
+      type: object
+      properties:
+        status_code:
+          type: integer
+          description: HTTP status of the returned response.
+          format: int32
+        url:
+          type: string
+          description: URL of the returned response; the final URL when redirects were
+            followed.
+        content:
+          type: string
+          description: Rendered HTML of the page. Empty for a redirect response.
+        headers:
+          type: object
+          description: Response headers, keyed by lowercase name.
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type:
+            - "null"
+            - string
+        title:
+          type:
+            - "null"
+            - string
+        status:
+          type:
+            - "null"
+            - integer
+          format: int32
+        detail:
+          type:
+            - "null"
+            - string
+        instance:
+          type:
+            - "null"
+            - string
+tags:
+  - name: Browser
+  - name: Health

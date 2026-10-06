@@ -5,7 +5,7 @@ using Microsoft.Kiota.Abstractions.Serialization;
 using System.Collections.Generic;
 using System.IO;
 using System;
-namespace Stalker.Gamma.Proxies.PythonApiClient.Models
+namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
 {
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     #pragma warning disable CS1591
@@ -14,7 +14,7 @@ namespace Stalker.Gamma.Proxies.PythonApiClient.Models
     {
         /// <summary>Stores additional data not described in the OpenAPI description found when deserializing. Can be used for serialization as well.</summary>
         public IDictionary<string, object> AdditionalData { get; set; }
-        /// <summary>The content property</summary>
+        /// <summary>Rendered HTML of the page. Empty for a redirect response.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
         public string? Content { get; set; }
@@ -22,17 +22,17 @@ namespace Stalker.Gamma.Proxies.PythonApiClient.Models
 #else
         public string Content { get; set; }
 #endif
-        /// <summary>The headers property</summary>
+        /// <summary>Response headers, keyed by lowercase name.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
-        public global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto_headers? Headers { get; set; }
+        public global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers? Headers { get; set; }
 #nullable restore
 #else
-        public global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto_headers Headers { get; set; }
+        public global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers Headers { get; set; }
 #endif
-        /// <summary>The status_code property</summary>
+        /// <summary>HTTP status of the returned response.</summary>
         public int? StatusCode { get; set; }
-        /// <summary>The url property</summary>
+        /// <summary>URL of the returned response; the final URL when redirects were followed.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
         public string? Url { get; set; }
@@ -41,7 +41,7 @@ namespace Stalker.Gamma.Proxies.PythonApiClient.Models
         public string Url { get; set; }
 #endif
         /// <summary>
-        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto"/> and sets the default values.
+        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto"/> and sets the default values.
         /// </summary>
         public NavigateResponseDto()
         {
@@ -50,12 +50,12 @@ namespace Stalker.Gamma.Proxies.PythonApiClient.Models
         /// <summary>
         /// Creates a new instance of the appropriate class based on discriminator value
         /// </summary>
-        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto"/></returns>
+        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto"/></returns>
         /// <param name="parseNode">The parse node to use to read the discriminator value and create the object</param>
-        public static global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto CreateFromDiscriminatorValue(IParseNode parseNode)
+        public static global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto CreateFromDiscriminatorValue(IParseNode parseNode)
         {
             if(ReferenceEquals(parseNode, null)) throw new ArgumentNullException(nameof(parseNode));
-            return new global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto();
+            return new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto();
         }
         /// <summary>
         /// The deserialization information for the current model
@@ -66,7 +66,7 @@ namespace Stalker.Gamma.Proxies.PythonApiClient.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "content", n => { Content = n.GetStringValue(); } },
-                { "headers", n => { Headers = n.GetObjectValue<global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto_headers>(global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto_headers.CreateFromDiscriminatorValue); } },
+                { "headers", n => { Headers = n.GetObjectValue<global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers>(global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers.CreateFromDiscriminatorValue); } },
                 { "status_code", n => { StatusCode = n.GetIntValue(); } },
                 { "url", n => { Url = n.GetStringValue(); } },
             };
@@ -79,7 +79,7 @@ namespace Stalker.Gamma.Proxies.PythonApiClient.Models
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("content", Content);
-            writer.WriteObjectValue<global::Stalker.Gamma.Proxies.PythonApiClient.Models.NavigateResponseDto_headers>("headers", Headers);
+            writer.WriteObjectValue<global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers>("headers", Headers);
             writer.WriteIntValue("status_code", StatusCode);
             writer.WriteStringValue("url", Url);
             writer.WriteAdditionalData(AdditionalData);

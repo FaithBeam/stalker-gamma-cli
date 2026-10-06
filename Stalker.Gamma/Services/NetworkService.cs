@@ -4,7 +4,11 @@ using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Services;
 
-public class NetworkService(IHttpClientFactory hcf, PythonApiProxy pythonApiProxy, bool useCurl)
+public class NetworkService(
+    IHttpClientFactory hcf,
+    ExperimentalCamoufoxProxy experimentalCamoufoxProxy,
+    bool useCurl
+)
 {
     public async Task<Dictionary<string, string>> GetHeadersAsync(
         string url,
@@ -15,10 +19,9 @@ public class NetworkService(IHttpClientFactory hcf, PythonApiProxy pythonApiProx
                 () => CurlHttp.GetHeaders(url, http3: true, ct: cancellationToken),
                 cancellationToken
             )
-            : (await pythonApiProxy.GetHeadersAsync(url, cancellationToken)).ToDictionary(
-                x => x.Key,
-                x => x.Value.ToString()!
-            );
+            : (
+                await experimentalCamoufoxProxy.GetHeadersAsync(url, cancellationToken)
+            ).ToDictionary(x => x.Key, x => x.Value.ToString()!);
 
     public async Task DownloadFileAsync(
         string url,
@@ -46,7 +49,7 @@ public class NetworkService(IHttpClientFactory hcf, PythonApiProxy pythonApiProx
                 () => CurlHttp.Fetch(url, http3: true, ct: cancellationToken),
                 cancellationToken
             )
-            : await pythonApiProxy.GetStringAsync(url, cancellationToken);
+            : await experimentalCamoufoxProxy.GetStringAsync(url, cancellationToken);
 
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.

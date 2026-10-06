@@ -48,20 +48,11 @@ public class Config(ILogger logger, CliSettings cliSettings)
                 value
             );
         }
-
-        if (cliSettings.ExperimentalModDbSettings.TrySet(setting, value, out error))
+        else
         {
-            await cliSettings.SaveAsync();
-            _logger.Information(
-                "ExpermientalModSettings updated with {Setting}={Value}",
-                setting,
-                value
-            );
-            return;
+            _logger.Error("{Error}", error);
+            Environment.Exit(1);
         }
-
-        _logger.Error("{Error}", error);
-        Environment.Exit(1);
     }
 
     /// <summary>

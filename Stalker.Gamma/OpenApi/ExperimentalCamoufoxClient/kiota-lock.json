@@ -1,14 +1,14 @@
 {
-  "descriptionHash": "D5807A17404036CB0E53186568833364DD0DCB752BF730833ACA5BD45358B3F66A61F2FD9E519559119AE61ECBA9EE0974B8B9B306D2DDB5E9F4291C175F40A2",
-  "descriptionLocation": "../python-api.json",
+  "descriptionHash": "67F2CF5E1451D753C4B4ED18F76AAA9BAE96C50EF4A691EB5C6B9451868884FEB4483E6F427C6BAD9FFDAECF9576A0EC524A1E94508BEADF2A1CB0C2518AC569",
+  "descriptionLocation": "../v1.yaml",
   "lockFileVersion": "1.0.0",
-  "kiotaVersion": "1.31.1",
-  "clientClassName": "PythonApiClient",
+  "kiotaVersion": "1.35.0",
+  "clientClassName": "ExperimentalCamoufoxClient",
   "typeAccessModifier": "Public",
-  "clientNamespaceName": "Stalker.Gamma.Proxies.PythonApiClient",
+  "clientNamespaceName": "Stalker.Gamma.Proxies.ExperimentalCamoufoxClient",
   "language": "CSharp",
   "usesBackingStore": false,
-  "excludeBackwardCompatible": false,
+  "excludeBackwardCompatible": true,
   "includeAdditionalData": true,
   "disableSSLValidation": false,
   "serializers": [
@@ -30,5 +30,6 @@
   ],
   "includePatterns": [],
   "excludePatterns": [],
-  "disabledValidationRules": []
+  "disabledValidationRules": [],
+  "allowedExternalOrigins": []
 }

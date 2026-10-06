@@ -1,12 +1,12 @@
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.Models;
-using Stalker.Gamma.Proxies.PythonApiClient.Models;
+using Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models;
 using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Proxies;
 
-public class PythonApiProxy(
-    PythonApiClientFactory pythonApiClientFactory,
+public class ExperimentalCamoufoxProxy(
+    ExperimentalCamoufoxClientFactory experimentalCamoufoxClientFactory,
     IHttpClientFactory hcf,
     StalkerGammaSettings settings
 )
@@ -16,8 +16,8 @@ public class PythonApiProxy(
         CancellationToken cancellationToken = default
     )
     {
-        var response = await pythonApiClientFactory
-            .Create(settings.PythonApiUrl ?? throw new InvalidOperationException())
+        var response = await experimentalCamoufoxClientFactory
+            .Create(PythonApiUrl)
             .Navigate.PostAsync(
                 new NavigateRequestDto { Url = url, FollowRedirects = false },
                 cancellationToken: cancellationToken
@@ -53,8 +53,8 @@ public class PythonApiProxy(
         CancellationToken cancellationToken = default
     )
     {
-        var response = await pythonApiClientFactory
-            .Create(settings.PythonApiUrl ?? throw new InvalidOperationException())
+        var response = await experimentalCamoufoxClientFactory
+            .Create(PythonApiUrl)
             .Navigate.PostAsync(
                 new NavigateRequestDto { Url = url, FollowRedirects = true },
                 cancellationToken: cancellationToken
@@ -78,9 +78,7 @@ public class PythonApiProxy(
     {
         try
         {
-            return await pythonApiClientFactory
-                .Create(settings.PythonApiUrl ?? throw new InvalidOperationException())
-                .Readyz.GetAsReadyzGetResponseAsync()
+            return await experimentalCamoufoxClientFactory.Create(PythonApiUrl).Readyz.GetAsync()
                 is not null;
         }
         catch (Exception)
@@ -90,6 +88,7 @@ public class PythonApiProxy(
     }
 
     private readonly HttpClient _diabolicalClient = hcf.CreateClient("dlArchive");
+    private string PythonApiUrl => settings.experimentalCamoufoxServerUrl!;
 }
 
 public class ModDbBotDetectedException(string msg) : Exception(msg);

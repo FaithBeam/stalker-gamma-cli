@@ -1,12 +1,12 @@
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
-using Stalker.Gamma.Proxies.PythonApiClient;
+using Stalker.Gamma.Proxies.ExperimentalCamoufoxClient;
 
 namespace Stalker.Gamma.Factories;
 
-public class PythonApiClientFactory
+public class ExperimentalCamoufoxClientFactory
 {
-    public PythonApiClient Create(string baseUrl) =>
+    public ExperimentalCamoufoxClient Create(string baseUrl) =>
         new(
             new HttpClientRequestAdapter(new AnonymousAuthenticationProvider())
             {

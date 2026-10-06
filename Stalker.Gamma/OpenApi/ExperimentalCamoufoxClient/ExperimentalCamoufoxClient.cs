@@ -6,41 +6,41 @@ using Microsoft.Kiota.Serialization.Form;
 using Microsoft.Kiota.Serialization.Json;
 using Microsoft.Kiota.Serialization.Multipart;
 using Microsoft.Kiota.Serialization.Text;
-using Stalker.Gamma.Proxies.PythonApiClient.Livez;
-using Stalker.Gamma.Proxies.PythonApiClient.Navigate;
-using Stalker.Gamma.Proxies.PythonApiClient.Readyz;
+using Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez;
+using Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Navigate;
+using Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Readyz;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System;
-namespace Stalker.Gamma.Proxies.PythonApiClient
+namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient
 {
     /// <summary>
     /// The main entry point of the SDK, exposes the configuration and the fluent API.
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
-    public partial class PythonApiClient : BaseRequestBuilder
+    public partial class ExperimentalCamoufoxClient : BaseRequestBuilder
     {
         /// <summary>The livez property</summary>
-        public global::Stalker.Gamma.Proxies.PythonApiClient.Livez.LivezRequestBuilder Livez
+        public global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder Livez
         {
-            get => new global::Stalker.Gamma.Proxies.PythonApiClient.Livez.LivezRequestBuilder(PathParameters, RequestAdapter);
+            get => new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder(PathParameters, RequestAdapter);
         }
         /// <summary>The navigate property</summary>
-        public global::Stalker.Gamma.Proxies.PythonApiClient.Navigate.NavigateRequestBuilder Navigate
+        public global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Navigate.NavigateRequestBuilder Navigate
         {
-            get => new global::Stalker.Gamma.Proxies.PythonApiClient.Navigate.NavigateRequestBuilder(PathParameters, RequestAdapter);
+            get => new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Navigate.NavigateRequestBuilder(PathParameters, RequestAdapter);
         }
         /// <summary>The readyz property</summary>
-        public global::Stalker.Gamma.Proxies.PythonApiClient.Readyz.ReadyzRequestBuilder Readyz
+        public global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Readyz.ReadyzRequestBuilder Readyz
         {
-            get => new global::Stalker.Gamma.Proxies.PythonApiClient.Readyz.ReadyzRequestBuilder(PathParameters, RequestAdapter);
+            get => new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Readyz.ReadyzRequestBuilder(PathParameters, RequestAdapter);
         }
         /// <summary>
-        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.PythonApiClient.PythonApiClient"/> and sets the default values.
+        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.ExperimentalCamoufoxClient"/> and sets the default values.
         /// </summary>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public PythonApiClient(IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}", new Dictionary<string, object>())
+        public ExperimentalCamoufoxClient(IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}", new Dictionary<string, object>())
         {
             ApiClientBuilder.RegisterDefaultSerializer<JsonSerializationWriterFactory>();
             ApiClientBuilder.RegisterDefaultSerializer<TextSerializationWriterFactory>();
@@ -49,6 +49,11 @@ namespace Stalker.Gamma.Proxies.PythonApiClient
             ApiClientBuilder.RegisterDefaultDeserializer<JsonParseNodeFactory>();
             ApiClientBuilder.RegisterDefaultDeserializer<TextParseNodeFactory>();
             ApiClientBuilder.RegisterDefaultDeserializer<FormParseNodeFactory>();
+            if (string.IsNullOrEmpty(RequestAdapter.BaseUrl))
+            {
+                RequestAdapter.BaseUrl = "http://localhost:5000";
+            }
+            PathParameters.TryAdd("baseurl", RequestAdapter.BaseUrl);
         }
     }
 }

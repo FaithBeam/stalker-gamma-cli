@@ -6,10 +6,15 @@ namespace Stalker.Gamma.Factories;
 
 public class NetworkServiceFactory(
     IHttpClientFactory hcf,
-    PythonApiProxy pythonApiProxy,
+    ExperimentalCamoufoxProxy experimentalCamoufoxProxy,
     StalkerGammaSettings settings
 )
 {
     public NetworkService Create() =>
-        new(hcf, pythonApiProxy, useCurl: string.IsNullOrWhiteSpace(settings.PythonApiUrl));
+        new(
+            hcf,
+            experimentalCamoufoxProxy,
+            useCurl: settings.experimentalCamoufoxServerUrl is null
+                || settings.experimentalCamoufoxServerUrl.Length == 0
+        );
 }

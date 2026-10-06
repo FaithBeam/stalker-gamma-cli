@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
         s.AddSingleton<StalkerGammaSettings>().AddSingleton<GammaProgress, GammaProgress>();
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
             .AddScoped<ArchiveService>()
-            .AddScoped<PythonApiClientFactory>()
+            .AddScoped<ExperimentalCamoufoxClientFactory>()
             .AddScoped<SevenZipService>()
             .AddScoped<TarService>()
             .AddScoped<UnzipService>()
@@ -49,7 +49,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<NetworkServiceFactory>()
             .AddScoped<ModDbGetCdnLinkService>()
             .AddScoped<PreserveMcmSettings>()
-            .AddScoped<PythonApiProxy>()
+            .AddScoped<ExperimentalCamoufoxProxy>()
             .AddScoped<PreserveUserLtxSettingsService>()
             .AddScoped<GetCanonicalLinkFromModDbStartLink>()
             .AddScoped<ModDbGetAddonMetadataService>()

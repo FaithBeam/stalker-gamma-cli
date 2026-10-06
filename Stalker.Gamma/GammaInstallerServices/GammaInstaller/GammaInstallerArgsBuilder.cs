@@ -16,8 +16,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private bool _preserveMcmSettings;
     private string? _modPackMakerPath;
     private string? _modListPath;
-    private string? _useExperimentalPythonServer;
-    private ExperimentalPythonServerSettings? _experimentalPythonServerSettings;
+    private string? _useExperimentalCamoufoxServer;
 
     public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
     {
@@ -67,17 +66,9 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         return this;
     }
 
-    public GammaInstallerArgsBuilder WithUseExperimentalPythonServer(string? value = null)
+    public GammaInstallerArgsBuilder WithUseExperimentalCamoufoxServer(string? value = null)
     {
-        _useExperimentalPythonServer = value;
-        return this;
-    }
-
-    public GammaInstallerArgsBuilder WithExperimentalPythonServerSettings(
-        ExperimentalPythonServerSettings? value
-    )
-    {
-        _experimentalPythonServerSettings = value;
+        _useExperimentalCamoufoxServer = value;
         return this;
     }
 
@@ -123,7 +114,6 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             ModListPath = _modListPath,
             GroupedAddonRecords = _groupedAddonRecords,
             AnomalyRecord = _anomalyRecord,
-            UseExperimentalPythonServer = _useExperimentalPythonServer,
-            ExperimentalPythonServerSettings = _experimentalPythonServerSettings,
+            UseExperimentalPythonServer = _useExperimentalCamoufoxServer,
         };
 }
