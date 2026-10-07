@@ -3,6 +3,7 @@ using System.Text.Json;
 using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
+using Stalker.Gamma.ModDb.Services;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer;
 using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
@@ -169,51 +170,66 @@ public class GammaInstaller(
 
         ConcurrentBag<IDownloadableRecord> brokenAddons = [];
 
-        var mainBatch = ProcessAddonsAsync(
-            mainBatchRecords,
-            brokenAddons,
-            args.Minimal,
-            cancellationToken: args.CancellationToken
+        using var batchCts = CancellationTokenSource.CreateLinkedTokenSource(args.CancellationToken);
+        var mainBatch = Task.Run(
+            async () =>
+            {
+                try
+                {
+                    await ProcessAddonsAsync(
+                        mainBatchRecords,
+                        brokenAddons,
+                        args.Minimal,
+                        cancellationToken: batchCts.Token
+                    );
+                }
+                catch (CloudflareChallengeException)
+                {
+                    await batchCts.CancelAsync();
+                    throw;
+                }
+            },
+            batchCts.Token
         );
         var teivazDlTask = Task.Run(
             async () =>
             {
-                await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(args.CancellationToken);
+                await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(batchCts.Token);
                 await (
                     (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
-                ).ExpandFilesAsync(args.CancellationToken);
+                ).ExpandFilesAsync(batchCts.Token);
             },
-            args.CancellationToken
+            batchCts.Token
         );
         var gammaLargeFilesDlTask = Task.Run(
             async () =>
             {
-                await args.GammaLargeFilesRecord!.DownloadAsync(args.CancellationToken);
+                await args.GammaLargeFilesRecord!.DownloadAsync(batchCts.Token);
                 await ((GammaLargeFilesRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
-                    args.CancellationToken
+                    batchCts.Token
                 );
             },
-            args.CancellationToken
+            batchCts.Token
         );
         var gammaSetupDownloadTask = Task.Run(
             async () =>
             {
-                await args.GammaSetupRecord!.DownloadAsync(args.CancellationToken);
+                await args.GammaSetupRecord!.DownloadAsync(batchCts.Token);
                 await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(
-                    args.CancellationToken
+                    batchCts.Token
                 );
             },
-            args.CancellationToken
+            batchCts.Token
         );
         var stalkerGammaDownloadTask = Task.Run(
             async () =>
             {
-                await args.StalkerGammaRecord!.DownloadAsync(args.CancellationToken);
+                await args.StalkerGammaRecord!.DownloadAsync(batchCts.Token);
                 await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
-                    args.CancellationToken
+                    batchCts.Token
                 );
             },
-            args.CancellationToken
+            batchCts.Token
         );
 
         await Task.WhenAll(
@@ -393,19 +409,24 @@ public class GammaInstaller(
     ) =>
         await Parallel.ForEachAsync(
             addons,
-            new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
-            async (grs, _) =>
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Settings.DownloadThreads,
+                CancellationToken = cancellationToken,
+            },
+            async (grs, ct) =>
             {
                 try
                 {
-                    await grs.DownloadAsync(cancellationToken);
-                    await grs.ExtractAsync(cancellationToken);
+                    await grs.DownloadAsync(ct);
+                    await grs.ExtractAsync(ct);
                     if (minimal)
                     {
                         grs.DeleteArchive();
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
+                    when (e is not CloudflareChallengeException and not OperationCanceledException)
                 {
                     brokenAddons.Add(grs);
                 }

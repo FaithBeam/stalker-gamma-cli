@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.ModDb.Services;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
@@ -60,7 +61,7 @@ public class ModDbRecord(
                 Downloaded = true;
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not CloudflareChallengeException)
         {
             throw new ModDbRecordException(
                 $"""

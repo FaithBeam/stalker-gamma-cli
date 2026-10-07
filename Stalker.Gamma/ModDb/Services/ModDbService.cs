@@ -34,6 +34,7 @@ public partial class ModDbService(
                     ShouldHandle = arguments =>
                         arguments.Outcome.Exception switch
                         {
+                            CloudflareChallengeException => ValueTask.FromResult(false),
                             not null => ValueTask.FromResult(true),
                             _ => ValueTask.FromResult(false),
                         },

@@ -55,17 +55,6 @@ public partial class ModDbMirrorService(NetworkServiceFactory networkServiceFact
         var mirrorsHtml = await networkServiceFactory
             .Create()
             .GetStringAsync(mirrorUrl, cancellationToken: cancellationToken);
-        if (mirrorsHtml.Contains("Just a moment..."))
-        {
-            throw new CloudflareChallengeException(
-                $"""
-                Cloudflare challenge detected.
-                Mirror URL: {mirrorUrl}
-                Mirrors HTML:
-                {mirrorsHtml}
-                """
-            );
-        }
         var matches = AvailableMirrors().Matches(mirrorsHtml);
         var matchSet = matches
             .Select(m =>
@@ -94,8 +83,6 @@ public partial class ModDbMirrorService(NetworkServiceFactory networkServiceFact
 }
 
 public class NoMirrorsAvailableException(string msg) : Exception(msg);
-
-public class CloudflareChallengeException(string msg) : Exception(msg);
 
 public class MirrorUtilityException : Exception
 {

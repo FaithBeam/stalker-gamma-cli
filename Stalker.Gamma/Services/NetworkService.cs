@@ -1,4 +1,5 @@
 using LibCurlImpersonate;
+using Stalker.Gamma.ModDb.Services;
 using Stalker.Gamma.Proxies;
 using Stalker.Gamma.Utilities;
 
@@ -45,12 +46,15 @@ public class NetworkService(
         string url,
         CancellationToken cancellationToken = default
     ) =>
-        useCurl
-            ? await Task.Run(
-                () => CurlHttp.Fetch(url, http3: true, ct: cancellationToken),
-                cancellationToken
-            )
-            : await stalkerGammaServerProxy.GetStringAsync(url, cancellationToken);
+        CloudflareChallenge.ThrowIfChallenged(
+            useCurl
+                ? await Task.Run(
+                    () => CurlHttp.Fetch(url, http3: true, ct: cancellationToken),
+                    cancellationToken
+                )
+                : await stalkerGammaServerProxy.GetStringAsync(url, cancellationToken),
+            url
+        );
 
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.

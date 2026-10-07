@@ -33,6 +33,8 @@ Invoke-WebRequest @7zDlSplat
 $env:__COMPAT_LAYER="RunAsInvoker"
 & $7zDlPath /S /D="$($7zDir)"
 $env:__COMPAT_LAYER=""
+# There's a discrepency between when 7z.exe is available vs when the script continues
+Start-Sleep -Seconds 1
 #endregion
 
 #region curl-impersonate
