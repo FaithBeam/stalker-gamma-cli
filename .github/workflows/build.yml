@@ -115,7 +115,6 @@ jobs:
       - name: Build
         env:
           FILE_VERSION: ${{ needs.version.outputs.file_version }}
-          SEMVER: ${{ needs.version.outputs.semver }}
         run: ${{ matrix.build }}
 
       - name: Hash
@@ -136,6 +135,16 @@ jobs:
             ${{ matrix.artifact }}
             ${{ matrix.server_artifact }}
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
+
+  print-hashes:
+    name: print-hashes
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Print hashes
+        env:
+          HASHES: ${{ toJSON(needs.build.outputs) }}
+        run: echo "$HASHES"
 
   update-aur:
     name: update-aur
