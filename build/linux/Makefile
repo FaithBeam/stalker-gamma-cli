@@ -49,6 +49,8 @@ APPIMAGETOOL = $(BUILD_DIR)/appimagetool.AppImage
 APPIMAGETOOL_DL_URL = https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(APPIMAGETOOL_ARCH).AppImage
 APPDIR = $(CUR_DIR)/stalker-gamma.AppDir
 APPIMAGE = $(CUR_DIR)/stalker-gamma+linux.$(ARCH).AppImage
+SERVER_APPDIR = $(CUR_DIR)/stalker-gamma-cli-server.AppDir
+SERVER_APPIMAGE = $(CUR_DIR)/stalker-gamma-cli-server+linux.$(ARCH).AppImage
 
 build:
 	mkdir $(BUILD_DIR)
@@ -83,13 +85,19 @@ build:
 	dotnet publish -c Release $(STALKER_GAMMA_CLI_SERVER_PROJECT) -r $(STALKER_GAMMA_CLI_SERVER_RID) -o $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
 	rm -f $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/*.pdb
 
-appimage:
+$(APPIMAGETOOL):
 	curl -Lo $(APPIMAGETOOL) $(APPIMAGETOOL_DL_URL)
 	chmod +x $(APPIMAGETOOL)
+
+appimage: $(APPIMAGETOOL)
 	mkdir -p $(APPDIR)/usr/bin/
 	cp -r $(STALKER_GAMMA_BUILD_DIR)/* $(APPDIR)/usr/bin/
 	$(APPIMAGETOOL) $(APPDIR) $(APPIMAGE)
 	chmod +x $(APPIMAGE)
+	mkdir -p $(SERVER_APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/* $(SERVER_APPDIR)/usr/bin/
+	$(APPIMAGETOOL) $(SERVER_APPDIR) $(SERVER_APPIMAGE)
+	chmod +x $(SERVER_APPIMAGE)
 
 archive:
 	tar -cvJf stalker-gamma-cli.tar.xz --directory=$(STALKER_GAMMA_BUILD_DIR) .

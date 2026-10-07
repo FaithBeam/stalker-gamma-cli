@@ -84,3 +84,9 @@ if (Test-Path $zipName) {
     Remove-Item $zipName -Force
 }
 & (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r $zipName (Join-Path $stalkerCliDir "*")
+
+$serverZipName = "stalker-gamma-cli-server+win.$Arch.zip"
+if (Test-Path $serverZipName) {
+    Remove-Item $serverZipName -Force
+}
+& (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r $serverZipName (Join-Path $stalkerCliServerDir "*")

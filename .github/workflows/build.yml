@@ -37,37 +37,47 @@ jobs:
             runner: ubuntu-22.04
             build: make build appimage -C build/linux VERSION=$FILE_VERSION ARCH=x64
             artifact: build/linux/stalker-gamma+linux.x64.AppImage
+            server_artifact: build/linux/stalker-gamma-cli-server+linux.x64.AppImage
           - platform: linux
             arch: arm64
             runner: ubuntu-22.04-arm
             build: make build appimage -C build/linux VERSION=$FILE_VERSION ARCH=arm64
             artifact: build/linux/stalker-gamma+linux.arm64.AppImage
+            server_artifact: build/linux/stalker-gamma-cli-server+linux.arm64.AppImage
           - platform: macos
             arch: x64
             runner: macos-15-intel
             build: make build archive -C build/mac VERSION=$FILE_VERSION ARCH=x64
             artifact: build/mac/stalker-gamma+mac.x64.tar.gz
+            server_artifact: build/mac/stalker-gamma-cli-server+mac.x64.tar.gz
           - platform: macos
             arch: arm64
             runner: macos-15
             build: make build archive -C build/mac VERSION=$FILE_VERSION ARCH=arm64
             artifact: build/mac/stalker-gamma+mac.arm64.tar.gz
+            server_artifact: build/mac/stalker-gamma-cli-server+mac.arm64.tar.gz
           - platform: win
             arch: x64
             runner: windows-latest
             build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $FILE_VERSION -Arch x64
             artifact: stalker-gamma+win.x64.zip
+            server_artifact: stalker-gamma-cli-server+win.x64.zip
           - platform: win
             arch: arm64
             runner: windows-11-arm
             build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $FILE_VERSION -Arch arm64
             artifact: stalker-gamma+win.arm64.zip
+            server_artifact: stalker-gamma-cli-server+win.arm64.zip
     # each leg only sets its own hash; the empty ones don't overwrite the other legs'
     outputs:
       linux_x64_sha256: ${{ steps.hash.outputs.linux_x64_sha256 }}
       linux_arm64_sha256: ${{ steps.hash.outputs.linux_arm64_sha256 }}
       macos_x64_sha256: ${{ steps.hash.outputs.macos_x64_sha256 }}
       macos_arm64_sha256: ${{ steps.hash.outputs.macos_arm64_sha256 }}
+      linux_x64_server_sha256: ${{ steps.hash.outputs.linux_x64_server_sha256 }}
+      linux_arm64_server_sha256: ${{ steps.hash.outputs.linux_arm64_server_sha256 }}
+      macos_x64_server_sha256: ${{ steps.hash.outputs.macos_x64_server_sha256 }}
+      macos_arm64_server_sha256: ${{ steps.hash.outputs.macos_arm64_server_sha256 }}
       version: ${{ steps.gitversion.outputs.SemVer }}
     defaults:
       run:
@@ -101,15 +111,21 @@ jobs:
 
       - name: Hash
         id: hash
+        # only the Linux and macOS hashes are consumed (AUR, Homebrew)
+        if: matrix.platform != 'win'
         run: |
           hash=$(sha256sum "${{ matrix.artifact }}" | cut -d ' ' -f 1)
           echo "${{ matrix.platform }}_${{ matrix.arch }}_sha256=$hash" >> $GITHUB_OUTPUT
+          server_hash=$(sha256sum "${{ matrix.server_artifact }}" | cut -d ' ' -f 1)
+          echo "${{ matrix.platform }}_${{ matrix.arch }}_server_sha256=$server_hash" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.4.2
         if: github.ref_type == 'tag'
         with:
-          files: ${{ matrix.artifact }}
+          files: |
+            ${{ matrix.artifact }}
+            ${{ matrix.server_artifact }}
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
   update-aur:

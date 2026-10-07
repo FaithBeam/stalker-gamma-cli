@@ -66,6 +66,7 @@ build:
 
 archive:
 	tar -czvf stalker-gamma+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_BUILD_DIR) .
+	tar -czvf stalker-gamma-cli-server+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_CLI_SERVER_BUILD_DIR) .
 
 clean:
 	rm -rf $(BUILD_DIR)
