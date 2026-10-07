@@ -91,11 +91,11 @@ $(APPIMAGETOOL):
 
 appimage: $(APPIMAGETOOL)
 	mkdir -p $(APPDIR)/usr/bin/
-	cp -r $(STALKER_GAMMA_BUILD_DIR)/* $(APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_BUILD_DIR)/. $(APPDIR)/usr/bin/
 	$(APPIMAGETOOL) $(APPDIR) $(APPIMAGE)
 	chmod +x $(APPIMAGE)
 	mkdir -p $(SERVER_APPDIR)/usr/bin/
-	cp -r $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/* $(SERVER_APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/. $(SERVER_APPDIR)/usr/bin/
 	$(APPIMAGETOOL) $(SERVER_APPDIR) $(SERVER_APPIMAGE)
 	chmod +x $(SERVER_APPIMAGE)
 
