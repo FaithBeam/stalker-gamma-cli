@@ -1,6 +1,10 @@
 param (
     [string]$Version = "1.0.0",
-    [string]$ChocolateyApiKey
+    [string]$ChocolateyApiKey,
+    [Parameter(Mandatory)]
+    [string]$WinX64Sha256,
+    [Parameter(Mandatory)]
+    [string]$WinArm64Sha256
 )
 
 $ErrorActionPreference = 'Stop'
@@ -8,24 +12,8 @@ $ProgressPreference = 'SilentlyContinue'
 
 $scriptDir = $PSScriptRoot
 
-Start-Sleep -Seconds 5
-
-$githubApi = "https://api.github.com"
-
-$getReleaseSplat = @{
-    Uri = "$($githubApi)/repos/FaithBeam/stalker-gamma-cli/releases/tags/$($Version)"
-    Headers = @{
-        'User-Agent' = 'stalker-gamma-gh-action/1.0'
-        'Accept' = 'application/json'
-    }
-    Method = 'GET'
-} 
-$releaseResponse = Invoke-RestMethod @getReleaseSplat
-$winAssetX64 = $releaseResponse.assets | Where-Object {$_.name -like '*+win.x64*'} | Select-Object -First 1
-$winAssetX64Sha256 = $winAssetX64.digest -replace 'sha256:', ''
-
-$winAssetArm64 = $releaseResponse.assets | Where-Object {$_.name -like '*+win.arm64*'} | Select-Object -First 1
-$winAssetArm64Sha256 = $winAssetArm64.digest -replace 'sha256:', ''
+$winAssetX64Name = "stalker-gamma+win.x64.zip"
+$winAssetArm64Name = "stalker-gamma+win.arm64.zip"
 
 #region chocolatey
 if (Get-Command choco) {
@@ -49,11 +37,11 @@ if (Get-Command choco) {
 `$packageName = 'stalker-gamma'
 
 if (`$env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
-    `$url      = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetArm64.name)'
-    `$checksum = '$($winAssetArm64Sha256)'
+    `$url      = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetArm64Name)'
+    `$checksum = '$($WinArm64Sha256)'
 } else {
-    `$url      = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetX64.name)'
-    `$checksum = '$($winAssetX64Sha256)'
+    `$url      = 'https://github.com/FaithBeam/stalker-gamma-cli/releases/download/$($Version)/$($winAssetX64Name)'
+    `$checksum = '$($WinX64Sha256)'
 }
 
 `$packageArgs = @{
