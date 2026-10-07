@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Stalker GAMMA CLI Server
+Exec=stalker-gamma-cli-server
+Icon=stalker-gamma-cli-server
+Type=Application
+Categories=Utility;
+Terminal=true
