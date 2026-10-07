@@ -55,12 +55,12 @@ jobs:
           - platform: win
             arch: x64
             runner: windows-latest
-            build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $SEMVER -Arch x64
+            build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $FILE_VERSION -Arch x64
             artifact: stalker-gamma+win.x64.zip
           - platform: win
             arch: arm64
             runner: windows-11-arm
-            build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $SEMVER -Arch arm64
+            build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $FILE_VERSION -Arch arm64
             artifact: stalker-gamma+win.arm64.zip
     # each leg only sets its own hash; the empty ones don't overwrite the other legs'
     outputs:
