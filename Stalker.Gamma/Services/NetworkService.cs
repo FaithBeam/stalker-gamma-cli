@@ -6,7 +6,7 @@ namespace Stalker.Gamma.Services;
 
 public class NetworkService(
     IHttpClientFactory hcf,
-    ExperimentalCamoufoxProxy experimentalCamoufoxProxy,
+    StalkerGammaCliServerProxy stalkerGammaCliServerProxy,
     bool useCurl
 )
 {
@@ -20,7 +20,7 @@ public class NetworkService(
                 cancellationToken
             )
             : (
-                await experimentalCamoufoxProxy.GetHeadersAsync(url, cancellationToken)
+                await stalkerGammaCliServerProxy.GetHeadersAsync(url, cancellationToken)
             ).ToDictionary(x => x.Key, x => x.Value.ToString()!);
 
     public async Task DownloadFileAsync(
@@ -49,7 +49,7 @@ public class NetworkService(
                 () => CurlHttp.Fetch(url, http3: true, ct: cancellationToken),
                 cancellationToken
             )
-            : await experimentalCamoufoxProxy.GetStringAsync(url, cancellationToken);
+            : await stalkerGammaCliServerProxy.GetStringAsync(url, cancellationToken);
 
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.

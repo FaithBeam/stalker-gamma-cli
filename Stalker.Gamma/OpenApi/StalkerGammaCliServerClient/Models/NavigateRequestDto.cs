@@ -5,32 +5,42 @@ using Microsoft.Kiota.Abstractions.Serialization;
 using System.Collections.Generic;
 using System.IO;
 using System;
-namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
+namespace Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models
 {
-    /// <summary>
-    /// Response headers, keyed by lowercase name.
-    /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
-    public partial class NavigateResponseDto_headers : IAdditionalDataHolder, IParsable
+    #pragma warning disable CS1591
+    public partial class NavigateRequestDto : IAdditionalDataHolder, IParsable
+    #pragma warning restore CS1591
     {
         /// <summary>Stores additional data not described in the OpenAPI description found when deserializing. Can be used for serialization as well.</summary>
         public IDictionary<string, object> AdditionalData { get; set; }
+        /// <summary>Follow redirects to the final page. When false, a 3xx response is returned as-is.</summary>
+        public bool? FollowRedirects { get; set; }
+        /// <summary>Absolute http or https URL to load.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public string? Url { get; set; }
+#nullable restore
+#else
+        public string Url { get; set; }
+#endif
         /// <summary>
-        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers"/> and sets the default values.
+        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.NavigateRequestDto"/> and sets the default values.
         /// </summary>
-        public NavigateResponseDto_headers()
+        public NavigateRequestDto()
         {
             AdditionalData = new Dictionary<string, object>();
+            FollowRedirects = true;
         }
         /// <summary>
         /// Creates a new instance of the appropriate class based on discriminator value
         /// </summary>
-        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers"/></returns>
+        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.NavigateRequestDto"/></returns>
         /// <param name="parseNode">The parse node to use to read the discriminator value and create the object</param>
-        public static global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers CreateFromDiscriminatorValue(IParseNode parseNode)
+        public static global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.NavigateRequestDto CreateFromDiscriminatorValue(IParseNode parseNode)
         {
             if(ReferenceEquals(parseNode, null)) throw new ArgumentNullException(nameof(parseNode));
-            return new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.NavigateResponseDto_headers();
+            return new global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.NavigateRequestDto();
         }
         /// <summary>
         /// The deserialization information for the current model
@@ -40,6 +50,8 @@ namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
         {
             return new Dictionary<string, Action<IParseNode>>
             {
+                { "follow_redirects", n => { FollowRedirects = n.GetBoolValue(); } },
+                { "url", n => { Url = n.GetStringValue(); } },
             };
         }
         /// <summary>
@@ -49,6 +61,8 @@ namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
         public virtual void Serialize(ISerializationWriter writer)
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
+            writer.WriteBoolValue("follow_redirects", FollowRedirects);
+            writer.WriteStringValue("url", Url);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

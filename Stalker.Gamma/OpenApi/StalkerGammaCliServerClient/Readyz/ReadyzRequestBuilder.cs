@@ -8,32 +8,32 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
-namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez
+namespace Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Readyz
 {
     /// <summary>
-    /// Builds and executes requests for operations under \livez
+    /// Builds and executes requests for operations under \readyz
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
-    public partial class LivezRequestBuilder : BaseRequestBuilder
+    public partial class ReadyzRequestBuilder : BaseRequestBuilder
     {
         /// <summary>
-        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder"/> and sets the default values.
+        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Readyz.ReadyzRequestBuilder"/> and sets the default values.
         /// </summary>
         /// <param name="pathParameters">Path parameters for the request</param>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public LivezRequestBuilder(Dictionary<string, object> pathParameters, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/livez", pathParameters)
+        public ReadyzRequestBuilder(Dictionary<string, object> pathParameters, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/readyz", pathParameters)
         {
         }
         /// <summary>
-        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder"/> and sets the default values.
+        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Readyz.ReadyzRequestBuilder"/> and sets the default values.
         /// </summary>
         /// <param name="rawUrl">The raw URL to use for the request builder.</param>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public LivezRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/livez", rawUrl)
+        public ReadyzRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/readyz", rawUrl)
         {
         }
         /// <summary>
-        /// The process is up and serving requests. No dependency checks.
+        /// The Camoufox container is running and the browser is connected.
         /// </summary>
         /// <returns>A <see cref="string"/></returns>
         /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
@@ -51,7 +51,7 @@ namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez
             return await RequestAdapter.SendPrimitiveAsync<string>(requestInfo, default, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
-        /// The process is up and serving requests. No dependency checks.
+        /// The Camoufox container is running and the browser is connected.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
@@ -72,11 +72,11 @@ namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez
         /// <summary>
         /// Returns a request builder with the provided arbitrary URL. Using this method means any other path or query parameters are ignored.
         /// </summary>
-        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder"/></returns>
+        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Readyz.ReadyzRequestBuilder"/></returns>
         /// <param name="rawUrl">The raw URL to use for the request builder.</param>
-        public global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder WithUrl(string rawUrl)
+        public global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Readyz.ReadyzRequestBuilder WithUrl(string rawUrl)
         {
-            return new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Livez.LivezRequestBuilder(rawUrl, RequestAdapter);
+            return new global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Readyz.ReadyzRequestBuilder(rawUrl, RequestAdapter);
         }
     }
 }

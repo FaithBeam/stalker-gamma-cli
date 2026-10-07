@@ -72,6 +72,13 @@ Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalk
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
 
+#region stalker-gamma-cli-server
+$stalkerCliServerDir = Join-Path $buildDir "stalker-gamma-cli-server"
+$pathToServerProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli-server") "stalker-gamma-cli-server.csproj")
+dotnet publish -c Release $pathToServerProject -o $stalkerCliServerDir -r $dotnetRid -p:AssemblyVersion=$Version
+Remove-Item -Path (Join-Path $stalkerCliServerDir "*.pdb") -ErrorAction SilentlyContinue
+#endregion
+
 $zipName = "stalker-gamma+win.$Arch.zip"
 if (Test-Path $zipName) {
     Remove-Item $zipName -Force

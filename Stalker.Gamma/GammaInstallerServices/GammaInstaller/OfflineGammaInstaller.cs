@@ -24,7 +24,7 @@ public class OfflineGammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    ExperimentalCamoufoxProxy experimentalCamoufoxProxy
+    StalkerGammaCliServerProxy stalkerGammaCliServerProxy
 )
     : GammaInstaller(
         settings,
@@ -39,7 +39,7 @@ public class OfflineGammaInstaller(
         getStalkerModsFromLocal,
         preserveUserLtxSettingsService,
         preserveMcmSettings,
-        experimentalCamoufoxProxy
+        stalkerGammaCliServerProxy
     )
 {
     public override async Task InstallAsync(GammaInstallerArgs args)

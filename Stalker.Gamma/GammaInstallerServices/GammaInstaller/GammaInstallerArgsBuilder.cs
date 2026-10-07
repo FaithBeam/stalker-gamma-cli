@@ -16,7 +16,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private bool _preserveMcmSettings;
     private string? _modPackMakerPath;
     private string? _modListPath;
-    private string? _useExperimentalCamoufoxServer;
+    private string? _stalkerGammaCliServerUrl;
 
     public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
     {
@@ -66,9 +66,9 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         return this;
     }
 
-    public GammaInstallerArgsBuilder WithUseExperimentalCamoufoxServer(string? value = null)
+    public GammaInstallerArgsBuilder WithUseStalkerGammaCliServerUrl(string? value = null)
     {
-        _useExperimentalCamoufoxServer = value;
+        _stalkerGammaCliServerUrl = value;
         return this;
     }
 
@@ -114,6 +114,6 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             ModListPath = _modListPath,
             GroupedAddonRecords = _groupedAddonRecords,
             AnomalyRecord = _anomalyRecord,
-            UseExperimentalPythonServer = _useExperimentalCamoufoxServer,
+            UseStalkerGammaCliServerUrl = _stalkerGammaCliServerUrl,
         };
 }

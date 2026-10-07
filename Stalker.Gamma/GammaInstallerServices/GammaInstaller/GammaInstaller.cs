@@ -25,7 +25,7 @@ public class GammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    ExperimentalCamoufoxProxy experimentalCamoufoxProxy
+    StalkerGammaCliServerProxy stalkerGammaCliServerProxy
 ) : IGammaInstaller, IDisposable
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -104,10 +104,10 @@ public class GammaInstaller(
     {
         if (
             args is
-            { UseExperimentalPythonServer: not null, ExperimentalPythonServerSettings: not null }
+            { UseStalkerGammaCliServerUrl: not null, ExperimentalPythonServerSettings: not null }
         )
         {
-            while (!await experimentalCamoufoxProxy.Ready())
+            while (!await stalkerGammaCliServerProxy.Ready())
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
             }

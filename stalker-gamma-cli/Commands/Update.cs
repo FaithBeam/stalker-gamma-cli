@@ -1,5 +1,4 @@
 using System.Reactive.Linq;
-using System.Text.Json;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
@@ -11,7 +10,6 @@ using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
-using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -202,7 +200,7 @@ public class UpdateCmds(
     /// <param name="minimal"></param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
-    /// <param name="experimentalCamoufoxServer">Use an experimental python server when connecting to moddb for addons</param>
+    /// <param name="stalkerGammaCliServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task<int> Apply(
         CancellationToken cancellationToken,
@@ -210,7 +208,7 @@ public class UpdateCmds(
         bool minimal = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
-        string? experimentalCamoufoxServer = null,
+        string? stalkerGammaCliServerUrl = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -238,7 +236,7 @@ public class UpdateCmds(
                 .WithMinimal(minimal)
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
-                .WithUseExperimentalCamoufoxServer(experimentalCamoufoxServer)
+                .WithUseStalkerGammaCliServerUrl(stalkerGammaCliServerUrl)
                 .Build();
             updateArgs.GroupedAddonRecords =
                 await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);

@@ -6,7 +6,7 @@ using Microsoft.Kiota.Abstractions;
 using System.Collections.Generic;
 using System.IO;
 using System;
-namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
+namespace Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models
 {
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     #pragma warning disable CS1591
@@ -52,7 +52,7 @@ namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
         public string Type { get; set; }
 #endif
         /// <summary>
-        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.ProblemDetails"/> and sets the default values.
+        /// Instantiates a new <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.ProblemDetails"/> and sets the default values.
         /// </summary>
         public ProblemDetails()
         {
@@ -61,12 +61,12 @@ namespace Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models
         /// <summary>
         /// Creates a new instance of the appropriate class based on discriminator value
         /// </summary>
-        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.ProblemDetails"/></returns>
+        /// <returns>A <see cref="global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.ProblemDetails"/></returns>
         /// <param name="parseNode">The parse node to use to read the discriminator value and create the object</param>
-        public static global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.ProblemDetails CreateFromDiscriminatorValue(IParseNode parseNode)
+        public static global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.ProblemDetails CreateFromDiscriminatorValue(IParseNode parseNode)
         {
             if(ReferenceEquals(parseNode, null)) throw new ArgumentNullException(nameof(parseNode));
-            return new global::Stalker.Gamma.Proxies.ExperimentalCamoufoxClient.Models.ProblemDetails();
+            return new global::Stalker.Gamma.Proxies.StalkerGammaCliServerClient.Models.ProblemDetails();
         }
         /// <summary>
         /// The deserialization information for the current model

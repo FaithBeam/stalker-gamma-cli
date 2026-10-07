@@ -34,6 +34,22 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
+STALKER_GAMMA_CLI_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli-server
+STALKER_GAMMA_CLI_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
+STALKER_GAMMA_CLI_SERVER_RID = linux-$(ARCH)
+
+ifeq ($(ARCH),x64)
+    APPIMAGETOOL_ARCH := x86_64
+else ifeq ($(ARCH),arm64)
+    APPIMAGETOOL_ARCH := aarch64
+else
+    APPIMAGETOOL_ARCH := unknown
+endif
+APPIMAGETOOL = $(BUILD_DIR)/appimagetool.AppImage
+APPIMAGETOOL_DL_URL = https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(APPIMAGETOOL_ARCH).AppImage
+APPDIR = $(CUR_DIR)/stalker-gamma.AppDir
+APPIMAGE = $(CUR_DIR)/stalker-gamma+linux.$(ARCH).AppImage
+
 build:
 	mkdir $(BUILD_DIR)
 
@@ -61,6 +77,19 @@ build:
 	cp $(CURL_BUILD_DIR)/libcurl-impersonate.so.4.8.0 $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.so
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
+
+	# build stalker-gamma-cli-server
+	mkdir $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)
+	dotnet publish -c Release $(STALKER_GAMMA_CLI_SERVER_PROJECT) -r $(STALKER_GAMMA_CLI_SERVER_RID) -o $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	rm -f $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/*.pdb
+
+appimage:
+	curl -Lo $(APPIMAGETOOL) $(APPIMAGETOOL_DL_URL)
+	chmod +x $(APPIMAGETOOL)
+	mkdir -p $(APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_BUILD_DIR)/* $(APPDIR)/usr/bin/
+	$(APPIMAGETOOL) $(APPDIR) $(APPIMAGE)
+	chmod +x $(APPIMAGE)
 
 archive:
 	tar -cvJf stalker-gamma-cli.tar.xz --directory=$(STALKER_GAMMA_BUILD_DIR) .
