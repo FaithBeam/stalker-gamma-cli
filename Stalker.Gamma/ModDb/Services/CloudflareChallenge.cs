@@ -7,7 +7,7 @@ public static class CloudflareChallenge
             ? throw new CloudflareChallengeException(
                 $"""
                 Cloudflare challenge detected when retrieving: {url}
-                Visit https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server
+                Use a VPN to another country or visit https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server
                 """
             )
             : html;
