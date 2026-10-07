@@ -34,9 +34,9 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
-STALKER_GAMMA_CLI_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli-server
-STALKER_GAMMA_CLI_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
-STALKER_GAMMA_CLI_SERVER_RID = linux-$(ARCH)
+STALKER_GAMMA_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-server
+STALKER_GAMMA_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
+STALKER_GAMMA_SERVER_RID = linux-$(ARCH)
 
 ifeq ($(ARCH),x64)
     APPIMAGETOOL_ARCH := x86_64
@@ -49,8 +49,8 @@ APPIMAGETOOL = $(BUILD_DIR)/appimagetool.AppImage
 APPIMAGETOOL_DL_URL = https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(APPIMAGETOOL_ARCH).AppImage
 APPDIR = $(CUR_DIR)/stalker-gamma.AppDir
 APPIMAGE = $(CUR_DIR)/stalker-gamma+linux.$(ARCH).AppImage
-SERVER_APPDIR = $(CUR_DIR)/stalker-gamma-cli-server.AppDir
-SERVER_APPIMAGE = $(CUR_DIR)/stalker-gamma-cli-server+linux.$(ARCH).AppImage
+SERVER_APPDIR = $(CUR_DIR)/stalker-gamma-server.AppDir
+SERVER_APPIMAGE = $(CUR_DIR)/stalker-gamma-server+linux.$(ARCH).AppImage
 
 build:
 	mkdir $(BUILD_DIR)
@@ -80,10 +80,10 @@ build:
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
-	# build stalker-gamma-cli-server
-	mkdir $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)
-	dotnet publish -c Release $(STALKER_GAMMA_CLI_SERVER_PROJECT) -r $(STALKER_GAMMA_CLI_SERVER_RID) -o $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
-	rm -f $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/*.pdb
+	# build stalker-gamma-server
+	mkdir $(STALKER_GAMMA_SERVER_BUILD_DIR)
+	dotnet publish -c Release $(STALKER_GAMMA_SERVER_PROJECT) -r $(STALKER_GAMMA_SERVER_RID) -o $(STALKER_GAMMA_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	rm -f $(STALKER_GAMMA_SERVER_BUILD_DIR)/*.pdb
 
 $(APPIMAGETOOL):
 	curl -Lo $(APPIMAGETOOL) $(APPIMAGETOOL_DL_URL)
@@ -95,7 +95,7 @@ appimage: $(APPIMAGETOOL)
 	$(APPIMAGETOOL) $(APPDIR) $(APPIMAGE)
 	chmod +x $(APPIMAGE)
 	mkdir -p $(SERVER_APPDIR)/usr/bin/
-	cp -r $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/. $(SERVER_APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_SERVER_BUILD_DIR)/. $(SERVER_APPDIR)/usr/bin/
 	$(APPIMAGETOOL) $(SERVER_APPDIR) $(SERVER_APPIMAGE)
 	chmod +x $(SERVER_APPIMAGE)
 

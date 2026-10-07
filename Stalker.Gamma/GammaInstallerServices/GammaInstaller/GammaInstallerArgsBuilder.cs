@@ -16,7 +16,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private bool _preserveMcmSettings;
     private string? _modPackMakerPath;
     private string? _modListPath;
-    private string? _stalkerGammaCliServerUrl;
+    private string? _stalkerGammaServerUrl;
 
     public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
     {
@@ -66,9 +66,9 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         return this;
     }
 
-    public GammaInstallerArgsBuilder WithUseStalkerGammaCliServerUrl(string? value = null)
+    public GammaInstallerArgsBuilder WithUseStalkerGammaServerUrl(string? value = null)
     {
-        _stalkerGammaCliServerUrl = value;
+        _stalkerGammaServerUrl = value;
         return this;
     }
 
@@ -114,6 +114,6 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             ModListPath = _modListPath,
             GroupedAddonRecords = _groupedAddonRecords,
             AnomalyRecord = _anomalyRecord,
-            UseStalkerGammaCliServerUrl = _stalkerGammaCliServerUrl,
+            StalkerGammaServerUrl = _stalkerGammaServerUrl,
         };
 }

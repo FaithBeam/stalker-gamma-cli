@@ -4,8 +4,8 @@ using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.Proxies;
 
-public class StalkerGammaCliServerProxy(
-    StalkerGammaCliServerClientFactory stalkerGammaCliServerClientFactory,
+public class StalkerGammaServerProxy(
+    StalkerGammaServerClientFactory stalkerGammaServerClientFactory,
     IHttpClientFactory hcf
 )
 {
@@ -14,7 +14,7 @@ public class StalkerGammaCliServerProxy(
         CancellationToken cancellationToken = default
     )
     {
-        var response = await stalkerGammaCliServerClientFactory
+        var response = await stalkerGammaServerClientFactory
             .Create()
             .Navigate.PostAsync(
                 new NavigateRequestDto { Url = url, FollowRedirects = false },
@@ -51,7 +51,7 @@ public class StalkerGammaCliServerProxy(
         CancellationToken cancellationToken = default
     )
     {
-        var response = await stalkerGammaCliServerClientFactory
+        var response = await stalkerGammaServerClientFactory
             .Create()
             .Navigate.PostAsync(
                 new NavigateRequestDto { Url = url, FollowRedirects = true },
@@ -76,7 +76,7 @@ public class StalkerGammaCliServerProxy(
     {
         try
         {
-            return await stalkerGammaCliServerClientFactory.Create().Readyz.GetAsync() is not null;
+            return await stalkerGammaServerClientFactory.Create().Readyz.GetAsync() is not null;
         }
         catch (Exception)
         {

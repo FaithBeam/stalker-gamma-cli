@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Stalker GAMMA Server
+Exec=stalker-gamma-server
+Icon=stalker-gamma-server
+Type=Application
+Categories=Utility;
+Terminal=true

@@ -200,7 +200,7 @@ public class UpdateCmds(
     /// <param name="minimal"></param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
-    /// <param name="stalkerGammaCliServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
+    /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task<int> Apply(
         CancellationToken cancellationToken,
@@ -208,7 +208,7 @@ public class UpdateCmds(
         bool minimal = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
-        string? stalkerGammaCliServerUrl = null,
+        string? stalkerGammaServerUrl = null,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -236,7 +236,7 @@ public class UpdateCmds(
                 .WithMinimal(minimal)
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
-                .WithUseStalkerGammaCliServerUrl(stalkerGammaCliServerUrl)
+                .WithUseStalkerGammaServerUrl(stalkerGammaServerUrl)
                 .Build();
             updateArgs.GroupedAddonRecords =
                 await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);

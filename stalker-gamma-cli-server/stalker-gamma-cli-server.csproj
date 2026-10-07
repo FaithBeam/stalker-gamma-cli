@@ -7,6 +7,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <PublishAot>false</PublishAot>
+    <AssemblyName>stalker-gamma-server</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

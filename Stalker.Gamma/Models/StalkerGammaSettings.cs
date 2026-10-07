@@ -22,5 +22,5 @@ public class StalkerGammaSettings
     public string PathToUnzip = "unzip";
     public string PathTo7Z = OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
     public string PathToTar = "tar";
-    public string? StalkerGammaCliServerUrl { get; set; }
+    public string? StalkerGammaServerUrl { get; set; }
 }

@@ -27,9 +27,9 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
-STALKER_GAMMA_CLI_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli-server
-STALKER_GAMMA_CLI_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
-STALKER_GAMMA_CLI_SERVER_RID = osx-$(ARCH)
+STALKER_GAMMA_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-server
+STALKER_GAMMA_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
+STALKER_GAMMA_SERVER_RID = osx-$(ARCH)
 
 build:
 	mkdir $(BUILD_DIR)
@@ -59,14 +59,14 @@ build:
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
-	# build stalker-gamma-cli-server
-	mkdir $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)
-	dotnet publish -c Release $(STALKER_GAMMA_CLI_SERVER_PROJECT) -r $(STALKER_GAMMA_CLI_SERVER_RID) -o $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
-	rm -f $(STALKER_GAMMA_CLI_SERVER_BUILD_DIR)/*.pdb
+	# build stalker-gamma-server
+	mkdir $(STALKER_GAMMA_SERVER_BUILD_DIR)
+	dotnet publish -c Release $(STALKER_GAMMA_SERVER_PROJECT) -r $(STALKER_GAMMA_SERVER_RID) -o $(STALKER_GAMMA_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	rm -f $(STALKER_GAMMA_SERVER_BUILD_DIR)/*.pdb
 
 archive:
 	tar -czvf stalker-gamma+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_BUILD_DIR) .
-	tar -czvf stalker-gamma-cli-server+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_CLI_SERVER_BUILD_DIR) .
+	tar -czvf stalker-gamma-server+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_SERVER_BUILD_DIR) .
 
 clean:
 	rm -rf $(BUILD_DIR)

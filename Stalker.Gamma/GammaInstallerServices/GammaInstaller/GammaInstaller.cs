@@ -25,7 +25,7 @@ public class GammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    StalkerGammaCliServerProxy stalkerGammaCliServerProxy
+    StalkerGammaServerProxy stalkerGammaServerProxy
 ) : IGammaInstaller, IDisposable
 {
     public IGammaProgress Progress { get; } = gammaProgress;
@@ -102,12 +102,9 @@ public class GammaInstaller(
 
     public virtual async Task InstallAsync(GammaInstallerArgs args)
     {
-        if (
-            args is
-            { UseStalkerGammaCliServerUrl: not null, ExperimentalPythonServerSettings: not null }
-        )
+        if (args is { StalkerGammaServerUrl: not null, ExperimentalPythonServerSettings: not null })
         {
-            while (!await stalkerGammaCliServerProxy.Ready())
+            while (!await stalkerGammaServerProxy.Ready())
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
             }

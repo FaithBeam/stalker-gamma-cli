@@ -16,7 +16,7 @@ public class GammaInstallerArgs
     public bool Offline { get; set; }
     public bool PreserveUserLtx { get; set; }
     public bool PreserveMcmSettings { get; set; }
-    public string? UseStalkerGammaCliServerUrl { get; set; }
+    public string? StalkerGammaServerUrl { get; set; }
     public ExperimentalPythonServerSettings? ExperimentalPythonServerSettings { get; set; }
     public string? ModPackMakerPath { get; set; }
     public string? ModListPath { get; set; }
