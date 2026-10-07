@@ -97,7 +97,7 @@ jobs:
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v4
         with:
-          versionSpec: "5.x"
+          versionSpec: "7.x"
 
       - name: Determine Version
         id: gitversion
