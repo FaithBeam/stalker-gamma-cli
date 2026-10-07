@@ -24,9 +24,30 @@ jobs:
           dotnet tool restore
           dotnet csharpier check .
 
+  version:
+    name: version
+    runs-on: ubuntu-22.04
+    outputs:
+      semver: ${{ steps.gitversion.outputs.SemVer }}
+      file_version: ${{ steps.gitversion.outputs.AssemblySemFileVer }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: "7.x"
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
   build:
     name: ${{ matrix.platform }}-${{ matrix.arch }}
-    needs: lint
+    needs: [lint, version]
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -78,7 +99,6 @@ jobs:
       linux_arm64_server_sha256: ${{ steps.hash.outputs.linux_arm64_server_sha256 }}
       macos_x64_server_sha256: ${{ steps.hash.outputs.macos_x64_server_sha256 }}
       macos_arm64_server_sha256: ${{ steps.hash.outputs.macos_arm64_server_sha256 }}
-      version: ${{ steps.gitversion.outputs.SemVer }}
     defaults:
       run:
         shell: bash
@@ -86,27 +106,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Install .NET Core
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4
-        with:
-          versionSpec: "7.x"
-
-      - name: Determine Version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v4
-
       - name: Build
         env:
-          FILE_VERSION: ${{ steps.gitversion.outputs.AssemblySemFileVer }}
-          SEMVER: ${{ steps.gitversion.outputs.SemVer }}
+          FILE_VERSION: ${{ needs.version.outputs.file_version }}
+          SEMVER: ${{ needs.version.outputs.semver }}
         run: ${{ matrix.build }}
 
       - name: Hash
@@ -131,7 +140,7 @@ jobs:
   update-aur:
     name: update-aur
     runs-on: ubuntu-22.04
-    needs: build
+    needs: [build, version]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
@@ -143,7 +152,7 @@ jobs:
         run: |
           PATH_TO_PKGBUILD="PKGBUILD"
           chmod +x "./build/update-pkgbuild.sh"
-          ./build/update-pkgbuild.sh "${{ needs.build.outputs.version }}" "${{ needs.build.outputs.linux_arm64_sha256 }}" "${{ needs.build.outputs.linux_x64_sha256 }}" "$PATH_TO_PKGBUILD"
+          ./build/update-pkgbuild.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.linux_arm64_sha256 }}" "${{ needs.build.outputs.linux_x64_sha256 }}" "$PATH_TO_PKGBUILD"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
@@ -160,7 +169,7 @@ jobs:
   update-chocolatey:
     name: update-chocolatey
     runs-on: windows-latest
-    needs: build
+    needs: [build, version]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout
@@ -170,12 +179,12 @@ jobs:
 
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ needs.build.outputs.version }} ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: build/win/chocolatey.bat ${{ needs.version.outputs.semver }} ${{ secrets.CHOCOLATEY_API_KEY }}
 
   update-homebrew:
     name: update-homebrew
     runs-on: ubuntu-22.04
-    needs: build
+    needs: [build, version]
     if: github.ref_type == 'tag'
     steps:
       - name: Checkout source repo
@@ -192,7 +201,7 @@ jobs:
         run: |
           PATH_TO_CASK="homebrew-stalker-gamma/Casks/stalker-gamma.rb"
           chmod +x "./build/update-cask.sh"
-          ./build/update-cask.sh "${{ needs.build.outputs.version }}" "${{ needs.build.outputs.macos_arm64_sha256 }}" "${{ needs.build.outputs.macos_x64_sha256 }}" "$PATH_TO_CASK"
+          ./build/update-cask.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.macos_arm64_sha256 }}" "${{ needs.build.outputs.macos_x64_sha256 }}" "$PATH_TO_CASK"
           git -C homebrew-stalker-gamma config user.name "github-actions[bot]"
           git -C homebrew-stalker-gamma config user.email "github-actions[bot]@users.noreply.github.com"
           git -C homebrew-stalker-gamma add .
