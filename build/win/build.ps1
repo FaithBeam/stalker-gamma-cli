@@ -47,7 +47,12 @@ $curlImpersonateSplat = @{
     OutFile = $curlArchivePath
 }
 Invoke-WebRequest @curlImpersonateSplat
-tar -xzf $curlArchivePath -C $curlDir
+# 7z unpacks .tar.gz in two steps: .gz -> .tar, then .tar -> files
+$7zExe = Join-Path $7zDir "7z.exe"
+& $7zExe x $curlArchivePath "-o$curlDir" -y
+$curlTarPath = Join-Path $curlDir ([System.IO.Path]::GetFileNameWithoutExtension($curlArchiveName))
+& $7zExe x $curlTarPath "-o$curlDir" -y
+Remove-Item $curlTarPath
 $cacertSplat = @{
     Uri     = "https://curl.se/ca/cacert.pem"
     OutFile = Join-Path $curlDir "cacert.pem"
