@@ -6,7 +6,11 @@ using Microsoft.Playwright;
 using Scalar.AspNetCore;
 using stalker_gamma_cli_server;
 
-var builder = WebApplication.CreateBuilder(args);
+// Load appsettings.json from next to the executable rather than the working directory, so the
+// server works when launched from anywhere (e.g. the Homebrew cask's symlink on PATH).
+var builder = WebApplication.CreateBuilder(
+    new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory }
+);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
