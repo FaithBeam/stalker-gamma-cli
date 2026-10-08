@@ -5,6 +5,11 @@ on:
     paths-ignore:
       - README.md
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run the publish jobs without creating a release or pushing packages"
+        type: boolean
+        default: false
 
 jobs:
   lint:
@@ -129,13 +134,36 @@ jobs:
           server_hash=$(sha256sum "${{ matrix.server_artifact }}" | cut -d ' ' -f 1)
           echo "${{ matrix.platform }}_${{ matrix.arch }}_server_sha256=$server_hash" >> $GITHUB_OUTPUT
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v3
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
         if: github.ref_type == 'tag'
         with:
-          files: |
+          name: ${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
             ${{ matrix.artifact }}
             ${{ matrix.server_artifact }}
+          if-no-files-found: error
+
+  # one job creates the draft so parallel build legs can't race into duplicate drafts;
+  # publish-release makes it public once every package manager has been updated
+  release:
+    name: release
+    runs-on: ubuntu-22.04
+    needs: build
+    if: github.ref_type == 'tag' && !inputs.dry_run
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          files: release/*
+          fail_on_unmatched_files: true
           token: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
 
   print-hashes:
@@ -148,24 +176,28 @@ jobs:
           HASHES: ${{ toJSON(needs.build.outputs) }}
         run: echo "$HASHES"
 
+  # release is skipped in a dry run, so don't let that skip cascade into the publish jobs
   update-aur:
     name: update-aur
     runs-on: ubuntu-22.04
-    needs: [build, version]
-    if: github.ref_type == 'tag'
+    needs: [build, version, release]
+    if: ${{ !cancelled() && !failure() && (github.ref_type == 'tag' || inputs.dry_run) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Generate PKGBUILD
+      - name: Generate PKGBUILDs
         run: |
-          PATH_TO_PKGBUILD="PKGBUILD"
           chmod +x "./build/update-pkgbuild.sh"
-          ./build/update-pkgbuild.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.linux_arm64_sha256 }}" "${{ needs.build.outputs.linux_x64_sha256 }}" "$PATH_TO_PKGBUILD"
+          mkdir -p server
+          ./build/update-pkgbuild.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.linux_arm64_sha256 }}" "${{ needs.build.outputs.linux_x64_sha256 }}" "PKGBUILD" cli
+          ./build/update-pkgbuild.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.linux_arm64_server_sha256 }}" "${{ needs.build.outputs.linux_x64_server_sha256 }}" "server/PKGBUILD" server
+          cat PKGBUILD server/PKGBUILD
 
       - name: Publish AUR package
+        if: ${{ !inputs.dry_run }}
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: stalker-gamma-cli-bin
@@ -176,12 +208,8 @@ jobs:
           commit_message: Update AUR package
           ssh_keyscan_types: ed25519
 
-      - name: Generate server PKGBUILD
-        run: |
-          mkdir -p server
-          ./build/update-pkgbuild.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.linux_arm64_server_sha256 }}" "${{ needs.build.outputs.linux_x64_server_sha256 }}" "server/PKGBUILD" server
-
       - name: Publish server AUR package
+        if: ${{ !inputs.dry_run }}
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: stalker-gamma-server-bin
@@ -191,13 +219,12 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_KEY_PRIVATE }}
           commit_message: Update AUR package
           ssh_keyscan_types: ed25519
-          
- 
+
   update-chocolatey:
     name: update-chocolatey
     runs-on: windows-latest
-    needs: [build, version]
-    if: github.ref_type == 'tag'
+    needs: [build, version, release]
+    if: ${{ !cancelled() && !failure() && (github.ref_type == 'tag' || inputs.dry_run) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -205,18 +232,17 @@ jobs:
           fetch-depth: 0
 
       - name: Create and Push Chocolatey Package
-        if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ needs.version.outputs.semver }} ${{ secrets.CHOCOLATEY_API_KEY }} ${{ needs.build.outputs.win_x64_sha256 }} ${{ needs.build.outputs.win_arm64_sha256 }} ${{ needs.build.outputs.win_x64_server_sha256 }} ${{ needs.build.outputs.win_arm64_server_sha256 }}
+        run: build/win/chocolatey.bat ${{ needs.version.outputs.semver }} ${{ secrets.CHOCOLATEY_API_KEY }} ${{ needs.build.outputs.win_x64_sha256 }} ${{ needs.build.outputs.win_arm64_sha256 }} ${{ needs.build.outputs.win_x64_server_sha256 }} ${{ needs.build.outputs.win_arm64_server_sha256 }} ${{ inputs.dry_run && 'true' || 'false' }}
 
   update-homebrew:
     name: update-homebrew
     runs-on: ubuntu-22.04
-    needs: [build, version]
-    if: github.ref_type == 'tag'
+    needs: [build, version, release]
+    if: ${{ !cancelled() && !failure() && (github.ref_type == 'tag' || inputs.dry_run) }}
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v7
-        
+
       - name: Checkout target repo
         uses: actions/checkout@v7
         with:
@@ -227,6 +253,7 @@ jobs:
       - name: Update Homebrew Casks
         env:
           VERSION: ${{ needs.version.outputs.semver }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: |
           CASKS_DIR="homebrew-stalker-gamma/Casks"
           chmod +x "./build/update-cask.sh"
@@ -236,4 +263,20 @@ jobs:
           git -C homebrew-stalker-gamma config user.email "github-actions[bot]@users.noreply.github.com"
           git -C homebrew-stalker-gamma add Casks
           git -C homebrew-stalker-gamma commit -m "Update casks to $VERSION"
-          git -C homebrew-stalker-gamma push
+          if [[ "$DRY_RUN" == "true" ]]; then
+            git -C homebrew-stalker-gamma show
+            git -C homebrew-stalker-gamma push --dry-run
+          else
+            git -C homebrew-stalker-gamma push
+          fi
+
+  publish-release:
+    name: publish-release
+    runs-on: ubuntu-22.04
+    needs: [release, update-aur, update-chocolatey, update-homebrew]
+    if: github.ref_type == 'tag' && !inputs.dry_run
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.STALKER_GAMMA_CLI_SECRET }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false

@@ -8,7 +8,9 @@ param (
     [Parameter(Mandatory)]
     [string]$WinX64ServerSha256,
     [Parameter(Mandatory)]
-    [string]$WinArm64ServerSha256
+    [string]$WinArm64ServerSha256,
+    # pack the packages but don't push them
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,12 +98,19 @@ foreach (`$file in `$filesToIgnore) {
 
     choco pack $chocolateyNuspecPath --outputdirectory $chocolateyDir
 
+    if ($DryRun) {
+        Write-Host "Dry run: skipping push of $($PackageId) $($Version)"
+        return
+    }
+
     choco push (Join-Path $chocolateyDir "$($PackageId).$($Version).nupkg") --source https://push.chocolatey.org/
 }
 
 #region chocolatey
 if (Get-Command choco) {
-    choco apikey --key $ChocolateyApiKey --source https://push.chocolatey.org/
+    if (-not $DryRun) {
+        choco apikey --key $ChocolateyApiKey --source https://push.chocolatey.org/
+    }
 
     New-ChocolateyPackage `
         -PackageId "stalker-gamma" `
