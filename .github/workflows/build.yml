@@ -175,6 +175,22 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_KEY_PRIVATE }}
           commit_message: Update AUR package
           ssh_keyscan_types: ed25519
+
+      - name: Generate server PKGBUILD
+        run: |
+          mkdir -p server
+          ./build/update-pkgbuild.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.linux_arm64_server_sha256 }}" "${{ needs.build.outputs.linux_x64_server_sha256 }}" "server/PKGBUILD" server
+
+      - name: Publish server AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
+        with:
+          pkgname: stalker-gamma-server-bin
+          pkgbuild: ./server/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY_PRIVATE }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: ed25519
           
  
   update-chocolatey:
