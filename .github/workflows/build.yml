@@ -190,7 +190,7 @@ jobs:
 
       - name: Create and Push Chocolatey Package
         if: github.ref_type == 'tag'
-        run: build/win/chocolatey.bat ${{ needs.version.outputs.semver }} ${{ secrets.CHOCOLATEY_API_KEY }} ${{ needs.build.outputs.win_x64_sha256 }} ${{ needs.build.outputs.win_arm64_sha256 }}
+        run: build/win/chocolatey.bat ${{ needs.version.outputs.semver }} ${{ secrets.CHOCOLATEY_API_KEY }} ${{ needs.build.outputs.win_x64_sha256 }} ${{ needs.build.outputs.win_arm64_sha256 }} ${{ needs.build.outputs.win_x64_server_sha256 }} ${{ needs.build.outputs.win_arm64_server_sha256 }}
 
   update-homebrew:
     name: update-homebrew
