@@ -224,13 +224,16 @@ jobs:
           token: ${{ secrets.HOMEBREW_REPO_TOKEN }}
           path: homebrew-stalker-gamma
 
-      - name: Update Homebrew Cask
+      - name: Update Homebrew Casks
+        env:
+          VERSION: ${{ needs.version.outputs.semver }}
         run: |
-          PATH_TO_CASK="homebrew-stalker-gamma/Casks/stalker-gamma.rb"
+          CASKS_DIR="homebrew-stalker-gamma/Casks"
           chmod +x "./build/update-cask.sh"
-          ./build/update-cask.sh "${{ needs.version.outputs.semver }}" "${{ needs.build.outputs.macos_arm64_sha256 }}" "${{ needs.build.outputs.macos_x64_sha256 }}" "$PATH_TO_CASK"
+          ./build/update-cask.sh "$VERSION" "${{ needs.build.outputs.macos_arm64_sha256 }}" "${{ needs.build.outputs.macos_x64_sha256 }}" "$CASKS_DIR/stalker-gamma.rb" cli
+          ./build/update-cask.sh "$VERSION" "${{ needs.build.outputs.macos_arm64_server_sha256 }}" "${{ needs.build.outputs.macos_x64_server_sha256 }}" "$CASKS_DIR/stalker-gamma-server.rb" server
           git -C homebrew-stalker-gamma config user.name "github-actions[bot]"
           git -C homebrew-stalker-gamma config user.email "github-actions[bot]@users.noreply.github.com"
-          git -C homebrew-stalker-gamma add .
-          git -C homebrew-stalker-gamma commit -m "Update $PATH_TO_CASK"
+          git -C homebrew-stalker-gamma add Casks
+          git -C homebrew-stalker-gamma commit -m "Update casks to $VERSION"
           git -C homebrew-stalker-gamma push
