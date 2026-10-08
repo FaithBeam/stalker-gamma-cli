@@ -24,8 +24,7 @@ public class OfflineGammaInstaller(
     IGetStalkerModsFromLocal getStalkerModsFromLocal,
     PreserveUserLtxSettingsService preserveUserLtxSettingsService,
     PreserveMcmSettings preserveMcmSettings,
-    PythonServerService pythonServerService,
-    PythonApiProxy pythonApiProxy
+    StalkerGammaServerProxy stalkerGammaServerProxy
 )
     : GammaInstaller(
         settings,
@@ -40,8 +39,7 @@ public class OfflineGammaInstaller(
         getStalkerModsFromLocal,
         preserveUserLtxSettingsService,
         preserveMcmSettings,
-        pythonServerService,
-        pythonApiProxy
+        stalkerGammaServerProxy
     )
 {
     public override async Task InstallAsync(GammaInstallerArgs args)

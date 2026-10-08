@@ -1,0 +1,5 @@
+#!/bin/sh
+# Find the path where the AppImage is mounted
+HERE="$(dirname "$(readlink -f "${0}")")"
+# Execute the binary located in usr/bin; appsettings.json is resolved from the content root, not the cwd
+exec "${HERE}/usr/bin/stalker-gamma-server" --contentRoot "${HERE}/usr/bin" "$@"

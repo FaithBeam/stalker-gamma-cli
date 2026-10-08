@@ -33,6 +33,8 @@ Invoke-WebRequest @7zDlSplat
 $env:__COMPAT_LAYER="RunAsInvoker"
 & $7zDlPath /S /D="$($7zDir)"
 $env:__COMPAT_LAYER=""
+# There's a discrepency between when 7z.exe is available vs when the script continues
+Start-Sleep -Seconds 1
 #endregion
 
 #region curl-impersonate
@@ -47,23 +49,17 @@ $curlImpersonateSplat = @{
     OutFile = $curlArchivePath
 }
 Invoke-WebRequest @curlImpersonateSplat
-tar -xzf $curlArchivePath -C $curlDir
+# 7z unpacks .tar.gz in two steps: .gz -> .tar, then .tar -> files
+$7zExe = Join-Path $7zDir "7z.exe"
+& $7zExe x $curlArchivePath "-o$curlDir" -y
+$curlTarPath = Join-Path $curlDir ([System.IO.Path]::GetFileNameWithoutExtension($curlArchiveName))
+& $7zExe x $curlTarPath "-o$curlDir" -y
+Remove-Item $curlTarPath
 $cacertSplat = @{
     Uri     = "https://curl.se/ca/cacert.pem"
     OutFile = Join-Path $curlDir "cacert.pem"
 }
 Invoke-WebRequest @cacertSplat
-#endregion
-
-#region cloudscraper
-$cloudscraperVenvDir = Join-Path $buildDir "cloudscraper-venv"
-$cloudscraperDistDir = Join-Path $buildDir "cloudscraper"
-$cloudscraperSpec = Join-Path $repoRoot "python-api\main.spec"
-$cloudscraperRequirements = Join-Path $repoRoot "python-api\requirements.txt"
-python -m venv $cloudscraperVenvDir
-& (Join-Path $cloudscraperVenvDir "Scripts\pip.exe") install -r $cloudscraperRequirements
-New-Item -Path $cloudscraperDistDir -ItemType Directory -Force
-& (Join-Path $cloudscraperVenvDir "Scripts\pyinstaller.exe") --distpath $cloudscraperDistDir $cloudscraperSpec
 #endregion
 
 #region stalker-gamma-cli
@@ -78,14 +74,26 @@ New-Item -Path $stalkerCliResourceDir -ItemType Directory -Force
 
 Copy-Item -Path (Join-Path $7zDir "7z.exe") -Destination (Join-Path $stalkerCliResourceDir "7zz.exe")
 Copy-Item -Path (Join-Path $7zDir "7z.dll") -Destination (Join-Path $stalkerCliResourceDir "7z.dll")
-Copy-Item -Path (Join-Path $cloudscraperDistDir "cloudscraper.exe") -Destination $stalkerCliResourceDir -Recurse
 Move-Item (Join-Path (Join-Path $curlDir "lib") "libcurl-impersonate.dll") $stalkerCliDir
 Copy-Item -Path (Join-Path $curlDir "cacert.pem") -Destination (Join-Path $stalkerCliDir "cacert.pem")
 
 Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
+
+#region stalker-gamma-server
+$stalkerCliServerDir = Join-Path $buildDir "stalker-gamma-server"
+$pathToServerProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli-server") "stalker-gamma-cli-server.csproj")
+dotnet publish -c Release $pathToServerProject -o $stalkerCliServerDir -r $dotnetRid -p:AssemblyVersion=$Version
+Remove-Item -Path (Join-Path $stalkerCliServerDir "*.pdb") -ErrorAction SilentlyContinue
+#endregion
 
 $zipName = "stalker-gamma+win.$Arch.zip"
 if (Test-Path $zipName) {
     Remove-Item $zipName -Force
 }
 & (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r $zipName (Join-Path $stalkerCliDir "*")
+
+$serverZipName = "stalker-gamma-server+win.$Arch.zip"
+if (Test-Path $serverZipName) {
+    Remove-Item $serverZipName -Force
+}
+& (Join-Path $7zDir "7z.exe") a -tzip -mx9 -r $serverZipName (Join-Path $stalkerCliServerDir "*")

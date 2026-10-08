@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Stalker.Gamma.GammaInstallerServices;
+using Stalker.Gamma.ModDb.Services;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 using Stalker.Gamma.Utilities;
@@ -18,8 +19,7 @@ public class ModDbRecord(
     string outputDirName,
     IList<string> instructions,
     ArchiveService archiveService,
-    ModDbService modDbService,
-    bool useCurl = true
+    ModDbService modDbService
 ) : IDownloadableRecord
 {
     private readonly GammaProgress _gammaProgress = gammaProgress;
@@ -27,7 +27,6 @@ public class ModDbRecord(
     private readonly string _outputDirName = outputDirName;
     private readonly ArchiveService _archiveService = archiveService;
     private readonly ModDbService _modDbService = modDbService;
-    private readonly bool _useCurl = useCurl;
     public string Name { get; } = name;
     private string Url { get; } = url;
     private string NiceUrl { get; } = niceUrl;
@@ -57,13 +56,12 @@ public class ModDbRecord(
                     Url,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
-                    useCurl: _useCurl,
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not CloudflareChallengeException)
         {
             throw new ModDbRecordException(
                 $"""

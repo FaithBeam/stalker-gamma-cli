@@ -1,27 +1,21 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
+using Stalker.Gamma.Factories;
 using Stalker.Gamma.ModDb.Models;
-using Stalker.Gamma.Utilities;
-using CurlService = Stalker.Gamma.Services.CurlService;
 
 namespace Stalker.Gamma.ModDb.Services;
 
-public partial class ModDbGetAddonMetadataService(CurlService curlService)
+public partial class ModDbGetAddonMetadataService(NetworkServiceFactory networkServiceFactory)
 {
-    private readonly CurlService _curlService = curlService;
-
     public async Task<ModDbPageMetadata> GetAsync(
         string modDbAddonUrl,
-        bool useCurl = true,
         CancellationToken ct = default
     )
     {
-        var addonHtml = await _curlService.GetStringAsync(
-            modDbAddonUrl,
-            useCurl: useCurl,
-            cancellationToken: ct
-        );
+        var addonHtml = await networkServiceFactory
+            .Create()
+            .GetStringAsync(modDbAddonUrl, cancellationToken: ct);
         try
         {
             var htmlDoc = new HtmlDocument();
@@ -29,17 +23,23 @@ public partial class ModDbGetAddonMetadataService(CurlService curlService)
             var node = htmlDoc.DocumentNode.SelectNodes(
                 "//div[contains(@class, 'table') and contains(@class, 'tablemenu')]//div[contains(@class, 'row') and contains(@class, 'clear')]"
             );
-            var modDbAddonMetadataDict = node.Select(n => new
-                {
-                    Title = n.ChildNodes.FirstOrDefault(cn => cn.Name == "h5")?.InnerText.Trim(),
-                    Value = n.ChildNodes.FirstOrDefault(cn => cn.Name == "span")?.InnerText.Trim(),
-                })
-                .Where(x =>
-                    !string.IsNullOrWhiteSpace(x.Title)
-                    && Wanted.Contains(x.Title)
-                    && !string.IsNullOrWhiteSpace(x.Value)
-                )
-                .ToDictionary(x => x.Title!, x => x.Value!);
+            var modDbAddonMetadataDict =
+                node?.Select(n => new
+                    {
+                        Title = n
+                            .ChildNodes.FirstOrDefault(cn => cn.Name == "h5")
+                            ?.InnerText.Trim(),
+                        Value = n
+                            .ChildNodes.FirstOrDefault(cn => cn.Name == "span")
+                            ?.InnerText.Trim(),
+                    })
+                    .Where(x =>
+                        !string.IsNullOrWhiteSpace(x.Title)
+                        && Wanted.Contains(x.Title)
+                        && !string.IsNullOrWhiteSpace(x.Value)
+                    )
+                    .ToDictionary(x => x.Title!, x => x.Value!)
+                ?? [];
             modDbAddonMetadataDict.TryGetValue("Credits", out var credits);
             var modDbPageMetadata = new ModDbPageMetadata
             {

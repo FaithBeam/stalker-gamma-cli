@@ -27,11 +27,9 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
-CLOUDSCRAPER_BUILD_DIR = $(BUILD_DIR)/cloudscraper
-CLOUDSCRAPER_SPEC = $(ROOT)/python-api/main.spec
-CLOUDSCRAPER_REQUIREMENTS = $(ROOT)/python-api/requirements.txt
-CLOUDSCRAPER_VENV = $(BUILD_DIR)/cloudscraper-venv
-CLOUDSCRAPER_PYINSTALLER = $(CLOUDSCRAPER_VENV)/bin/pyinstaller
+STALKER_GAMMA_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-server
+STALKER_GAMMA_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
+STALKER_GAMMA_SERVER_RID = osx-$(ARCH)
 
 build:
 	mkdir $(BUILD_DIR)
@@ -45,12 +43,6 @@ build:
 	mkdir $(7Z_BUILD_DIR)
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
-	
-	# cloudscraper
-	python3 -m venv $(CLOUDSCRAPER_VENV)
-	$(CLOUDSCRAPER_VENV)/bin/pip install -r $(CLOUDSCRAPER_REQUIREMENTS)
-	mkdir $(CLOUDSCRAPER_BUILD_DIR)
-	$(CLOUDSCRAPER_PYINSTALLER) --distpath $(CLOUDSCRAPER_BUILD_DIR) $(CLOUDSCRAPER_SPEC)
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
@@ -65,11 +57,16 @@ build:
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
 	cp $(CURL_BUILD_DIR)/libcurl-impersonate.4.8.0.dylib $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.dylib
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
-	cp -r $(CLOUDSCRAPER_BUILD_DIR)/cloudscraper $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
+
+	# build stalker-gamma-server
+	mkdir $(STALKER_GAMMA_SERVER_BUILD_DIR)
+	dotnet publish -c Release $(STALKER_GAMMA_SERVER_PROJECT) -r $(STALKER_GAMMA_SERVER_RID) -o $(STALKER_GAMMA_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	rm -f $(STALKER_GAMMA_SERVER_BUILD_DIR)/*.pdb
 
 archive:
 	tar -czvf stalker-gamma+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_BUILD_DIR) .
+	tar -czvf stalker-gamma-server+mac.$(ARCH).tar.gz --directory=$(STALKER_GAMMA_SERVER_BUILD_DIR) .
 
 clean:
 	rm -rf $(BUILD_DIR)

@@ -1,17 +1,17 @@
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using CurlService = Stalker.Gamma.Services.CurlService;
+using Stalker.Gamma.Factories;
+using Stalker.Gamma.Services;
 
 namespace Stalker.Gamma.ModDb.Services;
 
-public partial class ModDbMirrorService(CurlService curlService)
+public partial class ModDbMirrorService(NetworkServiceFactory networkServiceFactory)
 {
     private static FrozenSet<string>? _mirrors;
     private static readonly SemaphoreSlim Lock = new(1);
 
     public async Task<string> GetMirrorAsync(
         string mirrorUrl,
-        bool useCurl = true,
         bool invalidateCache = false,
         CancellationToken cancellationToken = default,
         params IEnumerable<string> excludeMirrors
@@ -22,7 +22,7 @@ public partial class ModDbMirrorService(CurlService curlService)
         {
             _mirrors =
                 _mirrors is null || _mirrors.Count == 0 || invalidateCache
-                    ? await GetMirrorsAsync(mirrorUrl, useCurl, cancellationToken)
+                    ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
                     : _mirrors;
 
             return _mirrors
@@ -30,7 +30,7 @@ public partial class ModDbMirrorService(CurlService curlService)
                 .OrderBy(_ => Guid.NewGuid())
                 .First();
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not CloudflareChallengeException)
         {
             throw new MirrorUtilityException(
                 $"""
@@ -49,26 +49,12 @@ public partial class ModDbMirrorService(CurlService curlService)
 
     private async Task<FrozenSet<string>> GetMirrorsAsync(
         string mirrorUrl,
-        bool useCurl = true,
         CancellationToken cancellationToken = default
     )
     {
-        var mirrorsHtml = await curlService.GetStringAsync(
-            mirrorUrl,
-            useCurl: useCurl,
-            cancellationToken: cancellationToken
-        );
-        if (mirrorsHtml.Contains("Just a moment..."))
-        {
-            throw new CloudflareChallengeException(
-                $"""
-                Cloudflare challenge detected.
-                Mirror URL: {mirrorUrl}
-                Mirrors HTML:
-                {mirrorsHtml}
-                """
-            );
-        }
+        var mirrorsHtml = await networkServiceFactory
+            .Create()
+            .GetStringAsync(mirrorUrl, cancellationToken: cancellationToken);
         var matches = AvailableMirrors().Matches(mirrorsHtml);
         var matchSet = matches
             .Select(m =>
@@ -97,8 +83,6 @@ public partial class ModDbMirrorService(CurlService curlService)
 }
 
 public class NoMirrorsAvailableException(string msg) : Exception(msg);
-
-public class CloudflareChallengeException(string msg) : Exception(msg);
 
 public class MirrorUtilityException : Exception
 {

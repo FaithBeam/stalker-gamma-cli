@@ -1,20 +1,14 @@
-using CurlService = Stalker.Gamma.Services.CurlService;
+using Stalker.Gamma.Factories;
 
 namespace Stalker.Gamma.ModDb.Services;
 
-public class ModDbGetCdnLinkService(CurlService curlService)
+public class ModDbGetCdnLinkService(NetworkServiceFactory networkServiceFactory)
 {
-    public async Task<string?> ExecuteAsync(
-        string moddbMirrorUrl,
-        bool useCurl = true,
-        CancellationToken ct = default
-    )
+    public async Task<string?> ExecuteAsync(string moddbMirrorUrl, CancellationToken ct = default)
     {
-        var headers = await curlService.GetHeadersAsync(
-            moddbMirrorUrl,
-            useCurl: useCurl,
-            cancellationToken: ct
-        );
+        var headers = await networkServiceFactory
+            .Create()
+            .GetHeadersAsync(moddbMirrorUrl, cancellationToken: ct);
         if (headers.TryGetValue("location", out var location)) { }
         return location;
     }

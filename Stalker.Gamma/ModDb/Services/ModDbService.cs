@@ -1,23 +1,22 @@
 using System.Text.RegularExpressions;
 using Polly;
 using Polly.Retry;
-using Stalker.Gamma.Services;
+using Stalker.Gamma.Factories;
 
 namespace Stalker.Gamma.ModDb.Services;
 
 public partial class ModDbService(
     ModDbMirrorService modDbMirrorService,
-    CurlService curlService,
+    NetworkServiceFactory networkServiceFactory,
     ModDbGetCdnLinkService modDbGetCdnLinkServiceSvc
 )
 {
-    private static readonly SemaphoreSlim _lock = new(1);
+    private static readonly SemaphoreSlim Lock = new(1);
 
     public async Task DownloadAddonAsync(
         string url,
         string output,
         Action<double> onProgress,
-        bool useCurl = true,
         CancellationToken cancellationToken = default
     )
     {
@@ -35,6 +34,7 @@ public partial class ModDbService(
                     ShouldHandle = arguments =>
                         arguments.Outcome.Exception switch
                         {
+                            CloudflareChallengeException => ValueTask.FromResult(false),
                             not null => ValueTask.FromResult(true),
                             _ => ValueTask.FromResult(false),
                         },
@@ -55,7 +55,7 @@ public partial class ModDbService(
 
                 try
                 {
-                    await _lock.WaitAsync(ct);
+                    await Lock.WaitAsync(ct);
 
                     var diabolicalResilience = BuildRetry();
                     await diabolicalResilience.ExecuteAsync(
@@ -63,7 +63,6 @@ public partial class ModDbService(
                             diabolicalLink = await GetCdnLinkAsync(
                                 url,
                                 visitedMirrors,
-                                useCurl,
                                 invalidateCache,
                                 ct: innertCt
                             ),
@@ -84,16 +83,18 @@ public partial class ModDbService(
                 }
                 finally
                 {
-                    _lock.Release();
+                    Lock.Release();
                 }
 
-                await curlService.DownloadFileAsync(
-                    diabolicalLink,
-                    parentPath?.FullName ?? "./",
-                    Path.GetFileName(output),
-                    onProgress,
-                    cancellationToken: ct
-                );
+                await networkServiceFactory
+                    .Create()
+                    .DownloadFileAsync(
+                        diabolicalLink,
+                        parentPath?.FullName ?? "./",
+                        Path.GetFileName(output),
+                        onProgress,
+                        cancellationToken: ct
+                    );
             },
             cancellationToken
         );
@@ -110,6 +111,7 @@ public partial class ModDbService(
                     ShouldHandle = arguments =>
                         arguments.Outcome.Exception switch
                         {
+                            CloudflareChallengeException => ValueTask.FromResult(false),
                             not null => ValueTask.FromResult(true),
                             _ => ValueTask.FromResult(false),
                         },
@@ -122,23 +124,19 @@ public partial class ModDbService(
     private async Task<string?> GetCdnLinkAsync(
         string url,
         List<string> mirrorsVisited,
-        bool useCurl = true,
         bool invalidateCache = false,
         CancellationToken ct = default
     )
     {
         var mirrorTask = modDbMirrorService.GetMirrorAsync(
             $"{url}/all",
-            useCurl: useCurl,
             excludeMirrors: mirrorsVisited,
             invalidateCache: invalidateCache,
             cancellationToken: ct
         );
-        var getContentTask = curlService.GetStringAsync(
-            url,
-            useCurl: useCurl,
-            cancellationToken: ct
-        );
+        var getContentTask = networkServiceFactory
+            .Create()
+            .GetStringAsync(url, cancellationToken: ct);
         var results = await Task.WhenAll(mirrorTask, getContentTask);
 
         var (mirror, content) = (results[0], results[1]);
@@ -151,18 +149,11 @@ public partial class ModDbService(
 
         mirrorsVisited.Add(mirror);
 
-        return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, useCurl: useCurl, ct: ct);
+        return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, ct: ct);
     }
 
     [GeneratedRegex("""window.location.href="(.+)";""")]
     private static partial Regex WindowLocationRx();
 }
 
-public class ModDbUtilityException : Exception
-{
-    public ModDbUtilityException(string msg)
-        : base(msg) { }
-
-    public ModDbUtilityException(string msg, Exception innerException)
-        : base(msg, innerException) { }
-}
+public class ModDbUtilityException(string msg) : Exception(msg);

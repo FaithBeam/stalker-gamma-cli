@@ -13,8 +13,7 @@ public class AnomalyInstaller(
     string downloadDirectory,
     string anomalyDir,
     ModDbService modDbService,
-    ArchiveService archiveService,
-    bool useCurl = true
+    ArchiveService archiveService
 ) : IAnomalyInstaller
 {
     public string Name { get; } = "Stalker Anomaly";
@@ -31,7 +30,6 @@ public class AnomalyInstaller(
     private readonly string _anomalyDir = anomalyDir;
     private readonly ModDbService _modDbService = modDbService;
     private readonly ArchiveService _archiveService = archiveService;
-    private readonly bool _useCurl = useCurl;
     public string DownloadPath => Path.Join(_downloadDirectory, ArchiveName);
     public string DownloadPathZstd => Path.Join(_downloadDirectory, ArchiveNameZstd);
     private string ExtractPath => _anomalyDir;
@@ -57,7 +55,6 @@ public class AnomalyInstaller(
                     StalkerAnomalyUrl,
                     DownloadPath,
                     pct => OnProgress(GammaProgressType.Download, pct),
-                    useCurl: _useCurl,
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;

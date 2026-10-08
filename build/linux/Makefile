@@ -34,11 +34,23 @@ STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
 STALKER_GAMMA_CLI_PROJECT = $(ROOT)/stalker-gamma-cli/stalker-gamma-cli.csproj
 
-CLOUDSCRAPER_BUILD_DIR = $(BUILD_DIR)/cloudscraper
-CLOUDSCRAPER_SPEC = $(ROOT)/python-api/main.spec
-CLOUDSCRAPER_REQUIREMENTS = $(ROOT)/python-api/requirements.txt
-CLOUDSCRAPER_VENV = $(BUILD_DIR)/cloudscraper-venv
-CLOUDSCRAPER_PYINSTALLER = $(CLOUDSCRAPER_VENV)/bin/pyinstaller
+STALKER_GAMMA_SERVER_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-server
+STALKER_GAMMA_SERVER_PROJECT = $(ROOT)/stalker-gamma-cli-server/stalker-gamma-cli-server.csproj
+STALKER_GAMMA_SERVER_RID = linux-$(ARCH)
+
+ifeq ($(ARCH),x64)
+    APPIMAGETOOL_ARCH := x86_64
+else ifeq ($(ARCH),arm64)
+    APPIMAGETOOL_ARCH := aarch64
+else
+    APPIMAGETOOL_ARCH := unknown
+endif
+APPIMAGETOOL = $(BUILD_DIR)/appimagetool.AppImage
+APPIMAGETOOL_DL_URL = https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(APPIMAGETOOL_ARCH).AppImage
+APPDIR = $(CUR_DIR)/stalker-gamma.AppDir
+APPIMAGE = $(CUR_DIR)/stalker-gamma+linux.$(ARCH).AppImage
+SERVER_APPDIR = $(CUR_DIR)/stalker-gamma-server.AppDir
+SERVER_APPIMAGE = $(CUR_DIR)/stalker-gamma-server+linux.$(ARCH).AppImage
 
 build:
 	mkdir $(BUILD_DIR)
@@ -53,12 +65,6 @@ build:
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
 
-	# cloudscraper
-	python3 -m venv $(CLOUDSCRAPER_VENV)
-	$(CLOUDSCRAPER_VENV)/bin/pip install -r $(CLOUDSCRAPER_REQUIREMENTS)
-	mkdir $(CLOUDSCRAPER_BUILD_DIR)
-	$(CLOUDSCRAPER_PYINSTALLER) --distpath $(CLOUDSCRAPER_BUILD_DIR) $(CLOUDSCRAPER_SPEC)
-
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
 	dotnet publish -c Release $(STALKER_GAMMA_CLI_PROJECT) -o $(STALKER_GAMMA_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
@@ -72,8 +78,26 @@ build:
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
 	cp $(CURL_BUILD_DIR)/libcurl-impersonate.so.4.8.0 $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.so
 	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
-	cp -r $(CLOUDSCRAPER_BUILD_DIR)/cloudscraper $(STALKER_RESOURCES_DIR)/
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
+
+	# build stalker-gamma-server
+	mkdir $(STALKER_GAMMA_SERVER_BUILD_DIR)
+	dotnet publish -c Release $(STALKER_GAMMA_SERVER_PROJECT) -r $(STALKER_GAMMA_SERVER_RID) -o $(STALKER_GAMMA_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	rm -f $(STALKER_GAMMA_SERVER_BUILD_DIR)/*.pdb
+
+$(APPIMAGETOOL):
+	curl -Lo $(APPIMAGETOOL) $(APPIMAGETOOL_DL_URL)
+	chmod +x $(APPIMAGETOOL)
+
+appimage: $(APPIMAGETOOL)
+	mkdir -p $(APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_BUILD_DIR)/. $(APPDIR)/usr/bin/
+	$(APPIMAGETOOL) $(APPDIR) $(APPIMAGE)
+	chmod +x $(APPIMAGE)
+	mkdir -p $(SERVER_APPDIR)/usr/bin/
+	cp -r $(STALKER_GAMMA_SERVER_BUILD_DIR)/. $(SERVER_APPDIR)/usr/bin/
+	$(APPIMAGETOOL) $(SERVER_APPDIR) $(SERVER_APPIMAGE)
+	chmod +x $(SERVER_APPIMAGE)
 
 archive:
 	tar -cvJf stalker-gamma-cli.tar.xz --directory=$(STALKER_GAMMA_BUILD_DIR) .
