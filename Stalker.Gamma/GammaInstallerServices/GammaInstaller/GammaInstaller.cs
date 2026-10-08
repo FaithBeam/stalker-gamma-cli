@@ -170,7 +170,9 @@ public class GammaInstaller(
 
         ConcurrentBag<IDownloadableRecord> brokenAddons = [];
 
-        using var batchCts = CancellationTokenSource.CreateLinkedTokenSource(args.CancellationToken);
+        using var batchCts = CancellationTokenSource.CreateLinkedTokenSource(
+            args.CancellationToken
+        );
         var mainBatch = Task.Run(
             async () =>
             {
@@ -215,9 +217,7 @@ public class GammaInstaller(
             async () =>
             {
                 await args.GammaSetupRecord!.DownloadAsync(batchCts.Token);
-                await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(
-                    batchCts.Token
-                );
+                await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(batchCts.Token);
             },
             batchCts.Token
         );
@@ -225,9 +225,7 @@ public class GammaInstaller(
             async () =>
             {
                 await args.StalkerGammaRecord!.DownloadAsync(batchCts.Token);
-                await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
-                    batchCts.Token
-                );
+                await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(batchCts.Token);
             },
             batchCts.Token
         );
