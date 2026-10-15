@@ -12,6 +12,9 @@ public class ModDbRecordGetMetadataGroup(
     public string ArchiveName => _modDbRecords.First().ArchiveName;
     public string DownloadPath => _modDbRecords.First().DownloadPath;
     private string StartLink => _modDbRecords.First().StartLink;
+
+    // the archive name isn't known until the metadata is retrieved during download
+    public string ResumeKey => $"{Name} | {StartLink}";
     private string Md5 => _modDbRecords.First().Md5;
 
     public virtual async Task DownloadAsync(CancellationToken cancellationToken) =>

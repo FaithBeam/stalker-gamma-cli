@@ -17,6 +17,7 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
     private string? _modPackMakerPath;
     private string? _modListPath;
     private string? _stalkerGammaServerUrl;
+    private ResumeState _resumeState = new();
 
     public GammaInstallerArgsBuilder WithCancellationToken(CancellationToken ct)
     {
@@ -96,6 +97,12 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
         return this;
     }
 
+    public GammaInstallerArgsBuilder WithResumeState(ResumeState resumeState)
+    {
+        _resumeState = resumeState;
+        return this;
+    }
+
     public GammaInstallerArgs Build() =>
         new()
         {
@@ -115,5 +122,6 @@ public class GammaInstallerArgsBuilder(string anomaly, string gamma, string cach
             GroupedAddonRecords = _groupedAddonRecords,
             AnomalyRecord = _anomalyRecord,
             StalkerGammaServerUrl = _stalkerGammaServerUrl,
+            ResumeState = _resumeState,
         };
 }

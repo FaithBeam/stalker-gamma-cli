@@ -201,6 +201,7 @@ public class UpdateCmds(
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
+    /// <param name="resume">Resume a previously failed update apply from resume.txt in your gamma folder</param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task<int> Apply(
         CancellationToken cancellationToken,
@@ -209,6 +210,7 @@ public class UpdateCmds(
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
+        bool resume = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -227,8 +229,16 @@ public class UpdateCmds(
             out var gammaWriteFileDisposable
         );
 
+        ResumeState? resumeState = null;
         try
         {
+            resumeState = await ResumeUtility.LoadAsync(
+                _logger,
+                resume,
+                gamma,
+                ApplyResumeCommand,
+                cancellationToken
+            );
             var updateArgs = GammaInstallerArgs
                 .Create(anomaly, gamma, cache)
                 .WithCancellationToken(cancellationToken)
@@ -237,17 +247,23 @@ public class UpdateCmds(
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
                 .WithUseStalkerGammaServerUrl(stalkerGammaServerUrl)
+                .WithResumeState(resumeState)
                 .Build();
             updateArgs.GroupedAddonRecords =
                 await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);
             gammaInstaller.BuildSpecialRepoRecords(updateArgs);
             await gammaInstaller.InstallAsync(updateArgs);
+            ResumeUtility.Delete(gamma);
             _logger.Information("Update finished");
         }
         catch (Exception e)
         {
             progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Update failed! {ExceptionMessage}", e.Message);
+            if (resumeState is not null)
+            {
+                ResumeUtility.Write(_logger, resumeState, gamma);
+            }
             statusCode = 1;
         }
         finally
@@ -325,6 +341,8 @@ public class UpdateCmds(
             $"[{e.Complete}/{e.Total}]",
             e.Url
         );
+
+    private const string ApplyResumeCommand = "update apply";
 
     private const string Informational = "{AddonName} | {Operation} | {Percent} | {CompleteTotal}";
     private const string Verbose =

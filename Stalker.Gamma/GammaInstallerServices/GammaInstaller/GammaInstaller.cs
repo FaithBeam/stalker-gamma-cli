@@ -66,13 +66,29 @@ public class GammaInstaller(
             .ToList();
         return downloadableRecordFactory
             .CreateGroupedDownloadableRecords(addonRecords)
-            .Select(dlRec =>
-                args.SkipExtractOnHashMatch
-                    ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(dlRec)
-                    : dlRec
-            )
+            .Select(dlRec => CreateResumableRecord(args, dlRec, args.SkipExtractOnHashMatch))
             .Shuffle() // randomize the order addons are downloaded
             .ToList();
+    }
+
+    /// <summary>
+    /// Wraps a record so its status is tracked in <see cref="GammaInstallerArgs.ResumeState"/>
+    /// </summary>
+    private IDownloadableRecord CreateResumableRecord(
+        GammaInstallerArgs args,
+        IDownloadableRecord record,
+        bool skipExtractOnHashMatch
+    )
+    {
+        var key = record.ResumeKey;
+        // a record that was downloaded but not extracted before the previous run died must be extracted,
+        // even if this run doesn't need to download it again
+        var inner =
+            skipExtractOnHashMatch && args.ResumeState.GetStatus(key) != ResumeStatus.Extract
+                ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(record)
+                : record;
+        args.ResumeState.Register(key);
+        return new ResumableRecord(gammaProgress, inner, key, args.ResumeState);
     }
 
     public void BuildSpecialRepoRecords(GammaInstallerArgs args)
@@ -99,6 +115,41 @@ public class GammaInstaller(
             Settings.StalkerGammaRepo,
             Settings.StalkerGammaRepoBranch
         );
+        args.ResumeState.Register(args.GammaLargeFilesRecord.ResumeKey);
+        args.ResumeState.Register(args.TeivazAnomalyGunslingerRecord.ResumeKey);
+        args.ResumeState.Register(args.GammaSetupRecord.ResumeKey);
+        args.ResumeState.Register(args.StalkerGammaRecord.ResumeKey);
+    }
+
+    /// <summary>
+    /// Downloads and expands a special repo unless a previous run already completed it
+    /// </summary>
+    protected static async Task DownloadSpecialRepoAsync(
+        GammaInstallerArgs args,
+        IDownloadableRecord record,
+        Func<Task> downloadAsync
+    )
+    {
+        if (args.ResumeState.IsComplete(record.ResumeKey))
+        {
+            return;
+        }
+        await downloadAsync();
+        args.ResumeState.SetStatus(record.ResumeKey, ResumeStatus.Extract);
+    }
+
+    /// <summary>
+    /// Extracts a special repo unless a previous run already completed it
+    /// </summary>
+    protected async Task ExtractSpecialRepoAsync(GammaInstallerArgs args, IDownloadableRecord record)
+    {
+        if (args.ResumeState.IsComplete(record.ResumeKey))
+        {
+            gammaProgress.IncrementCompletedMods();
+            return;
+        }
+        await record.ExtractAsync(args.CancellationToken);
+        args.ResumeState.SetStatus(record.ResumeKey, ResumeStatus.Complete);
     }
 
     public virtual async Task InstallAsync(GammaInstallerArgs args)
@@ -195,38 +246,62 @@ public class GammaInstaller(
         );
         var teivazDlTask = Task.Run(
             async () =>
-            {
-                await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(batchCts.Token);
-                await (
-                    (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
-                ).ExpandFilesAsync(batchCts.Token);
-            },
+                await DownloadSpecialRepoAsync(
+                    args,
+                    args.TeivazAnomalyGunslingerRecord!,
+                    async () =>
+                    {
+                        await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(batchCts.Token);
+                        await (
+                            (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
+                        ).ExpandFilesAsync(batchCts.Token);
+                    }
+                ),
             batchCts.Token
         );
         var gammaLargeFilesDlTask = Task.Run(
             async () =>
-            {
-                await args.GammaLargeFilesRecord!.DownloadAsync(batchCts.Token);
-                await ((GammaLargeFilesRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
-                    batchCts.Token
-                );
-            },
+                await DownloadSpecialRepoAsync(
+                    args,
+                    args.GammaLargeFilesRecord!,
+                    async () =>
+                    {
+                        await args.GammaLargeFilesRecord!.DownloadAsync(batchCts.Token);
+                        await ((GammaLargeFilesRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
+                            batchCts.Token
+                        );
+                    }
+                ),
             batchCts.Token
         );
         var gammaSetupDownloadTask = Task.Run(
             async () =>
-            {
-                await args.GammaSetupRecord!.DownloadAsync(batchCts.Token);
-                await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(batchCts.Token);
-            },
+                await DownloadSpecialRepoAsync(
+                    args,
+                    args.GammaSetupRecord!,
+                    async () =>
+                    {
+                        await args.GammaSetupRecord!.DownloadAsync(batchCts.Token);
+                        await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(
+                            batchCts.Token
+                        );
+                    }
+                ),
             batchCts.Token
         );
         var stalkerGammaDownloadTask = Task.Run(
             async () =>
-            {
-                await args.StalkerGammaRecord!.DownloadAsync(batchCts.Token);
-                await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(batchCts.Token);
-            },
+                await DownloadSpecialRepoAsync(
+                    args,
+                    args.StalkerGammaRecord!,
+                    async () =>
+                    {
+                        await args.StalkerGammaRecord!.DownloadAsync(batchCts.Token);
+                        await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
+                            batchCts.Token
+                        );
+                    }
+                ),
             batchCts.Token
         );
 
@@ -244,10 +319,10 @@ public class GammaInstaller(
             await brokenAddon.ExtractAsync(args.CancellationToken);
         }
 
-        await args.GammaSetupRecord!.ExtractAsync(args.CancellationToken);
-        await args.GammaLargeFilesRecord!.ExtractAsync(args.CancellationToken);
-        await args.TeivazAnomalyGunslingerRecord!.ExtractAsync(args.CancellationToken);
-        await args.StalkerGammaRecord!.ExtractAsync(args.CancellationToken);
+        await ExtractSpecialRepoAsync(args, args.GammaSetupRecord!);
+        await ExtractSpecialRepoAsync(args, args.GammaLargeFilesRecord!);
+        await ExtractSpecialRepoAsync(args, args.TeivazAnomalyGunslingerRecord!);
+        await ExtractSpecialRepoAsync(args, args.StalkerGammaRecord!);
         if (args.Minimal)
         {
             args.GammaSetupRecord!.DeleteArchive();
@@ -385,7 +460,10 @@ public class GammaInstaller(
             .Where(x => x is not null)
             .Select(x => x!)
             .ToList();
-        return downloadableRecordFactory.CreateGroupedDownloadableRecords(addonRecords).ToList();
+        return downloadableRecordFactory
+            .CreateGroupedDownloadableRecords(addonRecords)
+            .Select(dlRec => CreateResumableRecord(args, dlRec, skipExtractOnHashMatch: false))
+            .ToList();
     }
 
     public IDownloadableRecord BuildAnomalyRecord(GammaInstallerArgs args)
@@ -394,9 +472,7 @@ public class GammaInstaller(
             Path.Join(args.Gamma, "downloads"),
             args.Anomaly
         );
-        return args.SkipExtractOnHashMatch
-            ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(anomalyRecord)
-            : anomalyRecord;
+        return CreateResumableRecord(args, anomalyRecord, args.SkipExtractOnHashMatch);
     }
 
     protected virtual async Task ProcessAddonsAsync(

@@ -41,6 +41,7 @@ public class FullInstallCmd(
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
+    /// <param name="resume">Resume a previously failed full-install from resume.txt in your gamma folder</param>
     /// <param name="debug"></param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
     public async Task<int> FullInstall(
@@ -58,6 +59,7 @@ public class FullInstallCmd(
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
+        bool resume = false,
         [Hidden] bool debug = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
@@ -106,8 +108,16 @@ public class FullInstallCmd(
             out var gammaDbgDispo
         );
 
+        ResumeState? resumeState = null;
         try
         {
+            resumeState = await ResumeUtility.LoadAsync(
+                _logger,
+                resume,
+                gamma,
+                ResumeCommand,
+                cancellationToken
+            );
             var args = GammaInstallerArgs
                 .Create(anomaly, gamma, cache)
                 .WithCancellationToken(cancellationToken)
@@ -120,17 +130,23 @@ public class FullInstallCmd(
                 .WithPreserveUserLtx(preserveUserSettings)
                 .WithPreserveMcmSettings(preserveMcmSettings)
                 .WithUseStalkerGammaServerUrl(stalkerGammaServerUrl)
+                .WithResumeState(resumeState)
                 .Build();
             args.GroupedAddonRecords = await installer.BuildGroupedAddonRecordsAsync(args);
             args.AnomalyRecord = installer.BuildAnomalyRecord(args);
             installer.BuildSpecialRepoRecords(args);
             await installer.InstallAsync(args);
+            ResumeUtility.Delete(gamma);
             _logger.Information("Install finished");
         }
         catch (Exception e)
         {
             _progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Install failed! {ExceptionMessage}", e.Message);
+            if (resumeState is not null)
+            {
+                ResumeUtility.Write(_logger, resumeState, gamma);
+            }
             statusCode = 1;
         }
         finally
@@ -301,6 +317,8 @@ public class FullInstallCmd(
     private readonly OfflineGammaInstaller _offlineGammaInstaller = offlineGammaInstaller;
     private readonly PowerShellCmdBuilder _powerShellCmdBuilder = powerShellCmdBuilder;
     private readonly ProgressLoggingService _progressLoggingService = progressLoggingService;
+
+    private const string ResumeCommand = "full-install";
 
     private const string Informational =
         "\e[97m[{DateTime}]\e[0m "

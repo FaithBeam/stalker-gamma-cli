@@ -26,6 +26,7 @@ public class GammaInstallerArgs
     public IDownloadableRecord? TeivazAnomalyGunslingerRecord { get; set; }
     public IDownloadableRecord? GammaSetupRecord { get; set; }
     public IDownloadableRecord? StalkerGammaRecord { get; set; }
+    public ResumeState ResumeState { get; set; } = new();
 
     public static GammaInstallerArgsBuilder Create(string anomaly, string gamma, string cache) =>
         new(anomaly, gamma, cache);
