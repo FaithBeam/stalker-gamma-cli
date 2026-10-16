@@ -50,7 +50,7 @@ function New-ChocolateyPackage {
     <projectUrl>https://github.com/FaithBeam/stalker-gamma-cli</projectUrl>
     <description>$($Description)</description>
     <summary>$($Summary)</summary>
-    <license type="expression">GPL-3.0-only</license>
+    <licenseUrl>https://raw.githubusercontent.com/FaithBeam/stalker-gamma-cli/refs/heads/master/LICENSE</licenseUrl>
     <tags>stalker-gamma</tags>
   </metadata>
 </package>
