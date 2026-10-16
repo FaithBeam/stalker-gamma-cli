@@ -50,6 +50,7 @@ function New-ChocolateyPackage {
     <projectUrl>https://github.com/FaithBeam/stalker-gamma-cli</projectUrl>
     <description>$($Description)</description>
     <summary>$($Summary)</summary>
+    <license type="expression">GPL-3.0-only</license>
     <tags>stalker-gamma</tags>
   </metadata>
 </package>
@@ -125,8 +126,8 @@ if (Get-Command choco) {
     New-ChocolateyPackage `
         -PackageId "stalker-gamma-server" `
         -ExeName "stalker-gamma-server.exe" `
-        -Description "stalker-gamma-server is the companion server for stalker-gamma-cli." `
-        -Summary "Companion server for stalker-gamma-cli" `
+        -Description "stalker-gamma-server is the companion server for stalker-gamma-cli. It helps stalker-gamma-cli navigate through Cloudflare captchas." `
+        -Summary "stalker-gamma-server is the companion server for stalker-gamma-cli. It helps stalker-gamma-cli navigate through Cloudflare captchas." `
         -WinX64AssetName "stalker-gamma-server+win.x64.zip" `
         -WinArm64AssetName "stalker-gamma-server+win.arm64.zip" `
         -X64Sha256 $WinX64ServerSha256 `
