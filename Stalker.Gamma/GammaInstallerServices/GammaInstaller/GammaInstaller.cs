@@ -141,7 +141,10 @@ public class GammaInstaller(
     /// <summary>
     /// Extracts a special repo unless a previous run already completed it
     /// </summary>
-    protected async Task ExtractSpecialRepoAsync(GammaInstallerArgs args, IDownloadableRecord record)
+    protected async Task ExtractSpecialRepoAsync(
+        GammaInstallerArgs args,
+        IDownloadableRecord record
+    )
     {
         if (args.ResumeState.IsComplete(record.ResumeKey))
         {
