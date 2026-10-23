@@ -4,7 +4,7 @@ using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 
-public interface IGammaSetupRepo : IDownloadableRecord;
+public interface IGammaSetupRepo : ISpecialRepo;
 
 public class GammaSetupRepo(
     GammaProgress gammaProgress,
@@ -64,7 +64,10 @@ public class GammaSetupRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    public async Task ExpandFilesAsync(
+        CancellationToken ct = default,
+        Func<string, bool>? includePath = null
+    )
     {
         try
         {
@@ -72,6 +75,7 @@ public class GammaSetupRepo(
                 DownloadPath,
                 TempDir,
                 branch: Branch,
+                includePath: includePath,
                 ct: ct,
                 onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
             );
@@ -92,17 +96,33 @@ public class GammaSetupRepo(
         }
     }
 
+    public string? GetModsDirName(string repoPath) =>
+        ISpecialRepo.SplitRepoPath(repoPath) is { Length: > 2 } segments
+        && segments[0] == "modpack_addons"
+            ? segments[1]
+            : null;
+
+    public string? GetDestinationPath(string repoPath) =>
+        ISpecialRepo.SplitRepoPath(repoPath) is { Length: > 1 } segments
+        && segments[0] == "modpack_addons"
+            ? Path.Join([GammaModsDir, .. segments[1..]])
+            : null;
+
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            DirUtils.CopyDirectory(
-                Path.Join(TempDir, "modpack_addons"),
-                GammaModsDir,
-                onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
-                moveFile: true,
-                cancellationToken: cancellationToken
-            );
+            // may not exist when only some files were expanded
+            if (Directory.Exists(Path.Join(TempDir, "modpack_addons")))
+            {
+                DirUtils.CopyDirectory(
+                    Path.Join(TempDir, "modpack_addons"),
+                    GammaModsDir,
+                    onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
+                    moveFile: true,
+                    cancellationToken: cancellationToken
+                );
+            }
         }
         finally
         {

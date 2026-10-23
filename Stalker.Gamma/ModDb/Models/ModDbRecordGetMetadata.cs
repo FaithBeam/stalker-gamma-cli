@@ -29,7 +29,7 @@ public class ModDbRecordGetMetadata(
     public string StartLink { get; set; } = startLink;
     public string NiceUrl { get; set; } = null!;
     private List<string> Instructions { get; } = instructions;
-    private string OutputDirName { get; } = outputDirName;
+    public string OutputDirName { get; } = outputDirName;
     public string Url => StartLink;
     public string Md5 { get; set; } = null!;
 

@@ -251,7 +251,7 @@ public class UpdateCmds(
                 .Build();
             updateArgs.GroupedAddonRecords =
                 await gammaInstaller.BuildUpdateGroupedAddonRecordsAsync(updateArgs);
-            gammaInstaller.BuildSpecialRepoRecords(updateArgs);
+            gammaInstaller.BuildUpdateSpecialRepoRecords(updateArgs);
             await gammaInstaller.InstallAsync(updateArgs);
             ResumeUtility.Delete(gamma);
             _logger.Information("Update finished");
@@ -326,6 +326,7 @@ public class UpdateCmds(
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(
             Informational,
+            DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
             $"{e.Progress:P2}".PadRight(8),
@@ -344,7 +345,15 @@ public class UpdateCmds(
 
     private const string ApplyResumeCommand = "update apply";
 
-    private const string Informational = "{AddonName} | {Operation} | {Percent} | {CompleteTotal}";
+    private const string Informational =
+        "\e[97m[{DateTime}]\e[0m "
+        + "\e[96m{AddonName}\e[0m "
+        + "\e[97m|\e[0m "
+        + "\e[96m{Operation}\e[0m "
+        + "\e[97m|\e[0m "
+        + "\e[96m{Percent}\e[0m "
+        + "\e[97m|\e[0m "
+        + "\e[96m{CompleteTotal}\e[0m";
     private const string Verbose =
         "{AddonName} | {Operation} | {Percent} | {CompleteTotal} | {Url}";
 

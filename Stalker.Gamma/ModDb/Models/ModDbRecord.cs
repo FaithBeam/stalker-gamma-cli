@@ -33,6 +33,7 @@ public class ModDbRecord(
     public string ArchiveName { get; } = archiveName;
     private string? Md5 { get; } = md5;
     public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
+    public string OutputDirName => _outputDirName;
     private string ExtractPath => Path.Join(_gammaDir, "mods", _outputDirName);
     private IList<string> Instructions { get; } = instructions;
 

@@ -119,9 +119,9 @@ public class OfflineGammaInstaller(
                     args,
                     args.TeivazAnomalyGunslingerRecord!,
                     async () =>
-                        await (
-                            (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
-                        ).ExpandFilesAsync(args.CancellationToken)
+                        await ((ISpecialRepo)args.TeivazAnomalyGunslingerRecord!).ExpandFilesAsync(
+                            args.CancellationToken
+                        )
                 ),
             args.CancellationToken
         );
@@ -131,7 +131,7 @@ public class OfflineGammaInstaller(
                     args,
                     args.GammaLargeFilesRecord!,
                     async () =>
-                        await ((GammaLargeFilesRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
+                        await ((ISpecialRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
                             args.CancellationToken
                         )
                 ),
@@ -143,7 +143,7 @@ public class OfflineGammaInstaller(
                     args,
                     args.GammaSetupRecord!,
                     async () =>
-                        await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(
+                        await ((ISpecialRepo)args.GammaSetupRecord!).ExpandFilesAsync(
                             args.CancellationToken
                         )
                 ),
@@ -155,7 +155,7 @@ public class OfflineGammaInstaller(
                     args,
                     args.StalkerGammaRecord!,
                     async () =>
-                        await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
+                        await ((ISpecialRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
                             args.CancellationToken
                         )
                 ),

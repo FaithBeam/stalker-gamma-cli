@@ -4,7 +4,7 @@ using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 
-public interface IStalkerGammaRepo : IDownloadableRecord;
+public interface IStalkerGammaRepo : ISpecialRepo;
 
 public class StalkerGammaRepo(
     GammaProgress gammaProgress,
@@ -67,7 +67,10 @@ public class StalkerGammaRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    public async Task ExpandFilesAsync(
+        CancellationToken ct = default,
+        Func<string, bool>? includePath = null
+    )
     {
         try
         {
@@ -75,6 +78,7 @@ public class StalkerGammaRepo(
                 DownloadPath,
                 TempDir,
                 branch: Branch,
+                includePath: includePath,
                 ct: ct,
                 onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
             );
@@ -96,29 +100,64 @@ public class StalkerGammaRepo(
         }
     }
 
+    public string? GetModsDirName(string repoPath) =>
+        ISpecialRepo.SplitRepoPath(repoPath) is { Length: > 3 } segments
+        && segments[0] == "G.A.M.M.A"
+        && segments[1] == "modpack_addons"
+            ? segments[2]
+            : null;
+
+    public string? GetDestinationPath(string repoPath) =>
+        ISpecialRepo.SplitRepoPath(repoPath) switch
+        {
+            ["G.A.M.M.A", "modpack_addons", .. var rest] when rest.Length > 0 => Path.Join([
+                GammaModsDir,
+                .. rest,
+            ]),
+            ["G.A.M.M.A", "modpack_patches", .. var rest] when rest.Length > 0 => Path.Join([
+                AnomalyDir,
+                .. rest,
+            ]),
+            ["G.A.M.M.A_definition_version.txt"] => Path.Join(GammaModsDir, "..", "version.txt"),
+            _ => null,
+        };
+
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            DirUtils.CopyDirectory(
-                Path.Join(TempDir, "G.A.M.M.A", "modpack_addons"),
-                GammaModsDir,
-                onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
-                moveFile: true,
-                cancellationToken: cancellationToken
-            );
-            DirUtils.CopyDirectory(
-                Path.Join(TempDir, "G.A.M.M.A", "modpack_patches"),
-                AnomalyDir,
-                onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
-                moveFile: true,
-                cancellationToken: cancellationToken
-            );
-            File.Copy(
-                Path.Join(TempDir, "G.A.M.M.A_definition_version.txt"),
-                Path.Join(GammaModsDir, "..", "version.txt"),
-                true
-            );
+            // these may not exist when only some files were expanded
+            var modpackAddonsDir = Path.Join(TempDir, "G.A.M.M.A", "modpack_addons");
+            var modpackPatchesDir = Path.Join(TempDir, "G.A.M.M.A", "modpack_patches");
+            var definitionVersionPath = Path.Join(TempDir, "G.A.M.M.A_definition_version.txt");
+            if (Directory.Exists(modpackAddonsDir))
+            {
+                DirUtils.CopyDirectory(
+                    modpackAddonsDir,
+                    GammaModsDir,
+                    onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
+                    moveFile: true,
+                    cancellationToken: cancellationToken
+                );
+            }
+            if (Directory.Exists(modpackPatchesDir))
+            {
+                DirUtils.CopyDirectory(
+                    modpackPatchesDir,
+                    AnomalyDir,
+                    onProgress: pct => OnProgress(GammaProgressType.Extract, pct),
+                    moveFile: true,
+                    cancellationToken: cancellationToken
+                );
+            }
+            if (File.Exists(definitionVersionPath))
+            {
+                File.Copy(
+                    definitionVersionPath,
+                    Path.Join(GammaModsDir, "..", "version.txt"),
+                    true
+                );
+            }
         }
         finally
         {

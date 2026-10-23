@@ -26,6 +26,11 @@ public class GammaInstallerArgs
     public IDownloadableRecord? TeivazAnomalyGunslingerRecord { get; set; }
     public IDownloadableRecord? GammaSetupRecord { get; set; }
     public IDownloadableRecord? StalkerGammaRecord { get; set; }
+
+    /// <summary>
+    /// Output dir names of the ModDb and Github records that update apply re-extracts
+    /// </summary>
+    public IReadOnlySet<string> UpdateOutputDirNames { get; set; } = new HashSet<string>();
     public ResumeState ResumeState { get; set; } = new();
 
     public static GammaInstallerArgsBuilder Create(string anomaly, string gamma, string cache) =>
