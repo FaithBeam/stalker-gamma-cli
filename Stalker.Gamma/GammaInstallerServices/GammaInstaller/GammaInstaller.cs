@@ -3,6 +3,7 @@ using System.Text.Json;
 using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
+using Stalker.Gamma.ModDb.Models;
 using Stalker.Gamma.ModDb.Services;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.ModOrganizer;
@@ -93,6 +94,28 @@ public class GammaInstaller(
 
     public void BuildSpecialRepoRecords(GammaInstallerArgs args)
     {
+        CreateSpecialRepoRecords(args);
+        // every file is extracted, so the commit applied by a previous update is stale.
+        // the next update falls back to the commit the repo is at before it fetches, which is the one extracted here
+        foreach (
+            var record in new[]
+            {
+                args.GammaLargeFilesRecord!,
+                args.TeivazAnomalyGunslingerRecord!,
+                args.GammaSetupRecord!,
+                args.StalkerGammaRecord!,
+            }
+        )
+        {
+            if (File.Exists(UpdateSpecialRepoRecord.GetAppliedCommitPath(record)))
+            {
+                File.Delete(UpdateSpecialRepoRecord.GetAppliedCommitPath(record));
+            }
+        }
+    }
+
+    private void CreateSpecialRepoRecords(GammaInstallerArgs args)
+    {
         args.GammaLargeFilesRecord = downloadableRecordFactory.CreateGammaLargeFilesRecord(
             args.Gamma,
             Settings.GammaLargeFilesRepo,
@@ -119,6 +142,31 @@ public class GammaInstaller(
         args.ResumeState.Register(args.TeivazAnomalyGunslingerRecord.ResumeKey);
         args.ResumeState.Register(args.GammaSetupRecord.ResumeKey);
         args.ResumeState.Register(args.StalkerGammaRecord.ResumeKey);
+    }
+
+    /// <summary>
+    /// Builds special repo records that only extract into the addon folders in
+    /// <see cref="GammaInstallerArgs.UpdateOutputDirNames"/> and the files that changed since the last update
+    /// </summary>
+    public void BuildUpdateSpecialRepoRecords(GammaInstallerArgs args)
+    {
+        CreateSpecialRepoRecords(args);
+        args.GammaLargeFilesRecord = new UpdateSpecialRepoRecord(
+            (ISpecialRepo)args.GammaLargeFilesRecord!,
+            args.UpdateOutputDirNames
+        );
+        args.TeivazAnomalyGunslingerRecord = new UpdateSpecialRepoRecord(
+            (ISpecialRepo)args.TeivazAnomalyGunslingerRecord!,
+            args.UpdateOutputDirNames
+        );
+        args.GammaSetupRecord = new UpdateSpecialRepoRecord(
+            (ISpecialRepo)args.GammaSetupRecord!,
+            args.UpdateOutputDirNames
+        );
+        args.StalkerGammaRecord = new UpdateSpecialRepoRecord(
+            (ISpecialRepo)args.StalkerGammaRecord!,
+            args.UpdateOutputDirNames
+        );
     }
 
     /// <summary>
@@ -255,9 +303,9 @@ public class GammaInstaller(
                     async () =>
                     {
                         await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(batchCts.Token);
-                        await (
-                            (TeivazAnomalyGunslingerRepo)args.TeivazAnomalyGunslingerRecord!
-                        ).ExpandFilesAsync(batchCts.Token);
+                        await ((ISpecialRepo)args.TeivazAnomalyGunslingerRecord!).ExpandFilesAsync(
+                            batchCts.Token
+                        );
                     }
                 ),
             batchCts.Token
@@ -270,7 +318,7 @@ public class GammaInstaller(
                     async () =>
                     {
                         await args.GammaLargeFilesRecord!.DownloadAsync(batchCts.Token);
-                        await ((GammaLargeFilesRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
+                        await ((ISpecialRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
                             batchCts.Token
                         );
                     }
@@ -285,7 +333,7 @@ public class GammaInstaller(
                     async () =>
                     {
                         await args.GammaSetupRecord!.DownloadAsync(batchCts.Token);
-                        await ((GammaSetupRepo)args.GammaSetupRecord!).ExpandFilesAsync(
+                        await ((ISpecialRepo)args.GammaSetupRecord!).ExpandFilesAsync(
                             batchCts.Token
                         );
                     }
@@ -300,7 +348,7 @@ public class GammaInstaller(
                     async () =>
                     {
                         await args.StalkerGammaRecord!.DownloadAsync(batchCts.Token);
-                        await ((StalkerGammaRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
+                        await ((ISpecialRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
                             batchCts.Token
                         );
                     }
@@ -463,6 +511,19 @@ public class GammaInstaller(
             .Where(x => x is not null)
             .Select(x => x!)
             .ToList();
+        args.UpdateOutputDirNames = addonRecords
+            .Select(rec =>
+                rec switch
+                {
+                    ModDbRecord mdr => mdr.OutputDirName,
+                    ModDbRecordGetMetadata mdrgm => mdrgm.OutputDirName,
+                    GithubRecord ghr => ghr.OutputDirName,
+                    _ => null,
+                }
+            )
+            .Where(x => x is not null)
+            .Select(x => x!)
+            .ToHashSet();
         return downloadableRecordFactory
             .CreateGroupedDownloadableRecords(addonRecords)
             .Select(dlRec => CreateResumableRecord(args, dlRec, skipExtractOnHashMatch: false))

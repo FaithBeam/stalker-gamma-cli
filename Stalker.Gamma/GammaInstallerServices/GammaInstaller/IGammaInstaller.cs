@@ -7,6 +7,7 @@ public interface IGammaInstaller
     IGammaProgress Progress { get; }
     Task<IList<IDownloadableRecord>> BuildGroupedAddonRecordsAsync(GammaInstallerArgs args);
     void BuildSpecialRepoRecords(GammaInstallerArgs args);
+    void BuildUpdateSpecialRepoRecords(GammaInstallerArgs args);
     Task InstallAsync(GammaInstallerArgs args);
     IDownloadableRecord BuildAnomalyRecord(GammaInstallerArgs args);
 

@@ -4,7 +4,7 @@ using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 
-public interface IGammaLargeFilesRepo : IDownloadableRecord;
+public interface IGammaLargeFilesRepo : ISpecialRepo;
 
 public class GammaLargeFilesRepo(
     GammaProgress gammaProgress,
@@ -68,7 +68,10 @@ public class GammaLargeFilesRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    public async Task ExpandFilesAsync(
+        CancellationToken ct = default,
+        Func<string, bool>? includePath = null
+    )
     {
         try
         {
@@ -76,6 +79,7 @@ public class GammaLargeFilesRepo(
                 DownloadPath,
                 TempDir,
                 branch: Branch,
+                includePath: includePath,
                 ct: ct,
                 onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
             );
@@ -95,6 +99,12 @@ public class GammaLargeFilesRepo(
             );
         }
     }
+
+    public string? GetModsDirName(string repoPath) =>
+        ISpecialRepo.SplitRepoPath(repoPath) is { Length: > 1 } segments ? segments[0] : null;
+
+    public string? GetDestinationPath(string repoPath) =>
+        Path.Join([DestinationDir, .. ISpecialRepo.SplitRepoPath(repoPath)]);
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
     {

@@ -4,7 +4,7 @@ using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 
-public interface ITeivazAnomalyGunslingerRepo : IDownloadableRecord;
+public interface ITeivazAnomalyGunslingerRepo : ISpecialRepo;
 
 public class TeivazAnomalyGunslingerRepo(
     GammaProgress gammaProgress,
@@ -23,12 +23,10 @@ public class TeivazAnomalyGunslingerRepo(
     private string GammaModsDir => Path.Join(gammaDir, "mods");
     private readonly GammaProgress _gammaProgress = gammaProgress;
 
-    private string ExtractPath =>
-        Path.Join(
-            GammaModsDir,
-            "312- Gunslinger Guns for Anomaly - Teivazcz & Gunslinger Team",
-            "gamedata"
-        );
+    private const string ModsDirName =
+        "312- Gunslinger Guns for Anomaly - Teivazcz & Gunslinger Team";
+
+    private string ExtractPath => Path.Join(GammaModsDir, ModsDirName, "gamedata");
 
     public virtual Task DownloadAsync(CancellationToken cancellationToken = default)
     {
@@ -72,7 +70,10 @@ public class TeivazAnomalyGunslingerRepo(
         return Task.CompletedTask;
     }
 
-    public async Task ExpandFilesAsync(CancellationToken ct = default)
+    public async Task ExpandFilesAsync(
+        CancellationToken ct = default,
+        Func<string, bool>? includePath = null
+    )
     {
         try
         {
@@ -80,6 +81,7 @@ public class TeivazAnomalyGunslingerRepo(
                 DownloadPath,
                 TempDir,
                 branch: Branch,
+                includePath: includePath,
                 ct: ct,
                 onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
             );
@@ -98,6 +100,19 @@ public class TeivazAnomalyGunslingerRepo(
                 e
             );
         }
+    }
+
+    public string? GetModsDirName(string repoPath) =>
+        ISpecialRepo.SplitRepoPath(repoPath).Contains("gamedata") ? ModsDirName : null;
+
+    // every gamedata folder in the repo is merged into the addon's gamedata folder
+    public string? GetDestinationPath(string repoPath)
+    {
+        var segments = ISpecialRepo.SplitRepoPath(repoPath);
+        var gamedataIdx = Array.IndexOf(segments, "gamedata");
+        return gamedataIdx >= 0 && gamedataIdx < segments.Length - 1
+            ? Path.Join([ExtractPath, .. segments[(gamedataIdx + 1)..]])
+            : null;
     }
 
     public virtual Task ExtractAsync(CancellationToken cancellationToken = default)
