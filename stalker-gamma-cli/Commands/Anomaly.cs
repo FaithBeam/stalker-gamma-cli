@@ -31,6 +31,7 @@ public class AnomalyInstallCmd(
     /// <param name="verbose">
     /// Indicates whether progress updates should be logged in verbose mode.
     /// </param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     /// <param name="progressUpdateIntervalMs">
     /// The time interval, in milliseconds, at which progress updates are reported.
     /// </param>
@@ -40,6 +41,7 @@ public class AnomalyInstallCmd(
     public async Task<int> AnomalyInstall(
         CancellationToken cancellationToken,
         bool verbose = false,
+        bool json = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -56,6 +58,7 @@ public class AnomalyInstallCmd(
         }
 
         var statusCode = 0;
+        string? error = null;
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
@@ -77,7 +80,11 @@ public class AnomalyInstallCmd(
             .Select(x => x.EventArgs);
         var gammaProgressDisposable = gammaProgressObservable
             .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+            .Subscribe(
+                json ? JsonOutputUtility.WriteProgress
+                : verbose ? OnProgressChangedVerbose
+                : OnProgressChangedInformational
+            );
         try
         {
             await anomalyInstaller.DownloadAsync(cancellationToken);
@@ -88,11 +95,18 @@ public class AnomalyInstallCmd(
         {
             _logger.Error(e, "Anomaly install failed! {ExceptionMessage}", e.Message);
             statusCode = 1;
+            error = e.Message;
         }
         finally
         {
             gammaProgressDisposable.Dispose();
         }
+
+        if (json)
+        {
+            JsonOutputUtility.WriteResult(InstallCommand, statusCode, error);
+        }
+
         return statusCode;
     }
 
@@ -102,8 +116,9 @@ public class AnomalyInstallCmd(
     /// <param name="cancellationToken">
     /// A cancellation token that can be used to abort the operation.
     /// </param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     [Command("check")]
-    public async Task<int> CheckAnomaly(CancellationToken cancellationToken)
+    public async Task<int> CheckAnomaly(CancellationToken cancellationToken, bool json = false)
     {
         if (!utilitiesReady.IsReady)
         {
@@ -118,30 +133,51 @@ public class AnomalyInstallCmd(
         }
 
         var statusCode = 0;
+        string? error = null;
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
-        if (!Directory.Exists(anomaly))
+        try
         {
-            throw new DirectoryNotFoundException($"Directory {anomaly} doesn't exist");
+            if (!Directory.Exists(anomaly))
+            {
+                throw new DirectoryNotFoundException($"Directory {anomaly} doesn't exist");
+            }
+
+            var anomalyToolsPath = Path.Join(anomaly, "tools");
+            if (!Directory.Exists(anomalyToolsPath))
+            {
+                throw new DirectoryNotFoundException($"Directory {anomalyToolsPath} doesn't exist");
+            }
+
+            var anomalyChecksumsPath = Path.Join(anomalyToolsPath, "checksums.md5");
+            if (!File.Exists(anomalyChecksumsPath))
+            {
+                throw new FileNotFoundException($"File {anomalyChecksumsPath} doesn't exist");
+            }
+
+            var checksums = await GetChecksums(anomaly, anomalyChecksumsPath);
+            var actual = await GetActualHashes(cancellationToken, anomaly);
+            var longestPath = checksums.MaxBy(x => x.Path.Length).Path.Length + 5;
+            var failures = await ValidateChecksums(checksums, actual, longestPath, json);
+            if (failures > 0)
+            {
+                statusCode = 1;
+                error = $"{failures} file(s) corrupt or missing";
+            }
+        }
+        // Only catch in json mode so a GUI wrapper always gets a result message
+        catch (Exception e) when (json)
+        {
+            _logger.Error(e, "Anomaly check failed! {ExceptionMessage}", e.Message);
+            statusCode = 1;
+            error = e.Message;
         }
 
-        var anomalyToolsPath = Path.Join(anomaly, "tools");
-        if (!Directory.Exists(anomalyToolsPath))
+        if (json)
         {
-            throw new DirectoryNotFoundException($"Directory {anomalyToolsPath} doesn't exist");
+            JsonOutputUtility.WriteResult(CheckCommand, statusCode, error);
         }
-
-        var anomalyChecksumsPath = Path.Join(anomalyToolsPath, "checksums.md5");
-        if (!File.Exists(anomalyChecksumsPath))
-        {
-            throw new FileNotFoundException($"File {anomalyChecksumsPath} doesn't exist");
-        }
-
-        var checksums = await GetChecksums(anomaly, anomalyChecksumsPath);
-        var actual = await GetActualHashes(cancellationToken, anomaly);
-        var longestPath = checksums.MaxBy(x => x.Path.Length).Path.Length + 5;
-        await ValidateChecksums(checksums, actual, longestPath);
 
         return statusCode;
     }
@@ -210,38 +246,45 @@ public class AnomalyInstallCmd(
         }
     }
 
-    private async Task ValidateChecksums(
+    /// <returns>The number of files that are corrupt or missing</returns>
+    private async Task<int> ValidateChecksums(
         List<(string Md5, string Path)> checksums,
         Dictionary<string, Task<string>> actual,
-        int longestPath
+        int longestPath,
+        bool json
     )
     {
-        foreach (var checksum in checksums)
+        var failures = 0;
+        for (var i = 0; i < checksums.Count; i++)
         {
-            if (actual.TryGetValue(checksum.Path, out var md5))
+            var checksum = checksums[i];
+            var status =
+                !actual.TryGetValue(checksum.Path, out var md5) ? ChecksumStatus.NotFound
+                : checksum.Md5 == await md5 ? ChecksumStatus.Ok
+                : ChecksumStatus.Corrupt;
+            if (status != ChecksumStatus.Ok)
             {
-                if (checksum.Md5 == await md5)
-                {
-                    _logger.Information(
-                        InformationalCheck,
-                        checksum.Path.PadRight(longestPath),
-                        "OK"
-                    );
-                }
-                else
-                {
-                    _logger.Error(
-                        InformationalCheck,
-                        checksum.Path.PadRight(longestPath),
-                        "CORRUPT"
-                    );
-                }
+                failures++;
+            }
+
+            if (json)
+            {
+                JsonOutputUtility.WriteChecksum(checksum.Path, status, i + 1, checksums.Count);
+            }
+            else if (status == ChecksumStatus.Ok)
+            {
+                _logger.Information(InformationalCheck, checksum.Path.PadRight(longestPath), "OK");
             }
             else
             {
-                _logger.Error(InformationalCheck, checksum.Path.PadRight(longestPath), "NOT FOUND");
+                _logger.Error(
+                    InformationalCheck,
+                    checksum.Path.PadRight(longestPath),
+                    status == ChecksumStatus.Corrupt ? "CORRUPT" : "NOT FOUND"
+                );
             }
         }
+        return failures;
     }
 
     private static async Task<Dictionary<string, Task<string>>> GetActualHashes(
@@ -299,6 +342,8 @@ public class AnomalyInstallCmd(
             })
             .ToList();
 
+    private const string InstallCommand = "anomaly install";
+    private const string CheckCommand = "anomaly check";
     private const string InformationalCheck = "{File} | {Status}";
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>

@@ -42,6 +42,7 @@ public class FullInstallCmd(
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="resume">Resume a previously failed full-install from resume.txt in your gamma folder</param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     /// <param name="debug"></param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
     public async Task<int> FullInstall(
@@ -60,11 +61,13 @@ public class FullInstallCmd(
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
         bool resume = false,
+        bool json = false,
         [Hidden] bool debug = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
         var statusCode = 0;
+        string? error = null;
         LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
@@ -101,6 +104,7 @@ public class FullInstallCmd(
         SetUpLogging(
             installer,
             verbose,
+            json,
             debug,
             progressUpdateIntervalMs,
             out var gammaWriteFileDisposable,
@@ -148,6 +152,7 @@ public class FullInstallCmd(
                 ResumeUtility.Write(_logger, resumeState, gamma);
             }
             statusCode = 1;
+            error = e.Message;
         }
         finally
         {
@@ -155,6 +160,11 @@ public class FullInstallCmd(
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
+        }
+
+        if (json)
+        {
+            JsonOutputUtility.WriteResult(ResumeCommand, statusCode, error);
         }
 
         return statusCode;
@@ -246,6 +256,7 @@ public class FullInstallCmd(
     private void SetUpLogging(
         IGammaInstaller installer,
         bool verbose,
+        bool json,
         bool debug,
         long progressUpdateIntervalMs,
         out IDisposable gammaWriteFileDisposable,
@@ -283,7 +294,11 @@ public class FullInstallCmd(
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable
             .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+            .Subscribe(
+                json ? JsonOutputUtility.WriteProgress
+                : verbose ? OnProgressChangedVerbose
+                : OnProgressChangedInformational
+            );
     }
 
     private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
