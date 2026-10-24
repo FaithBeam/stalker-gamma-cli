@@ -341,7 +341,12 @@ public partial class GitService
                 blobs.OrderByDescending(blob => blob.Size),
                 EnumerablePartitionerOptions.NoBuffering
             ),
-            new ParallelOptions { CancellationToken = ct },
+            // leave half the cores free so the rest of the app (and the machine) stays responsive
+            new ParallelOptions
+            {
+                CancellationToken = ct,
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
+            },
             // libgit2 handles aren't safe to share across threads, so each worker opens its own
             () => new Repository(pathToRepo),
             (blob, _, repo) =>
