@@ -32,6 +32,7 @@ public class AnomalyInstallCmd(
     /// Indicates whether progress updates should be logged in verbose mode.
     /// </param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
+    /// <param name="anomalyMirror">Download Anomaly from the faith-beam.com mirror first, which extracts faster, and fall back to ModDB if it fails</param>
     /// <param name="progressUpdateIntervalMs">
     /// The time interval, in milliseconds, at which progress updates are reported.
     /// </param>
@@ -42,6 +43,7 @@ public class AnomalyInstallCmd(
         CancellationToken cancellationToken,
         bool verbose = false,
         bool json = false,
+        bool anomalyMirror = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -68,6 +70,7 @@ public class AnomalyInstallCmd(
             resourcesPath,
             OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
         );
+        stalkerGammaSettings.UseAnomalyMirror = anomalyMirror;
 
         var anomalyInstaller = (AnomalyInstaller)
             downloadableRecordFactory.CreateAnomalyRecord(cache, anomaly);

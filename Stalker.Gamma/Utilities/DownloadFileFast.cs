@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Headers;
+
 namespace Stalker.Gamma.Utilities;
 
 public static class DownloadFileFast
@@ -7,27 +10,49 @@ public static class DownloadFileFast
         string url,
         string downloadPath,
         Action<DownloadProgress>? onProgress = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool resume = false
     )
     {
         const int bufferSize = 1024 * 1024;
 
         try
         {
-            using var response = await hc.GetAsync(
-                url,
+            var existingBytes =
+                resume && File.Exists(downloadPath) ? new FileInfo(downloadPath).Length : 0;
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (existingBytes > 0)
+            {
+                request.Headers.Range = new RangeHeaderValue(existingBytes, null);
+            }
+            using var response = await hc.SendAsync(
+                request,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken
             );
+
+            // nothing exists past the bytes already downloaded, so the file is complete
+            if (
+                existingBytes > 0
+                && response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable
+            )
+            {
+                onProgress?.Invoke(new DownloadProgress(existingBytes, existingBytes));
+                return;
+            }
             response.EnsureSuccessStatusCode();
+
+            // a server that ignores the range sends the whole file with 200 instead of 206
+            var append = response.StatusCode == HttpStatusCode.PartialContent;
+            var offset = append ? existingBytes : 0;
 
             // null when the server doesn't send Content-Length, e.g. github archive zips which are
             // generated on the fly and streamed with chunked transfer encoding
-            var totalBytes = response.Content.Headers.ContentLength;
+            var totalBytes = response.Content.Headers.ContentLength + offset;
 
             await using var fs = new FileStream(
                 downloadPath,
-                FileMode.Create,
+                append ? FileMode.Append : FileMode.Create,
                 FileAccess.Write,
                 FileShare.None,
                 bufferSize: bufferSize
@@ -36,13 +61,13 @@ public static class DownloadFileFast
                 cancellationToken
             );
 
-            long bytesRead = 0;
+            long bytesRead = offset;
             await StreamChunkFast.ChunkAsync(
                 contentStream,
                 chunkFunc: async args =>
                 {
                     await fs.WriteAsync(args.Buffer.AsMemory(0, args.BytesRead), cancellationToken);
-                    bytesRead = args.TotalBytesRead;
+                    bytesRead = offset + args.TotalBytesRead;
                     onProgress?.Invoke(new DownloadProgress(bytesRead, totalBytes));
                 },
                 cancellationToken: cancellationToken

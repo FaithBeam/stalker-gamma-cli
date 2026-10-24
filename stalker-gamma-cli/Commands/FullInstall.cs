@@ -38,6 +38,7 @@ public class FullInstallCmd(
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
+    /// <param name="anomalyMirror">Download Anomaly from the faith-beam.com mirror first, which extracts faster, and fall back to ModDB if it fails</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
@@ -57,6 +58,7 @@ public class FullInstallCmd(
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
+        bool anomalyMirror = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
@@ -90,6 +92,7 @@ public class FullInstallCmd(
             out var cache,
             out var mo2Profile
         );
+        _stalkerGammaSettings.UseAnomalyMirror = anomalyMirror;
 
         ConfigurePowerShellSettings(
             addFoldersToWinDefenderExclusion,

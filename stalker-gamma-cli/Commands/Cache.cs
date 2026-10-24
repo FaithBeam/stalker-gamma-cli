@@ -218,6 +218,7 @@ public abstract class PruneLogic(
     private readonly IReadOnlySet<string> _ignoreAddons = new HashSet<string>
     {
         "Anomaly-1.5.3-Full.2.7z",
+        "Anomaly-1.5.3-Full.mt-mx5.7z",
         "ModOrganizer.v2.5.2.7z",
     };
 }
