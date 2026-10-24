@@ -54,7 +54,7 @@ public class AnomalyInstaller(
                 await _modDbService.DownloadAddonAsync(
                     StalkerAnomalyUrl,
                     DownloadPath,
-                    pct => OnProgress(GammaProgressType.Download, pct),
+                    p => OnProgress(GammaProgressType.Download, p.Percent, p),
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;
@@ -111,18 +111,24 @@ public class AnomalyInstaller(
 
     public bool Downloaded { get; set; }
 
-    private void OnProgress(GammaProgressType operation, double pct) =>
-        _progress.OnProgressChanged(ProgFunc(operation, pct));
+    private void OnProgress(
+        GammaProgressType operation,
+        double? pct,
+        DownloadProgress? download = null
+    ) => _progress.OnProgressChanged(ProgFunc(operation, pct, download));
 
     private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
         GammaProgressType operation,
-        double pct
+        double? pct,
+        DownloadProgress? download
     ) =>
         new()
         {
             Name = Name,
             ProgressType = operation,
             Progress = pct,
+            BytesDownloaded = download?.BytesRead,
+            TotalBytes = download?.TotalBytes,
             Url = StalkerAnomalyUrl,
             ArchiveName = ArchiveName,
             DownloadPath = DownloadPath,

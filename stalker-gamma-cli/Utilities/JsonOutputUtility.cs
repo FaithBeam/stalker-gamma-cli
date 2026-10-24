@@ -73,6 +73,8 @@ public static class JsonOutputUtility
                     Name = e.Name,
                     Operation = e.ProgressType.ToString(),
                     Progress = e.Progress,
+                    BytesDownloaded = e.BytesDownloaded,
+                    TotalBytes = e.TotalBytes,
                     Complete = e.Complete,
                     Total = e.Total,
                     Url = e.Url,
@@ -309,7 +311,13 @@ public class JsonProgressMessage
     public string Type => "progress";
     public required string Name { get; init; }
     public required string Operation { get; init; }
-    public required double Progress { get; init; }
+
+    /// <summary>
+    /// null when the total size of a download is unknown; use BytesDownloaded instead.
+    /// </summary>
+    public required double? Progress { get; init; }
+    public long? BytesDownloaded { get; init; }
+    public long? TotalBytes { get; init; }
     public required int Complete { get; init; }
     public required int Total { get; init; }
     public required string Url { get; init; }

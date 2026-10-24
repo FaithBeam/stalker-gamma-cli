@@ -24,6 +24,24 @@ public static class GammaProgressExtensions
                 _ => throw new ArgumentOutOfRangeException(nameof(e), e, null),
             };
     }
+
+    extension(GammaProgress.GammaInstallProgressEventArgs e)
+    {
+        /// <summary>
+        /// The progress as a percentage, or the bytes downloaded so far when the total is unknown.
+        /// </summary>
+        public string GetHumanReadableProgress() =>
+            e.Progress is { } pct ? $"{pct:P2}" : FormatBytes(e.BytesDownloaded ?? 0);
+    }
+
+    private static string FormatBytes(long bytes) =>
+        bytes switch
+        {
+            >= 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024 * 1024):F2} GB",
+            >= 1024 * 1024 => $"{bytes / (1024.0 * 1024):F2} MB",
+            >= 1024 => $"{bytes / 1024.0:F2} KB",
+            _ => $"{bytes} B",
+        };
 }
 
 public class GammaProgress : IGammaProgress
@@ -64,7 +82,22 @@ public class GammaProgress : IGammaProgress
     {
         public required string Name { get; init; }
         public required GammaProgressType ProgressType { get; init; }
-        public required double Progress { get; init; }
+
+        /// <summary>
+        /// Fraction complete from 0 to 1, or null if it can't be known, e.g. a download whose
+        /// server didn't report its size. Use <see cref="BytesDownloaded"/> instead in that case.
+        /// </summary>
+        public required double? Progress { get; init; }
+
+        /// <summary>
+        /// Bytes downloaded so far. Only set for downloads.
+        /// </summary>
+        public long? BytesDownloaded { get; init; }
+
+        /// <summary>
+        /// Total size of the download, or null if unknown. Only set for downloads.
+        /// </summary>
+        public long? TotalBytes { get; init; }
         public required string Url { get; init; }
         public required string ArchiveName { get; init; }
         public required string DownloadPath { get; init; }
@@ -81,6 +114,8 @@ public class GammaProgress : IGammaProgress
             return Name == other.Name
                 && ProgressType == other.ProgressType
                 && Progress.Equals(other.Progress)
+                && BytesDownloaded == other.BytesDownloaded
+                && TotalBytes == other.TotalBytes
                 && Url == other.Url
                 && ArchiveName == other.ArchiveName
                 && DownloadPath == other.DownloadPath
@@ -100,15 +135,17 @@ public class GammaProgress : IGammaProgress
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(
-                Name,
-                ProgressType,
-                Progress,
-                Url,
-                ArchiveName,
-                DownloadPath,
-                ExtractPath
-            );
+            var hash = new HashCode();
+            hash.Add(Name);
+            hash.Add(ProgressType);
+            hash.Add(Progress);
+            hash.Add(BytesDownloaded);
+            hash.Add(TotalBytes);
+            hash.Add(Url);
+            hash.Add(ArchiveName);
+            hash.Add(DownloadPath);
+            hash.Add(ExtractPath);
+            return hash.ToHashCode();
         }
     }
 }

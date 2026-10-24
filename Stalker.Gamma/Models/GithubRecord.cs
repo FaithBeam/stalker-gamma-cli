@@ -47,7 +47,7 @@ public class GithubRecord(
                 _hc,
                 Url,
                 DownloadPath,
-                onProgress: pct => OnProgress(GammaProgressType.Download, pct),
+                onProgress: p => OnProgress(GammaProgressType.Download, p.Percent, p),
                 cancellationToken: cancellationToken
             );
 
@@ -122,18 +122,24 @@ public class GithubRecord(
             Instructions: {string.Join(", ", Instructions)}
             """;
 
-    private void OnProgress(GammaProgressType operation, double pct) =>
-        _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
+    private void OnProgress(
+        GammaProgressType operation,
+        double? pct,
+        DownloadProgress? download = null
+    ) => _gammaProgress.OnProgressChanged(ProgFunc(operation, pct, download));
 
     private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
         GammaProgressType operation,
-        double pct
+        double? pct,
+        DownloadProgress? download
     ) =>
         new()
         {
             Name = Name,
             ProgressType = operation,
             Progress = pct,
+            BytesDownloaded = download?.BytesRead,
+            TotalBytes = download?.TotalBytes,
             Url = Url,
             ArchiveName = ArchiveName,
             DownloadPath = DownloadPath,

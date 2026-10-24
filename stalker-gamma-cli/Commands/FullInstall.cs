@@ -310,7 +310,7 @@ public class FullInstallCmd(
             DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
+            e.GetHumanReadableProgress().PadRight(10),
             $"[{e.Complete}/{e.Total}]"
         );
 
@@ -319,7 +319,7 @@ public class FullInstallCmd(
             Verbose,
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
+            e.GetHumanReadableProgress().PadRight(10),
             $"[{e.Complete}/{e.Total}]",
             e.Url
         );
