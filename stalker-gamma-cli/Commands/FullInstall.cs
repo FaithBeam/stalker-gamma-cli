@@ -38,10 +38,12 @@ public class FullInstallCmd(
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
+    /// <param name="anomalyMirror">Download Anomaly from the faith-beam.com mirror first, which extracts faster, and fall back to ModDB if it fails</param>
     /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
     /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="resume">Resume a previously failed full-install from resume.txt in your gamma folder</param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     /// <param name="debug"></param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
     public async Task<int> FullInstall(
@@ -56,15 +58,18 @@ public class FullInstallCmd(
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
+        bool anomalyMirror = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
         [Range(1, 20)] int? downloadThreads = null,
         bool resume = false,
+        bool json = false,
         [Hidden] bool debug = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
         var statusCode = 0;
+        string? error = null;
         LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
@@ -87,6 +92,7 @@ public class FullInstallCmd(
             out var cache,
             out var mo2Profile
         );
+        _stalkerGammaSettings.UseAnomalyMirror = anomalyMirror;
 
         ConfigurePowerShellSettings(
             addFoldersToWinDefenderExclusion,
@@ -101,6 +107,7 @@ public class FullInstallCmd(
         SetUpLogging(
             installer,
             verbose,
+            json,
             debug,
             progressUpdateIntervalMs,
             out var gammaWriteFileDisposable,
@@ -148,6 +155,7 @@ public class FullInstallCmd(
                 ResumeUtility.Write(_logger, resumeState, gamma);
             }
             statusCode = 1;
+            error = e.Message;
         }
         finally
         {
@@ -155,6 +163,11 @@ public class FullInstallCmd(
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
+        }
+
+        if (json)
+        {
+            JsonOutputUtility.WriteResult(ResumeCommand, statusCode, error);
         }
 
         return statusCode;
@@ -246,6 +259,7 @@ public class FullInstallCmd(
     private void SetUpLogging(
         IGammaInstaller installer,
         bool verbose,
+        bool json,
         bool debug,
         long progressUpdateIntervalMs,
         out IDisposable gammaWriteFileDisposable,
@@ -283,7 +297,11 @@ public class FullInstallCmd(
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable
             .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+            .Subscribe(
+                json ? JsonOutputUtility.WriteProgress
+                : verbose ? OnProgressChangedVerbose
+                : OnProgressChangedInformational
+            );
     }
 
     private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
@@ -295,7 +313,7 @@ public class FullInstallCmd(
             DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
+            e.GetHumanReadableProgress().PadRight(10),
             $"[{e.Complete}/{e.Total}]"
         );
 
@@ -304,7 +322,7 @@ public class FullInstallCmd(
             Verbose,
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
+            e.GetHumanReadableProgress().PadRight(10),
             $"[{e.Complete}/{e.Total}]",
             e.Url
         );

@@ -167,13 +167,15 @@ public class DownloadModOrganizerService(
                             hc,
                             dlUrl,
                             mo2ArchivePath,
-                            onProgress: pct =>
+                            onProgress: p =>
                                 gammaProgress.OnProgressChanged(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
                                         ProgressType = GammaProgressType.Download,
-                                        Progress = pct,
+                                        Progress = p.Percent,
+                                        BytesDownloaded = p.BytesRead,
+                                        TotalBytes = p.TotalBytes,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                                         DownloadPath = cachePath,
@@ -211,13 +213,15 @@ public class DownloadModOrganizerService(
                             hc,
                             dlUrl,
                             mo2ArchivePath,
-                            onProgress: pct =>
+                            onProgress: p =>
                                 gammaProgress.OnProgressChanged(
                                     new GammaProgress.GammaInstallProgressEventArgs
                                     {
                                         Name = "ModOrganizer",
                                         ProgressType = GammaProgressType.Download,
-                                        Progress = pct,
+                                        Progress = p.Percent,
+                                        BytesDownloaded = p.BytesRead,
+                                        TotalBytes = p.TotalBytes,
                                         Url = dlUrl,
                                         ArchiveName = Path.GetFileName(mo2ArchivePath),
                                         DownloadPath = cachePath,
@@ -236,13 +240,15 @@ public class DownloadModOrganizerService(
                 hc,
                 dlUrl,
                 mo2ArchivePath,
-                onProgress: pct =>
+                onProgress: p =>
                     gammaProgress.OnProgressChanged(
                         new GammaProgress.GammaInstallProgressEventArgs
                         {
                             Name = "ModOrganizer",
                             ProgressType = GammaProgressType.Download,
-                            Progress = pct,
+                            Progress = p.Percent,
+                            BytesDownloaded = p.BytesRead,
+                            TotalBytes = p.TotalBytes,
                             Url = dlUrl,
                             ArchiveName = Path.GetFileName(mo2ArchivePath),
                             DownloadPath = cachePath,

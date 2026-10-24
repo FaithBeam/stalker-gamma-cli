@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Polly;
 using Polly.Retry;
 using Stalker.Gamma.Factories;
+using Stalker.Gamma.Utilities;
 
 namespace Stalker.Gamma.ModDb.Services;
 
@@ -16,7 +17,7 @@ public partial class ModDbService(
     public async Task DownloadAddonAsync(
         string url,
         string output,
-        Action<double> onProgress,
+        Action<DownloadProgress> onProgress,
         CancellationToken cancellationToken = default
     )
     {

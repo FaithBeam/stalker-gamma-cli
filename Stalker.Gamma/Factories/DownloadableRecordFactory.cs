@@ -53,7 +53,8 @@ public class DownloadableRecordFactory(
     GitService gitService,
     GetCanonicalLinkFromModDbStartLink getCanonicalLinkFromModDbStartLink,
     ModDbGetAddonMetadataService modDbGetAddonMetadataService,
-    ModDbService modDbService
+    ModDbService modDbService,
+    StalkerGammaSettings settings
 ) : IDownloadableRecordFactory
 {
     public IDownloadableRecord CreateSkippedRecord(IDownloadableRecord record) =>
@@ -69,7 +70,9 @@ public class DownloadableRecordFactory(
             downloadDirectory,
             anomalyDir,
             modDbService,
-            archiveService
+            archiveService,
+            httpClientFactory,
+            settings.UseAnomalyMirror ? settings.AnomalyMirrorUrl : null
         );
 
     public IDownloadableRecord CreateGammaSetupRecord(

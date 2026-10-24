@@ -17,62 +17,77 @@ public partial class Gog(
     /// <summary>
     /// Fix the GOG installation that creates the ModOrganizer.ini with bad paths.
     /// </summary>
-    public async Task FixInstall()
-    {
-        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
-        var mo2IniPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "ModOrganizer.ini");
-        var pathTxtFilePath = Path.Join(_cliSettings.ActiveProfile.Gamma, "..", "path.txt");
-        var pathIniPath = Path.Join(_cliSettings.ActiveProfile.Gamma, "..", "path.ini");
-        if (!File.Exists(mo2IniPath) || !File.Exists(pathTxtFilePath) || !File.Exists(pathIniPath))
-        {
-            _logger.Error("ModOrganizer.ini, path.txt, or path.ini not found");
-            return;
-        }
-
-        var mo2IniTxt = await File.ReadAllTextAsync(mo2IniPath);
-        var pathTxt = (await File.ReadAllTextAsync(pathTxtFilePath)).Replace("\\", @"\\");
-        var pathIniTxt = await File.ReadAllTextAsync(pathIniPath);
-        var badPath = PathIniPathRx().Match(pathIniTxt).Groups["path"].Value.Trim();
-        mo2IniTxt = mo2IniTxt.Replace(badPath, pathTxt.Replace("/", @"\\"));
-        _logger.Information(
-            "Replacing {BadPath} with {GoodPath} in {FilePath}",
-            badPath,
-            pathTxt,
-            mo2IniPath
-        );
-        await File.WriteAllTextAsync(mo2IniPath, mo2IniTxt);
-        _logger.Information("ModOrganizer.ini updated");
-
-        List<string> gitReposToTransfer =
-        [
-            "gamma_large_files_v2",
-            "Stalker_GAMMA",
-            "teivaz_anomaly_gunslinger",
-        ];
-        foreach (var gitRepo in gitReposToTransfer)
-        {
-            var dstPath = Path.Join(
-                _cliSettings.ActiveProfile.Gamma,
-                "downloads",
-                $"{gitRepo}.git"
-            );
-            var srcPath = Path.Join(
-                _cliSettings.ActiveProfile.Gamma,
-                ".Grok's Modpack Installer",
-                "resources",
-                gitRepo,
-                ".git"
-            );
-            // skip if the directory already exists or the source doesn't exist
-            if (Directory.Exists(dstPath) || !Directory.Exists(srcPath))
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
+    public Task<int> FixInstall(bool json = false) =>
+        Run(
+            "gog fix-install",
+            json,
+            async () =>
             {
-                continue;
-            }
+                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                var mo2IniPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "ModOrganizer.ini");
+                var pathTxtFilePath = Path.Join(_cliSettings.ActiveProfile.Gamma, "..", "path.txt");
+                var pathIniPath = Path.Join(_cliSettings.ActiveProfile.Gamma, "..", "path.ini");
+                if (
+                    !File.Exists(mo2IniPath)
+                    || !File.Exists(pathTxtFilePath)
+                    || !File.Exists(pathIniPath)
+                )
+                {
+                    return LogError("ModOrganizer.ini, path.txt, or path.ini not found");
+                }
 
-            Directory.Move(srcPath, dstPath);
-            _logger.Information("Moved {SrcPath} to {DstPath}", srcPath, dstPath);
-        }
-    }
+                var mo2IniTxt = await File.ReadAllTextAsync(mo2IniPath);
+                var pathTxt = (await File.ReadAllTextAsync(pathTxtFilePath)).Replace("\\", @"\\");
+                var pathIniTxt = await File.ReadAllTextAsync(pathIniPath);
+                var badPath = PathIniPathRx().Match(pathIniTxt).Groups["path"].Value.Trim();
+                mo2IniTxt = mo2IniTxt.Replace(badPath, pathTxt.Replace("/", @"\\"));
+                _logger.Information(
+                    "Replacing {BadPath} with {GoodPath} in {FilePath}",
+                    badPath,
+                    pathTxt,
+                    mo2IniPath
+                );
+                await File.WriteAllTextAsync(mo2IniPath, mo2IniTxt);
+                _logger.Information("ModOrganizer.ini updated");
+
+                List<string> gitReposToTransfer =
+                [
+                    "gamma_large_files_v2",
+                    "Stalker_GAMMA",
+                    "teivaz_anomaly_gunslinger",
+                ];
+                foreach (var gitRepo in gitReposToTransfer)
+                {
+                    var dstPath = Path.Join(
+                        _cliSettings.ActiveProfile.Gamma,
+                        "downloads",
+                        $"{gitRepo}.git"
+                    );
+                    var srcPath = Path.Join(
+                        _cliSettings.ActiveProfile.Gamma,
+                        ".Grok's Modpack Installer",
+                        "resources",
+                        gitRepo,
+                        ".git"
+                    );
+                    // skip if the directory already exists or the source doesn't exist
+                    if (Directory.Exists(dstPath) || !Directory.Exists(srcPath))
+                    {
+                        continue;
+                    }
+
+                    Directory.Move(srcPath, dstPath);
+                    _logger.Information("Moved {SrcPath} to {DstPath}", srcPath, dstPath);
+                }
+                return null;
+            }
+        );
+
+    private Task<int> Run(string command, bool json, Func<Task<string?>> action) =>
+        JsonOutputUtility.RunAsync(_logger, command, json, action);
+
+    private string LogError(string error) => JsonOutputUtility.LogError(_logger, error);
 
     [GeneratedRegex("^path=(?<path>.+)$", RegexOptions.Multiline)]
     private partial Regex PathIniPathRx();
