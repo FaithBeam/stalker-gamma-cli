@@ -101,7 +101,7 @@ public class ResumeState
         var lines = await File.ReadAllLinesAsync(path, cancellationToken);
         var command = lines
             .FirstOrDefault(x => x.StartsWith(CommandPrefix, StringComparison.Ordinal))
-            ?[CommandPrefix.Length..].Trim();
+            ?[CommandPrefix.Length..]?.Trim();
         var state = new ResumeState { Command = command };
         foreach (var line in lines.Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith('#')))
         {

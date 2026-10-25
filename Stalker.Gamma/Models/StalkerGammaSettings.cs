@@ -23,4 +23,15 @@ public class StalkerGammaSettings
     public string PathTo7Z = OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
     public string PathToTar = "tar";
     public string? StalkerGammaServerUrl { get; set; }
+
+    /// <summary>
+    /// Direct download link to a multithreaded repack of the Anomaly archive.
+    /// </summary>
+    public string AnomalyMirrorUrl { get; set; } =
+        "https://files.faith-beam.com/anomaly/1.5.3/Anomaly-1.5.3-Full.mt-mx5.7z";
+
+    /// <summary>
+    /// Download Anomaly from <see cref="AnomalyMirrorUrl"/> first and fall back to ModDB if it fails.
+    /// </summary>
+    public bool UseAnomalyMirror { get; set; }
 }

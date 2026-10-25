@@ -30,10 +30,16 @@ public class UpdateCmds(
     /// <summary>
     /// Check for updates
     /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     [Command("check")]
-    public async Task<int> CheckUpdates(CancellationToken cancellationToken = default)
+    public async Task<int> CheckUpdates(
+        CancellationToken cancellationToken = default,
+        bool json = false
+    )
     {
         var statusCode = 0;
+        string? error = null;
         LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         stalkerGammaSettings.ModpackMakerList = _cliSettings.ActiveProfile!.ModPackMakerUrl;
@@ -57,7 +63,11 @@ public class UpdateCmds(
                 .LocalRecords.Diff(diffed.OnlineRecords)
                 .Concat(localGitRepoDiffs)
                 .ToList();
-            if (diffs.Count > 0)
+            if (json)
+            {
+                JsonOutputUtility.WriteUpdates(diffs);
+            }
+            else if (diffs.Count > 0)
             {
                 var olds = diffs
                     .Where(x =>
@@ -129,11 +139,18 @@ public class UpdateCmds(
             progressLoggingService.WriteToLogFile();
             _logger.Error(e, "Update check failed! {ExceptionMessage}", e.Message);
             statusCode = 1;
+            error = e.Message;
         }
         finally
         {
             progressLoggingService.WriteToLogFile();
         }
+
+        if (json)
+        {
+            JsonOutputUtility.WriteResult(CheckCommand, statusCode, error);
+        }
+
         return statusCode;
     }
 
@@ -202,6 +219,7 @@ public class UpdateCmds(
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
     /// <param name="resume">Resume a previously failed update apply from resume.txt in your gamma folder</param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     /// <param name="progressUpdateIntervalMs"></param>
     public async Task<int> Apply(
         CancellationToken cancellationToken,
@@ -211,10 +229,12 @@ public class UpdateCmds(
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
         bool resume = false,
+        bool json = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
         var statusCode = 0;
+        string? error = null;
 
         LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
 
@@ -224,6 +244,7 @@ public class UpdateCmds(
 
         SetUpLogging(
             verbose,
+            json,
             progressUpdateIntervalMs,
             out var gammaProgressDisposable,
             out var gammaWriteFileDisposable
@@ -265,12 +286,18 @@ public class UpdateCmds(
                 ResumeUtility.Write(_logger, resumeState, gamma);
             }
             statusCode = 1;
+            error = e.Message;
         }
         finally
         {
             progressLoggingService.WriteToLogFile();
             gammaWriteFileDisposable.Dispose();
             gammaProgressDisposable.Dispose();
+        }
+
+        if (json)
+        {
+            JsonOutputUtility.WriteResult(ApplyResumeCommand, statusCode, error);
         }
 
         return statusCode;
@@ -297,6 +324,7 @@ public class UpdateCmds(
 
     private void SetUpLogging(
         bool verbose,
+        bool json,
         long progressUpdateIntervalMs,
         out IDisposable gammaProgressDisposable,
         out IDisposable gammaWriteFileDisposable
@@ -320,7 +348,11 @@ public class UpdateCmds(
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable
             .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(verbose ? OnProgressChangedVerbose : OnProgressChangedInformational);
+            .Subscribe(
+                json ? JsonOutputUtility.WriteProgress
+                : verbose ? OnProgressChangedVerbose
+                : OnProgressChangedInformational
+            );
     }
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
@@ -329,7 +361,7 @@ public class UpdateCmds(
             DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
+            e.GetHumanReadableProgress().PadRight(10),
             $"[{e.Complete}/{e.Total}]"
         );
 
@@ -338,11 +370,12 @@ public class UpdateCmds(
             Verbose,
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
-            $"{e.Progress:P2}".PadRight(8),
+            e.GetHumanReadableProgress().PadRight(10),
             $"[{e.Complete}/{e.Total}]",
             e.Url
         );
 
+    private const string CheckCommand = "update check";
     private const string ApplyResumeCommand = "update apply";
 
     private const string Informational =

@@ -24,8 +24,9 @@ public class Cache(
     /// Check for out-of-date addons that can be pruned.
     /// </summary>
     /// <param name="cancellationToken"></param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     [Command("prune check")]
-    public async Task PruneCheck(CancellationToken cancellationToken)
+    public async Task<int> PruneCheck(CancellationToken cancellationToken, bool json = false)
     {
         var pruneCheckLogic = new PruneCheck(
             logger,
@@ -36,15 +37,16 @@ public class Cache(
             downloadableRecordFactory,
             progressLoggingService
         );
-        await pruneCheckLogic.ExecuteAsync(cancellationToken);
+        return await pruneCheckLogic.ExecuteAsync(json, cancellationToken);
     }
 
     /// <summary>
     /// Prune out-of-date addons.
     /// </summary>
     /// <param name="cancellationToken"></param>
+    /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     [Command("prune apply")]
-    public async Task PruneApply(CancellationToken cancellationToken)
+    public async Task<int> PruneApply(CancellationToken cancellationToken, bool json = false)
     {
         var pruneApplyLogic = new PruneApply(
             logger,
@@ -55,7 +57,7 @@ public class Cache(
             downloadableRecordFactory,
             progressLoggingService
         );
-        await pruneApplyLogic.ExecuteAsync(cancellationToken);
+        return await pruneApplyLogic.ExecuteAsync(json, cancellationToken);
     }
 }
 
@@ -82,8 +84,14 @@ public abstract class PruneLogic(
 
     private ProgressLoggingService ProgressLoggingService { get; set; } = progressLoggingService;
 
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    protected bool Json { get; private set; }
+
+    public async Task<int> ExecuteAsync(bool json, CancellationToken cancellationToken = default)
     {
+        Json = json;
+        var statusCode = 0;
+        string? error = null;
+
         LogAndExitOnDependencyError.Check(UtilitiesReady, Logger);
 
         ValidateActiveProfile.Validate(Logger, CliSettings.ActiveProfile);
@@ -94,24 +102,40 @@ public abstract class PruneLogic(
 
             if (addonArchivesToDelete.Count == 0)
             {
+                if (Json)
+                {
+                    JsonOutputUtility.WritePrune(addonArchivesToDelete);
+                }
                 Logger.Information("No addons to prune");
-                return;
             }
+            else
+            {
+                var (maxPathLen, maxMbLen) = CalculateMaxLengths(addonArchivesToDelete);
 
-            var (maxPathLen, maxMbLen) = CalculateMaxLengths(addonArchivesToDelete);
-
-            HandlePrunableArchives(addonArchivesToDelete, maxPathLen, maxMbLen);
+                HandlePrunableArchives(addonArchivesToDelete, maxPathLen, maxMbLen);
+            }
         }
         catch (Exception e)
         {
             ProgressLoggingService.WriteToLogFile();
             LoggerExceptionMsg(e);
+            statusCode = 1;
+            error = e.Message;
         }
         finally
         {
             ProgressLoggingService.WriteToLogFile();
         }
+
+        if (Json)
+        {
+            JsonOutputUtility.WriteResult(Command, statusCode, error);
+        }
+
+        return statusCode;
     }
+
+    protected abstract string Command { get; }
 
     protected abstract void LoggerExceptionMsg(Exception e);
 
@@ -132,6 +156,11 @@ public abstract class PruneLogic(
 
     protected void LogArchiveDetails(FileInfo archive, int maxPathLen, int maxMbLen)
     {
+        // The prune json message lists every archive instead
+        if (Json)
+        {
+            return;
+        }
         var mb = archive.Length / 1024 / 1024;
         var date = archive.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
         var paddedArchiveName = archive.FullName.PadRight(maxPathLen);
@@ -189,6 +218,7 @@ public abstract class PruneLogic(
     private readonly IReadOnlySet<string> _ignoreAddons = new HashSet<string>
     {
         "Anomaly-1.5.3-Full.2.7z",
+        "Anomaly-1.5.3-Full.mt-mx5.7z",
         "ModOrganizer.v2.5.2.7z",
     };
 }
@@ -212,6 +242,8 @@ public class PruneCheck(
         progressLoggingService
     )
 {
+    protected override string Command => "cache prune check";
+
     protected override void LoggerExceptionMsg(Exception e) =>
         Logger.Error(e, "Prune check failed! {ExceptionMessage}", e.Message);
 
@@ -224,6 +256,11 @@ public class PruneCheck(
         foreach (var archive in addonArchivesToDelete)
         {
             LogArchiveDetails(archive, maxPathLen, maxMbLen);
+        }
+
+        if (Json)
+        {
+            JsonOutputUtility.WritePrune(addonArchivesToDelete);
         }
 
         var mbToReclaim = MbToReclaim(addonArchivesToDelete);
@@ -253,6 +290,8 @@ public class PruneApply(
         progressLoggingService
     )
 {
+    protected override string Command => "cache prune apply";
+
     protected override void LoggerExceptionMsg(Exception e) =>
         Logger.Error(e, "Prune apply failed! {ExceptionMessage}", e.Message);
 
@@ -268,6 +307,11 @@ public class PruneApply(
         {
             LogArchiveDetails(archive, maxPathLen, maxMbLen);
             archive.Delete();
+        }
+
+        if (Json)
+        {
+            JsonOutputUtility.WritePrune(addonArchivesToDelete);
         }
 
         Logger.Information("Reclaimed {Mb} MB", mbToReclaim);

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using LibGit2Sharp;
 
 namespace Stalker.Gamma.Services;
@@ -122,24 +123,33 @@ public partial class GitService
         }
     }
 
-    private static int CountBlobs(Tree tree, Func<string, bool>? includePath = null)
-    {
-        var count = 0;
+    private record ExtractableBlob(string Path, ObjectId Id, long Size);
 
+    private static void CollectExtractableBlobs(
+        Repository repo,
+        Tree tree,
+        List<ExtractableBlob> blobs,
+        Func<string, bool>? includePath = null
+    )
+    {
         foreach (var entry in tree)
         {
             switch (entry.TargetType)
             {
                 case TreeEntryTargetType.Blob when includePath?.Invoke(entry.Path) ?? true:
-                    count++;
+                    blobs.Add(
+                        new ExtractableBlob(
+                            entry.Path,
+                            entry.Target.Id,
+                            repo.ObjectDatabase.RetrieveObjectMetadata(entry.Target.Id).Size
+                        )
+                    );
                     break;
                 case TreeEntryTargetType.Tree:
-                    count += CountBlobs((Tree)entry.Target, includePath);
+                    CollectExtractableBlobs(repo, (Tree)entry.Target, blobs, includePath);
                     break;
             }
         }
-
-        return count;
     }
 
     /// <param name="includePath">Only extract blobs whose repo relative path this returns true for</param>
@@ -154,15 +164,12 @@ public partial class GitService
     {
         try
         {
-            using var repo = new Repository(pathToRepo);
-            var commit = LookupCommit(repo, branch);
-            await ExtractTreeAsync(
-                commit.Tree,
-                outputDir,
-                ct: ct,
-                onProgress: onProgress,
-                includePath: includePath
-            );
+            List<ExtractableBlob> blobs = [];
+            using (var repo = new Repository(pathToRepo))
+            {
+                CollectExtractableBlobs(repo, LookupCommit(repo, branch).Tree, blobs, includePath);
+            }
+            await Task.Run(() => ExtractBlobs(pathToRepo, outputDir, blobs, onProgress, ct), ct);
         }
         catch (Exception e)
         {
@@ -305,60 +312,53 @@ public partial class GitService
         }
     }
 
-    private static async Task<int> ExtractTreeAsync(
-        Tree tree,
-        string basePath,
-        Action<double>? onProgress = null,
-        int? total = null,
-        int current = 0,
-        Func<string, bool>? includePath = null,
-        CancellationToken ct = default
+    private static void ExtractBlobs(
+        string pathToRepo,
+        string outputDir,
+        List<ExtractableBlob> blobs,
+        Action<double>? onProgress,
+        CancellationToken ct
     )
     {
-        // count once at the root so a filter that excludes everything doesn't recount every subtree
-        total ??= CountBlobs(tree, includePath);
-        if (!Directory.Exists(basePath))
+        Directory.CreateDirectory(outputDir);
+        foreach (
+            var directoryName in blobs
+                .Select(blob => Path.GetDirectoryName(Path.Combine(outputDir, blob.Path)))
+                .Distinct()
+        )
         {
-            Directory.CreateDirectory(basePath);
-        }
-
-        foreach (var entry in tree)
-        {
-            var entryPath = Path.Combine(basePath, entry.Path);
-            switch (entry.TargetType)
+            if (!string.IsNullOrWhiteSpace(directoryName))
             {
-                case TreeEntryTargetType.Tree:
-                    current = await ExtractTreeAsync(
-                        (Tree)entry.Target,
-                        basePath,
-                        ct: ct,
-                        onProgress: onProgress,
-                        total: total,
-                        current: current,
-                        includePath: includePath
-                    );
-                    break;
-                case TreeEntryTargetType.Blob when includePath?.Invoke(entry.Path) ?? true:
-                {
-                    var directoryName = Path.GetDirectoryName(entryPath);
-                    if (
-                        !string.IsNullOrWhiteSpace(directoryName)
-                        && !Directory.Exists(directoryName)
-                    )
-                    {
-                        Directory.CreateDirectory(directoryName);
-                    }
-                    var blob = (Blob)entry.Target;
-                    await using var content = blob.GetContentStream();
-                    await using var file = File.Create(entryPath);
-                    await content.CopyToAsync(file, ct);
-                    current++;
-                    onProgress?.Invoke((double)current / total.Value);
-                    break;
-                }
+                Directory.CreateDirectory(directoryName);
             }
         }
-        return current;
+
+        var extracted = 0;
+        Parallel.ForEach(
+            // largest first so a big file doesn't start last and leave the other workers idle.
+            // NoBuffering hands out one blob at a time in this order instead of in chunks
+            Partitioner.Create(
+                blobs.OrderByDescending(blob => blob.Size),
+                EnumerablePartitionerOptions.NoBuffering
+            ),
+            // leave half the cores free so the rest of the app (and the machine) stays responsive
+            new ParallelOptions
+            {
+                CancellationToken = ct,
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
+            },
+            // libgit2 handles aren't safe to share across threads, so each worker opens its own
+            () => new Repository(pathToRepo),
+            (blob, _, repo) =>
+            {
+                using var content = repo.Lookup<Blob>(blob.Id).GetContentStream();
+                using var file = File.Create(Path.Combine(outputDir, blob.Path));
+                content.CopyTo(file);
+                onProgress?.Invoke((double)Interlocked.Increment(ref extracted) / blobs.Count);
+                return repo;
+            },
+            repo => repo.Dispose()
+        );
     }
 
     public static bool Ready => true;

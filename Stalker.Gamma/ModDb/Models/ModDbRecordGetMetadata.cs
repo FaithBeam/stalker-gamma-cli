@@ -53,7 +53,7 @@ public class ModDbRecordGetMetadata(
                 await _modDbService.DownloadAddonAsync(
                     Url,
                     DownloadPath,
-                    pct => OnProgress(GammaProgressType.Download, pct),
+                    p => OnProgress(GammaProgressType.Download, p.Percent, p),
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;
@@ -128,18 +128,24 @@ public class ModDbRecordGetMetadata(
 
     public bool Downloaded { get; set; }
 
-    private void OnProgress(GammaProgressType operation, double pct) =>
-        _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));
+    private void OnProgress(
+        GammaProgressType operation,
+        double? pct,
+        DownloadProgress? download = null
+    ) => _gammaProgress.OnProgressChanged(ProgFunc(operation, pct, download));
 
     private GammaProgress.GammaInstallProgressEventArgs ProgFunc(
         GammaProgressType operation,
-        double pct
+        double? pct,
+        DownloadProgress? download
     ) =>
         new()
         {
             Name = Name,
             ProgressType = operation,
             Progress = pct,
+            BytesDownloaded = download?.BytesRead,
+            TotalBytes = download?.TotalBytes,
             Url = Url,
             ArchiveName = ArchiveName,
             DownloadPath = DownloadPath,

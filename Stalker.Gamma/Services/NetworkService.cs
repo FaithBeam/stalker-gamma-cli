@@ -29,7 +29,7 @@ public class NetworkService(
         string url,
         string pathToDownloads,
         string fileName,
-        Action<double>? onProgress = null,
+        Action<DownloadProgress>? onProgress = null,
         CancellationToken cancellationToken = default
     )
     {

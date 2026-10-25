@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.Json;
 using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +23,7 @@ public static class Program
         );
         var logPath = Path.Join(stalkerGammaLogsPath, "stalker-gamma-cli.log");
         Directory.CreateDirectory(stalkerGammaLogsPath);
+        var jsonOutput = JsonOutputUtility.IsEnabled(args);
         var log = new LoggerConfiguration()
             .MinimumLevel.Verbose()
             .WriteTo.Logger(lc =>
@@ -37,11 +38,24 @@ public static class Program
                         outputTemplate: "{Message:lj}{NewLine}{Exception}"
                     )
             )
-            .WriteTo.Console(
-                restrictedToMinimumLevel: LogEventLevel.Information,
-                outputTemplate: "{Message:lj}{NewLine}",
-                theme: ConsoleTheme.None
-            )
+            .WriteTo.Logger(lc =>
+            {
+                if (jsonOutput)
+                {
+                    lc.WriteTo.Console(
+                        new JsonLogFormatter(),
+                        restrictedToMinimumLevel: LogEventLevel.Information
+                    );
+                }
+                else
+                {
+                    lc.WriteTo.Console(
+                        restrictedToMinimumLevel: LogEventLevel.Information,
+                        outputTemplate: "{Message:lj}{NewLine}",
+                        theme: ConsoleTheme.None
+                    );
+                }
+            })
             .CreateLogger();
         var app = ConsoleApp
             .Create()
