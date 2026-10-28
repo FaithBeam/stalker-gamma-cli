@@ -7,15 +7,23 @@ _stalker-gamma-cli_ is a cli to install Stalker Anomaly and the GAMMA mod pack.
 Usage: [command] [-h|--help] [--version]
 
 Commands:
-  anomaly-install                    Installs Stalker Anomaly.
-  check-anomaly                      Verifies the integrity of Stalker Anomaly
+  anomaly check                      Verifies the integrity of Stalker Anomaly
+  anomaly delete-reshade             Deletes all ReShade-related files from the Anomaly bin directory
+  anomaly install                    Installs Stalker Anomaly.
+  anomaly purge-shader-cache         Deletes the shader cache directory for the active Anomaly profile
+  cache prune apply                  Prune out-of-date addons.
+  cache prune check                  Check for out-of-date addons that can be pruned.
   config                             Get the currently active profile
-  config create                      Create settings file
+  config create                      Create the settings file
   config delete                      Delete a profile. If this profile was active, you should set another to be active with config use
+  config info                        Print the currently active profile settings.
   config list                        List profiles
+  config set                         Edit a setting in the currently active profile.
   config use                         Set a profile as active.
-  debug hash-install                 For debugging broken installations only. Hashes installation folders and creates a compressed archive containing the computed hashes.
-  full-install                       This will install/update Anomaly and all GAMMA addons.
+  debug hash-install                 Hashes installation folders and creates a compressed archive containing the computed hashes.
+  debug logs                         Open the logs folder.
+  full-install                       This will install/update Anomaly and all GAMMA addons. This will take ~150GB.
+  gog fix-install                    Fix the GOG installation that creates the ModOrganizer.ini with bad paths.
   mo2 config get selected-profile    Retrieves the selected profile information from the ModOrganizer.ini file within the specified directory.
   mo2 config set selected-profile    Updates the selected profile in the ModOrganizer.ini file for the specified directory.
   mo2 mod delete                     Deletes a specified mod in the provided profile.
@@ -29,22 +37,28 @@ Commands:
   update check                       Check for updates
 ```
 
+See the [Commands](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Commands) wiki page for every command and option.
+
 ## Features
 
 - Install Stalker Anomaly
 - Install GAMMA mod pack
 - Manage mod lists for GAMMA
 - Update support
+- Resume failed installs and updates
+- Offline installs
+- Multiple install profiles
+- Machine-readable JSON output for GUI wrappers
 
 ## Usage
 
 ### Install
 
-| OS | Method                                                                                 |
-|----------|----------------------------------------------------------------------------------------|
-| Windows  | [Windows Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) |
-| Linux    | [Linux Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install)     |
-| macOS    | [MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)     |
+| OS      | Method                                                                                 |
+| ------- | -------------------------------------------------------------------------------------- |
+| Windows | [Windows Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) |
+| Linux   | [Linux Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install)     |
+| macOS   | [MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)     |
 
 ### Update
 
@@ -60,7 +74,7 @@ stalker-gamma update apply
 ## Build
 
 | Platform | Commands                       |
-|----------|--------------------------------|
+| -------- | ------------------------------ |
 | Windows  | `cd build/win; build.bat`      |
 | Linux    | `cd build/linux && make build` |
 | macOS    | `cd build/mac && make build`   |
@@ -81,4 +95,8 @@ Artifacts in the `build/stalker-gamma-cli` folder.
 
 ### Advanced Options
 
-[Advanced](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced)
+- [Advanced](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced)
+- [JSON Output](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Json-Output)
+- [Anomaly Mirror](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Anomaly-Mirror)
+- [Stalker GAMMA Server](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server)
+- [Offline Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Offline-Install)
