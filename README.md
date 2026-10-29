@@ -16,7 +16,7 @@ _stalker-gamma-cli_ installs and updates Stalker Anomaly and the [G.A.M.M.A.](ht
 
 ## Install
 
-A full install needs about **150 GB** of free space (about 100 GB with [`--minimal`](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced#minimal-install)).
+A full install needs about **150 GB** of free space.
 
 | OS      | Install the CLI                                                                                      | Guide                                                                                  |
 | ------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
