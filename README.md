@@ -1,102 +1,73 @@
 # stalker-gamma-cli
 
-_stalker-gamma-cli_ is a cli to install Stalker Anomaly and the GAMMA mod pack.
-
-```
-❯ stalker-gamma
-Usage: [command] [-h|--help] [--version]
-
-Commands:
-  anomaly check                      Verifies the integrity of Stalker Anomaly
-  anomaly delete-reshade             Deletes all ReShade-related files from the Anomaly bin directory
-  anomaly install                    Installs Stalker Anomaly.
-  anomaly purge-shader-cache         Deletes the shader cache directory for the active Anomaly profile
-  cache prune apply                  Prune out-of-date addons.
-  cache prune check                  Check for out-of-date addons that can be pruned.
-  config                             Get the currently active profile
-  config create                      Create the settings file
-  config delete                      Delete a profile. If this profile was active, you should set another to be active with config use
-  config info                        Print the currently active profile settings.
-  config list                        List profiles
-  config set                         Edit a setting in the currently active profile.
-  config use                         Set a profile as active.
-  debug hash-install                 Hashes installation folders and creates a compressed archive containing the computed hashes.
-  debug logs                         Open the logs folder.
-  full-install                       This will install/update Anomaly and all GAMMA addons. This will take ~150GB.
-  gog fix-install                    Fix the GOG installation that creates the ModOrganizer.ini with bad paths.
-  mo2 config get selected-profile    Retrieves the selected profile information from the ModOrganizer.ini file within the specified directory.
-  mo2 config set selected-profile    Updates the selected profile in the ModOrganizer.ini file for the specified directory.
-  mo2 mod delete                     Deletes a specified mod in the provided profile.
-  mo2 mod disable                    Disables a specified mod in the given profile
-  mo2 mod enable                     Enables a specified mod within a given profile.
-  mo2 mod status                     Show mod status info
-  mo2 profile delete                 Deletes a specified profile from a Gamma installation.
-  mo2 profile list mods              Lists all mods in a profile.
-  mo2 profiles list                  Lists all profiles in a gamma installation.
-  update apply                       Apply any updates
-  update check                       Check for updates
-```
-
-See the [Commands](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Commands) wiki page for every command and option.
+_stalker-gamma-cli_ installs and updates Stalker Anomaly and the [G.A.M.M.A.](https://github.com/Grokitach/Stalker_GAMMA) mod pack from the command line on Windows, Linux and macOS.
 
 ## Features
 
-- Install Stalker Anomaly
-- Install GAMMA mod pack
-- Manage mod lists for GAMMA
-- Update support
-- Resume failed installs and updates
-- Offline installs
-- Multiple install profiles
-- Machine-readable JSON output for GUI wrappers
+- Install and update Stalker Anomaly and GAMMA
+- [Resume](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced#resume-a-failed-install) failed installs and updates
+- [Offline installs](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Offline-Install) from a cache archive
+- [Multiple install profiles](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced#multiple-profiles), e.g. stable and testing
+- Manage Mod Organizer 2 profiles and mods
+- [Anomaly mirror](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Anomaly-Mirror) that extracts about 9× faster
+- [Get past ModDB's Cloudflare challenge](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server) (experimental)
+- [Prune outdated addons](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced#freeing-up-cache-space) from your cache
+- [Machine-readable JSON output](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Json-Output) for GUI wrappers
 
-## Usage
+## Install
 
-### Install
+A full install needs about **150 GB** of free space (about 100 GB with [`--minimal`](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced#minimal-install)).
 
-| OS      | Method                                                                                 |
-| ------- | -------------------------------------------------------------------------------------- |
-| Windows | [Windows Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) |
-| Linux   | [Linux Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install)     |
-| macOS   | [MacOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)     |
+| OS      | Install the CLI                                                                                      | Guide                                                                                  |
+| ------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Windows | `choco install stalker-gamma`                                                                        | [Windows Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) |
+| Linux   | `yay -S stalker-gamma-cli-bin` or the AppImage from [Releases](https://github.com/FaithBeam/stalker-gamma-cli/releases) | [Linux Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install)     |
+| macOS   | `brew tap faithbeam/stalker-gamma && brew install --cask stalker-gamma`                              | [macOS Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install)     |
 
-### Update
+The guides cover creating a profile, running `full-install`, and setting up Wine/Proton or a Sikarugir bottle on Linux and macOS.
 
-After you've performed a full-install, you can update your installation.
+## Update
 
-Check for updates and apply:
+After a full install, check for and apply updates:
 
 ```bash
 stalker-gamma update check
-stalker-gamma update apply
+stalker-gamma update apply --preserve-user-settings --preserve-mcm-settings
 ```
 
-## Build
+The switches keep your `user.ltx` (hotkeys, graphics) and MCM settings. See [Advanced](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced) for details.
 
-| Platform | Commands                       |
-| -------- | ------------------------------ |
-| Windows  | `cd build/win; build.bat`      |
-| Linux    | `cd build/linux && make build` |
-| macOS    | `cd build/mac && make build`   |
+## Documentation
 
-Artifacts in the `build/stalker-gamma-cli` folder.
+The [wiki](https://github.com/FaithBeam/stalker-gamma-cli/wiki) has everything else:
+
+- **Install:** [Windows](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Windows-Install) · [Linux](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Linux-Install) · [macOS](https://github.com/FaithBeam/stalker-gamma-cli/wiki/MacOS-Install) · [Offline Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Offline-Install) · [Create Offline Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Create-Offline-Install)
+- **Usage:** [Commands](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Commands) · [Advanced](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced) · [Anomaly Mirror](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Anomaly-Mirror) · [Stalker GAMMA Server](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server) · [FSR Upscaling](https://github.com/FaithBeam/stalker-gamma-cli/wiki/FSR-Upscaling) · [Steam Deck / Potato Mode](https://github.com/FaithBeam/stalker-gamma-cli/wiki/FPS-Config-%7C-Steam-Deck-%7C-Potato-Mode-Modlist)
+- **Developers:** [JSON Output](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Json-Output)
+
+Run `stalker-gamma --help`, or `--help` on any command, to see the commands and options for your installed version.
 
 ## Troubleshooting
 
-[Troubleshooting wiki](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Troubleshooting)
+See [Troubleshooting](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Troubleshooting). If an install fails partway, rerun the same command with `--resume`.
+
+When reporting a bug, include your logs (`stalker-gamma debug logs` opens the folder), the command you ran, and the output of `stalker-gamma --version`.
 
 ## Development
 
 ### Requirements
 
 - .NET 10 SDK
-- 7zz, curl-impersonate, cacert.pem in stalker-gamma-cli/bin/debug/net10.0/resources folder
-  - These dependencies can be retrieved by running your platform's `make build` command and copying the `resources` folder to the proper location
+- Native dependencies in `stalker-gamma-cli/bin/Debug/net10.0/`:
+  - `libcurl-impersonate` (`.dll`, `.so` or `.dylib`) and `cacert.pem` next to the executable
+  - `resources/7zz` (`resources/7zz.exe` and `7z.dll` on Windows)
 
-### Advanced Options
+The easiest way to get these is to run your platform's build below once, then copy them from its output folder.
 
-- [Advanced](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Advanced)
-- [JSON Output](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Json-Output)
-- [Anomaly Mirror](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Anomaly-Mirror)
-- [Stalker GAMMA Server](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server)
-- [Offline Install](https://github.com/FaithBeam/stalker-gamma-cli/wiki/Offline-Install)
+### Build
+
+| Platform | Commands                       | Output                                   |
+| -------- | ------------------------------ | ---------------------------------------- |
+| Windows  | `cd build/win; build.bat`      | `build/win/build/stalker-gamma-cli`      |
+| Linux    | `cd build/linux && make build` | `build/linux/build/stalker-gamma-cli`    |
+| macOS    | `cd build/mac && make build`   | `build/mac/build/stalker-gamma-cli`      |
