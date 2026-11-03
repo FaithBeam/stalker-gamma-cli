@@ -41,8 +41,6 @@ public static class ServiceCollectionExtensions
             .AddScoped<ArchiveService>()
             .AddScoped<StalkerGammaServerClientFactory>()
             .AddScoped<SevenZipService>()
-            .AddScoped<TarService>()
-            .AddScoped<UnzipService>()
             .AddScoped<GitService>()
             .AddScoped<ModDbService>()
             .AddScoped<ModDbMirrorService>()
