@@ -296,8 +296,8 @@ public class FullInstallCmd(
             )
             .Select(x => x.EventArgs);
         gammaProgressDisposable = gammaProgressObservable
-            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(
+            .SubscribeSampledOnDedicatedThread(
+                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
                 json ? JsonOutputUtility.WriteProgress
                 : verbose ? OnProgressChangedVerbose
                 : OnProgressChangedInformational

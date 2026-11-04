@@ -77,8 +77,8 @@ public class AnomalyInstallCmd(
             )
             .Select(x => x.EventArgs);
         var gammaProgressDisposable = gammaProgressObservable
-            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(
+            .SubscribeSampledOnDedicatedThread(
+                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
                 json ? JsonOutputUtility.WriteProgress
                 : verbose ? OnProgressChangedVerbose
                 : OnProgressChangedInformational
