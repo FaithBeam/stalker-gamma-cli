@@ -102,13 +102,32 @@ public sealed unsafe class SevenZipArchive : IDisposable
         CancellationToken ct = default
     )
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
         var root = Path.GetFullPath(destinationDir);
         Directory.CreateDirectory(root);
+        ExtractTo(entry => ResolveUnder(root, entry.Path), progress, ct);
+    }
+
+    /// <summary>
+    /// Extracts every item to the path <paramref name="resolveDestination"/> returns for it,
+    /// overwriting existing files. Items it returns null for are skipped. The caller is
+    /// responsible for keeping destinations where it wants them; <see cref="ResolveUnder"/>
+    /// helps with that.
+    /// </summary>
+    /// <param name="resolveDestination">
+    /// Returns the full path to extract an item to, or null to skip it. Called once per item,
+    /// in archive order, on the extracting thread.
+    /// </param>
+    /// <param name="progress">Fraction complete, 0 to 1.</param>
+    public void ExtractTo(
+        Func<ArchiveEntry, string?> resolveDestination,
+        Action<double>? progress = null,
+        CancellationToken ct = default
+    )
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var errors = new CallbackErrors();
-        var handler = new DirectoryExtractHandler(this, root, progress);
+        var handler = new DirectoryExtractHandler(this, resolveDestination, progress);
         var callback = new ExtractCallback(handler, errors, ct);
         int hr;
         try
@@ -142,6 +161,31 @@ public sealed unsafe class SevenZipArchive : IDisposable
         }
 
         progress?.Invoke(1);
+    }
+
+    /// <summary>
+    /// Joins an archive item path onto <paramref name="root"/>, treating backslashes as
+    /// directory separators. Throws if the result would land outside <paramref name="root"/>.
+    /// </summary>
+    /// <param name="root">A full path.</param>
+    public static string ResolveUnder(string root, string itemPath)
+    {
+        var rootWithSeparator = Path.EndsInDirectorySeparator(root)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+        var relative = itemPath.Replace('\\', '/').TrimStart('/');
+        var full = Path.GetFullPath(Path.Join(root, relative));
+        if (
+            !full.StartsWith(rootWithSeparator, StringComparison.Ordinal)
+            && !string.Equals(full, root, StringComparison.Ordinal)
+        )
+        {
+            throw new SevenZipException(
+                $"Archive item would extract outside of the destination: {itemPath}"
+            );
+        }
+
+        return full;
     }
 
     /// <summary>Runs <see cref="ExtractTo"/> on a thread pool thread.</summary>

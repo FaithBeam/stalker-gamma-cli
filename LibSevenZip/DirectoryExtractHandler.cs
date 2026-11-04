@@ -2,17 +2,16 @@ using LibSevenZip.Native;
 
 namespace LibSevenZip;
 
-/// <summary>Writes extracted items under a root directory.</summary>
+/// <summary>
+/// Writes extracted items to the paths chosen by <paramref name="resolveDestination"/>.
+/// Items it returns null for are skipped.
+/// </summary>
 internal sealed class DirectoryExtractHandler(
     SevenZipArchive archive,
-    string root,
+    Func<ArchiveEntry, string?> resolveDestination,
     Action<double>? progress
 ) : IExtractHandler
 {
-    private readonly string _rootWithSeparator = Path.EndsInDirectorySeparator(root)
-        ? root
-        : root + Path.DirectorySeparatorChar;
-
     private ulong _total;
     private ArchiveEntry? _currentEntry;
     private string? _currentPath;
@@ -44,7 +43,12 @@ internal sealed class DirectoryExtractHandler(
             return null;
         }
 
-        var destination = Resolve(entry.Path);
+        var destination = resolveDestination(entry);
+        if (destination is null)
+        {
+            return null;
+        }
+
         _currentEntry = entry;
         _currentPath = destination;
 
@@ -96,22 +100,5 @@ internal sealed class DirectoryExtractHandler(
         _currentStream = null;
         _currentEntry = null;
         _currentPath = null;
-    }
-
-    private string Resolve(string itemPath)
-    {
-        var relative = itemPath.Replace('\\', '/').TrimStart('/');
-        var full = Path.GetFullPath(Path.Join(root, relative));
-        if (
-            !full.StartsWith(_rootWithSeparator, StringComparison.Ordinal)
-            && !string.Equals(full, root, StringComparison.Ordinal)
-        )
-        {
-            throw new SevenZipException(
-                $"Archive item would extract outside of the destination: {itemPath}"
-            );
-        }
-
-        return full;
     }
 }

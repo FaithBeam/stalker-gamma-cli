@@ -34,13 +34,13 @@ public class FullInstallCmd(
     /// <param name="enableLongPaths">(Windows) Enable long paths</param>
     /// <param name="verbose">More verbose logging</param>
     /// <param name="minimal">Delete cache files after extracting. Could be useful for space-constrained devices but increases the chance of installation failure and will make updates much slower. This will take about ~100GB.</param>
-    /// <param name="offline">Perform an offline installation from a cache. This will not download anything if you combine this with --mod-pack-maker-path and --mod-list-path</param>
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
     /// <param name="useAnomalyMirror">Download Anomaly from the faith-beam.com mirror first, which extracts faster, and fall back to ModDB if it fails</param>
-    /// <param name="modPackMakerPath">Path to modpack_maker_list.txt. Offline install.</param>
-    /// <param name="modListPath">Path to modlist.txt. Offline install.</param>
+    /// <param name="modPackMakerPath">Path to a modpack_maker_list.txt to install instead of downloading the latest one. Overrides the one in --offline-archive-path.</param>
+    /// <param name="modListPath">Path to a modlist.txt to install instead of downloading the latest one. Overrides the one in --offline-archive-path.</param>
+    /// <param name="offlineArchivePath">Path to an offline cache tar archive. It's extracted to your cache folder, then an offline install is performed with the modpack_maker_list.txt and modlist.txt inside it. Nothing is downloaded.</param>
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="resume">Resume a previously failed full-install from resume.txt in your gamma folder</param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
@@ -54,13 +54,13 @@ public class FullInstallCmd(
         bool enableLongPaths = false,
         bool verbose = false,
         bool minimal = false,
-        bool offline = false,
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
         bool useAnomalyMirror = false,
         string? modPackMakerPath = null,
         string? modListPath = null,
+        string? offlineArchivePath = null,
         [Range(1, 20)] int? downloadThreads = null,
         bool resume = false,
         bool json = false,
@@ -74,7 +74,8 @@ public class FullInstallCmd(
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
 
-        ValidateOfflineRequirements(offline, modPackMakerPath, modListPath);
+        var offline = !string.IsNullOrWhiteSpace(offlineArchivePath);
+        ValidateOfflineArchivePath(offlineArchivePath);
 
         InitializeSettings(
             downloadThreads,
@@ -116,8 +117,24 @@ public class FullInstallCmd(
         );
 
         ResumeState? resumeState = null;
+        DirectoryInfo? offlineListsDir = null;
         try
         {
+            if (!string.IsNullOrWhiteSpace(offlineArchivePath))
+            {
+                offlineListsDir = Directory.CreateTempSubdirectory("stalker-gamma-offline-");
+                (modPackMakerPath, modListPath) = await ExtractOfflineArchiveAsync(
+                    offlineArchivePath,
+                    cache,
+                    offlineListsDir.FullName,
+                    modPackMakerPath,
+                    modListPath,
+                    GetProgressWriter(verbose, json),
+                    progressUpdateIntervalMs,
+                    cancellationToken
+                );
+            }
+
             resumeState = await ResumeUtility.LoadAsync(
                 _logger,
                 resume,
@@ -159,6 +176,7 @@ public class FullInstallCmd(
         }
         finally
         {
+            DeleteOfflineListsDir(offlineListsDir);
             _progressLoggingService.WriteToLogFile();
             gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
@@ -173,23 +191,101 @@ public class FullInstallCmd(
         return statusCode;
     }
 
-    private static void ValidateOfflineRequirements(
-        bool offline,
-        string? modPackMakerPath,
-        string? modListPath
-    )
+    private static void ValidateOfflineArchivePath(string? offlineArchivePath)
     {
-        if (
-            offline
-            && (
-                string.IsNullOrWhiteSpace(modPackMakerPath)
-                || string.IsNullOrWhiteSpace(modListPath)
-            )
-        )
+        if (!string.IsNullOrWhiteSpace(offlineArchivePath) && !File.Exists(offlineArchivePath))
         {
             throw new ArgumentException(
-                "--offline requires --mod-pack-maker-path and --mod-list-path"
+                $"--offline-archive-path {offlineArchivePath} does not exist"
             );
+        }
+    }
+
+    /// <summary>
+    /// Extract the offline archive's cache into the cache folder and its lists into listsDir.
+    /// --mod-pack-maker-path and --mod-list-path take priority over the lists in the archive.
+    /// </summary>
+    /// <returns>Paths to modpack_maker_list.txt and modlist.txt to install with</returns>
+    private async Task<(string ModPackMakerPath, string ModListPath)> ExtractOfflineArchiveAsync(
+        string offlineArchivePath,
+        string cache,
+        string listsDir,
+        string? modPackMakerPath,
+        string? modListPath,
+        Action<GammaProgress.GammaInstallProgressEventArgs> writeProgress,
+        long progressUpdateIntervalMs,
+        CancellationToken cancellationToken
+    )
+    {
+        var archiveFullPath = Path.GetFullPath(offlineArchivePath);
+        var cacheFullPath = Path.GetFullPath(cache);
+        _logger.Information(
+            "Extracting offline archive {OfflineArchive} to {Cache}",
+            archiveFullPath,
+            cacheFullPath
+        );
+        var archiveName = Path.GetFileName(archiveFullPath);
+        var progress = ProgressThrottleUtility.Throttle<double>(
+            pct =>
+                writeProgress(
+                    new GammaProgress.GammaInstallProgressEventArgs
+                    {
+                        Name = archiveName,
+                        ProgressType = GammaProgressType.Extract,
+                        Progress = pct,
+                        Url = "",
+                        ArchiveName = archiveName,
+                        DownloadPath = archiveFullPath,
+                        ExtractPath = cacheFullPath,
+                        Complete = pct >= 1 ? 1 : 0,
+                        Total = 1,
+                    }
+                ),
+            TimeSpan.FromMilliseconds(progressUpdateIntervalMs)
+        );
+
+        var result = await OfflineArchiveUtility.ExtractAsync(
+            archiveFullPath,
+            cacheFullPath,
+            listsDir,
+            progress,
+            cancellationToken
+        );
+        _logger.Information(
+            "Extracted {Extracted} files from the offline archive, skipped {Skipped} files that were already extracted",
+            result.Extracted,
+            result.Skipped
+        );
+
+        modPackMakerPath = string.IsNullOrWhiteSpace(modPackMakerPath)
+            ? result.ModPackMakerListPath
+                ?? throw new OfflineArchiveException(
+                    $"{archiveFullPath} does not contain {OfflineArchiveUtility.ModPackMakerListFileName}. Pass it with --mod-pack-maker-path"
+                )
+            : modPackMakerPath;
+        modListPath = string.IsNullOrWhiteSpace(modListPath)
+            ? result.ModListPath
+                ?? throw new OfflineArchiveException(
+                    $"{archiveFullPath} does not contain {OfflineArchiveUtility.ModListFileName}. Pass it with --mod-list-path"
+                )
+            : modListPath;
+        return (modPackMakerPath, modListPath);
+    }
+
+    private void DeleteOfflineListsDir(DirectoryInfo? dir)
+    {
+        if (dir is null)
+        {
+            return;
+        }
+
+        try
+        {
+            dir.Delete(true);
+        }
+        catch (Exception e)
+        {
+            _logger.Warning(e, "Unable to delete {OfflineListsDir}", dir.FullName);
         }
     }
 
@@ -298,11 +394,17 @@ public class FullInstallCmd(
         gammaProgressDisposable = gammaProgressObservable
             .SubscribeSampledOnDedicatedThread(
                 TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
-                json ? JsonOutputUtility.WriteProgress
-                : verbose ? OnProgressChangedVerbose
-                : OnProgressChangedInformational
+                GetProgressWriter(verbose, json)
             );
     }
+
+    private Action<GammaProgress.GammaInstallProgressEventArgs> GetProgressWriter(
+        bool verbose,
+        bool json
+    ) =>
+        json ? JsonOutputUtility.WriteProgress
+        : verbose ? OnProgressChangedVerbose
+        : OnProgressChangedInformational;
 
     private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
         File.AppendAllText("stalker-gamma-cli.log", $"{e.Text}{Environment.NewLine}");
