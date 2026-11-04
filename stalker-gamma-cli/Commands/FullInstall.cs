@@ -391,11 +391,10 @@ public class FullInstallCmd(
                 handler => installer.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
-        gammaProgressDisposable = gammaProgressObservable
-            .SubscribeSampledOnDedicatedThread(
-                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
-                GetProgressWriter(verbose, json)
-            );
+        gammaProgressDisposable = gammaProgressObservable.SubscribeSampledOnDedicatedThread(
+            TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
+            GetProgressWriter(verbose, json)
+        );
     }
 
     private Action<GammaProgress.GammaInstallProgressEventArgs> GetProgressWriter(

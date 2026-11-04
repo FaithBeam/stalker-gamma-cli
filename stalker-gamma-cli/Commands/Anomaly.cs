@@ -76,13 +76,12 @@ public class AnomalyInstallCmd(
                 handler => anomalyInstaller.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
-        var gammaProgressDisposable = gammaProgressObservable
-            .SubscribeSampledOnDedicatedThread(
-                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
-                json ? JsonOutputUtility.WriteProgress
+        var gammaProgressDisposable = gammaProgressObservable.SubscribeSampledOnDedicatedThread(
+            TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
+            json ? JsonOutputUtility.WriteProgress
                 : verbose ? OnProgressChangedVerbose
                 : OnProgressChangedInformational
-            );
+        );
         try
         {
             await anomalyInstaller.DownloadAsync(cancellationToken);
