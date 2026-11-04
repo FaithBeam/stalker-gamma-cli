@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LibCurlImpersonate\LibCurlImpersonate.csproj" />
+    <ProjectReference Include="..\LibSevenZip\LibSevenZip.csproj" />
   </ItemGroup>
 </Project>

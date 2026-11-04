@@ -65,11 +65,6 @@ public class AnomalyInstallCmd(
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         var anomaly = _cliSettings.ActiveProfile!.Anomaly;
         var cache = _cliSettings.ActiveProfile!.Cache;
-        var resourcesPath = Path.Join(Path.GetDirectoryName(AppContext.BaseDirectory), "resources");
-        stalkerGammaSettings.PathTo7Z = Path.Join(
-            resourcesPath,
-            OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
-        );
         stalkerGammaSettings.UseAnomalyMirror = useAnomalyMirror;
 
         var anomalyInstaller = (AnomalyInstaller)

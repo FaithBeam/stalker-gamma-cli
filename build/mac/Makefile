@@ -18,10 +18,14 @@ CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
 CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-macos.tar.gz
 CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).arm64-macos.tar.gz
 
+# 7-Zip only publishes the 7zz executable for macOS, so build the 7z.so library
+# (all formats) from source. cmpl_mac_{arm64,x64}.mak writes to b/m_{arm64,x64}.
 7Z_VERSION = 2603
 7Z_BUILD_DIR = $(BUILD_DIR)/7zip
-7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-mac.tar.xz
-7Z_DL_URL = https://7-zip.org/a/7z$(7Z_VERSION)-mac.tar.xz
+7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-src.tar.xz
+7Z_DL_URL = https://7-zip.org/a/7z$(7Z_VERSION)-src.tar.xz
+7Z_FORMAT_DIR = $(7Z_BUILD_DIR)/CPP/7zip/Bundles/Format7zF
+7Z_LIB = $(7Z_FORMAT_DIR)/b/m_$(ARCH)/7z.so
 
 STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
@@ -42,7 +46,8 @@ build:
 	# 7zip
 	mkdir $(7Z_BUILD_DIR)
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
-	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
+	tar -xf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
+	$(MAKE) -j -C $(7Z_FORMAT_DIR) -f ../../cmpl_mac_$(ARCH).mak
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
@@ -56,7 +61,7 @@ build:
 	mkdir $(STALKER_RESOURCES_DIR)
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
 	cp $(CURL_BUILD_DIR)/libcurl-impersonate.4.8.0.dylib $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.dylib
-	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
+	cp $(7Z_LIB) $(STALKER_RESOURCES_DIR)/7z.so
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 	# build stalker-gamma-server

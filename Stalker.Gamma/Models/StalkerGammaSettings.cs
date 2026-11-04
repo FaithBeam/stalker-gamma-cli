@@ -19,7 +19,6 @@ public class StalkerGammaSettings
     public string ModOrganizer244Md5 { get; set; } = "e2bb7233cdab78f56912ebf4a0091768";
     public string ModOrganizer252Md5 { get; set; } = "b223ce1297107adbabb3fbaa3769eb2b";
     public int DownloadThreads { get; set; } = 2;
-    public string PathTo7Z = OperatingSystem.IsWindows() ? "7zz.exe" : "7zz";
     public string? StalkerGammaServerUrl { get; set; }
 
     /// <summary>

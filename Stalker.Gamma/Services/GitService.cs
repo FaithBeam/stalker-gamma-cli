@@ -345,7 +345,7 @@ public partial class GitService
             new ParallelOptions
             {
                 CancellationToken = ct,
-                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 4),
             },
             // libgit2 handles aren't safe to share across threads, so each worker opens its own
             () => new Repository(pathToRepo),
