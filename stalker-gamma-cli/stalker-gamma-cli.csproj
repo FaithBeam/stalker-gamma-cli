@@ -12,10 +12,12 @@
     <NoWarn>1701;1702;IL2121;IL2104;IL2121</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework" Version="5.7.13">
+    <PackageReference Include="ConsoleAppFramework" Version="5.8.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="10.0.14" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="System.Reactive" Version="7.0.0" />

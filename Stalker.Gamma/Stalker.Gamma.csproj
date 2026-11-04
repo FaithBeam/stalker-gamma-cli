@@ -6,13 +6,15 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.13.1" />
     <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
-    <PackageReference Include="Microsoft.Extensions.Resilience" Version="10.10.0" />
-    <PackageReference Include="Microsoft.Kiota.Bundle" Version="2.1.2" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
+    <PackageReference Include="Microsoft.Extensions.Resilience" Version="10.11.0" />
+    <PackageReference Include="Microsoft.Kiota.Bundle" Version="2.1.6" />
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="10.0.14" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LibCurlImpersonate\LibCurlImpersonate.csproj" />
