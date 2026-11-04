@@ -7,8 +7,4 @@
     <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="10.0.14" />
-  </ItemGroup>
 </Project>

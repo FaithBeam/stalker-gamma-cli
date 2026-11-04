@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="10.0.14" />
     <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.18.7" />
     <PackageReference Include="Testcontainers" Version="4.16.0" />
