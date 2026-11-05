@@ -1,14 +1,3 @@
-# Requirements
-
-You need these applications installed to run stalker-gamma:
-
-1. libidn2
-2. zstd
-
-You should install them with homebrew:
-
-`brew install git libidn2 zstd`
-
 # Usage
 
 1. Remove the quarantine attribute from the binaries: `xattr -dr com.apple.quarantine .`

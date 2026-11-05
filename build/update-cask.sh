@@ -18,15 +18,12 @@ case "$PACKAGE" in
         DESC="Install Stalker GAMMA via CLI"
         ASSET="stalker-gamma"
         BINARY="stalker-gamma"
-        # libcurl-impersonate needs these at runtime
-        DEPENDS=$'  depends_on formula: "libidn2"\n  depends_on formula: "zstd"\n\n'
         ;;
     server)
         TOKEN="stalker-gamma-server"
         DESC="Companion server for stalker-gamma-cli"
         ASSET="stalker-gamma-server"
         BINARY="stalker-gamma-server"
-        DEPENDS=""
         ;;
     *)
         echo "Error: package must be 'cli' or 'server', got '$PACKAGE'." >&2
@@ -49,7 +46,7 @@ cask "${TOKEN}" do
   desc "${DESC}"
   homepage "https://github.com/FaithBeam/stalker-gamma-cli"
 
-${DEPENDS}  binary "${BINARY}"
+  binary "${BINARY}"
 
   postflight_steps do
      on_macos do
