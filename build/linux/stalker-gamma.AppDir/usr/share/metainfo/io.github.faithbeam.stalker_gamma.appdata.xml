@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.faithbeam.stalker_gamma</id>
+  <name>Stalker GAMMA</name>
+  <summary>Install and update Stalker Anomaly and the GAMMA mod pack</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.faithbeam">
+    <name>FaithBeam</name>
+  </developer>
+  <description>
+    <p>
+      The stalker-gamma CLI installs and updates Stalker Anomaly and the G.A.M.M.A. mod pack from the command line.
+    </p>
+    <ul>
+      <li>Install and update Stalker Anomaly and GAMMA</li>
+      <li>Resume failed installs and updates</li>
+      <li>Offline installs from a cache archive</li>
+      <li>Multiple install profiles, e.g. stable and testing</li>
+      <li>Manage Mod Organizer 2 profiles and mods</li>
+      <li>Machine-readable JSON output for GUI wrappers</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/FaithBeam/stalker-gamma-cli</url>
+  <url type="bugtracker">https://github.com/FaithBeam/stalker-gamma-cli/issues</url>
+  <provides>
+    <binary>stalker-gamma</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>
