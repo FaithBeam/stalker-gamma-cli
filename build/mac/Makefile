@@ -16,7 +16,7 @@ else
 endif
 CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
 CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-macos.tar.gz
-CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).arm64-macos.tar.gz
+CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-macos.tar.gz
 
 # 7-Zip only publishes the 7zz executable for macOS, so build the 7z.so library
 # (all formats) from source. cmpl_mac_{arm64,x64}.mak writes to b/m_{arm64,x64}.
