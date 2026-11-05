@@ -1,14 +1,14 @@
-using Stalker.Gamma.Models;
+using LibSevenZip;
 
 namespace stalker_gamma_cli.Services;
 
-public class SetupUtilitiesService(StalkerGammaSettings settings)
+public class SetupUtilitiesService
 {
     public void Setup()
     {
-        settings.PathTo7Z = Path.Join(
+        SevenZipLibrary.LibraryPath = Path.Join(
             ResourcesPath,
-            OperatingSystem.IsWindows() ? "7zz.exe" : "7zz"
+            OperatingSystem.IsWindows() ? "7z.dll" : "7z.so"
         );
     }
 

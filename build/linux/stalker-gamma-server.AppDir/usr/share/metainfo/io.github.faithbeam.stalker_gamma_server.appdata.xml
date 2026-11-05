@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.faithbeam.stalker_gamma_server</id>
+  <name>Stalker GAMMA Server</name>
+  <summary>Companion server that gets stalker-gamma past ModDB's Cloudflare challenge</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.faithbeam">
+    <name>FaithBeam</name>
+  </developer>
+  <description>
+    <p>
+      The stalker-gamma server loads pages through a Camoufox browser and solves Cloudflare Turnstile challenges,
+      so stalker-gamma can download addons from ModDB.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/FaithBeam/stalker-gamma-cli/wiki/Stalker-GAMMA-Server</url>
+  <url type="bugtracker">https://github.com/FaithBeam/stalker-gamma-cli/issues</url>
+  <provides>
+    <binary>stalker-gamma-server</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>

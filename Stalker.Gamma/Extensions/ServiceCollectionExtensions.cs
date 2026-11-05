@@ -12,7 +12,6 @@ using ModDbGetAddonMetadataService = Stalker.Gamma.ModDb.Services.ModDbGetAddonM
 using ModDbGetCdnLinkService = Stalker.Gamma.ModDb.Services.ModDbGetCdnLinkService;
 using ModDbMirrorService = Stalker.Gamma.ModDb.Services.ModDbMirrorService;
 using ModDbService = Stalker.Gamma.ModDb.Services.ModDbService;
-using SevenZipService = Stalker.Gamma.Services.SevenZipService;
 
 namespace Stalker.Gamma.Extensions;
 
@@ -40,9 +39,6 @@ public static class ServiceCollectionExtensions
         return s.AddScoped<IDownloadModOrganizerService, DownloadModOrganizerService>()
             .AddScoped<ArchiveService>()
             .AddScoped<StalkerGammaServerClientFactory>()
-            .AddScoped<SevenZipService>()
-            .AddScoped<TarService>()
-            .AddScoped<UnzipService>()
             .AddScoped<GitService>()
             .AddScoped<ModDbService>()
             .AddScoped<ModDbMirrorService>()

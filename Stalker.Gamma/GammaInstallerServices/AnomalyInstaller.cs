@@ -28,7 +28,7 @@ public class AnomalyInstaller(
     public IGammaProgress Progress => _progress;
     protected string StalkerAnomalyMd5 = "d6bce51a4e6d98f9610ef0aa967ba964";
 
-    // the mirror hosts a repack compressed with multithreaded lzma2 so 7zz extracts it on every core
+    // the mirror hosts a repack compressed with multithreaded lzma2 so 7-Zip extracts it on every core
     protected string StalkerAnomalyMirrorMd5 = "123a0566485a77f8d44a659630cce856";
     private readonly GammaProgress _progress = progress;
     private readonly string _downloadDirectory = downloadDirectory;

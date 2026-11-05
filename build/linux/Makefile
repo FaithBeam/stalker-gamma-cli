@@ -18,17 +18,26 @@ CURL_BUILD_DIR = $(BUILD_DIR)/curl-impersonate
 CURL_IMPERSONATE_ARCHIVE = $(CURL_BUILD_DIR)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-linux-gnu.tar.gz
 CURL_IMPERSONATE_DL_URL = https://github.com/lexiforest/curl-impersonate/releases/download/$(CURL_IMPERSONATE_VERSION)/libcurl-impersonate-$(CURL_IMPERSONATE_VERSION).$(CURL_ARCH)-linux-gnu.tar.gz
 
+# 7-Zip only publishes the 7zz executable for Linux, so build the 7z.so library
+# (all formats) from source with gcc/g++.
+# x64 uses the plain C/C++ build: the assembler-optimized one needs asmc or uasm.
+# arm64 uses the GNU assembler that comes with gcc.
 7Z_VERSION = 2603
 ifeq ($(ARCH),x64)
-    7Z_ARCH := x64
+    7Z_MAK := cmpl_gcc.mak
+    7Z_OUT := b/g
 else ifeq ($(ARCH),arm64)
-    7Z_ARCH := arm64
+    7Z_MAK := cmpl_gcc_arm64.mak
+    7Z_OUT := b/g_arm64
 else
-    7Z_ARCH := unknown
+    7Z_MAK := unknown
+    7Z_OUT := unknown
 endif
 7Z_BUILD_DIR = $(BUILD_DIR)/7zip
-7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-linux-$(7Z_ARCH).tar.xz
-7Z_DL_URL = https://www.7-zip.org/a/7z$(7Z_VERSION)-linux-$(7Z_ARCH).tar.xz
+7Z_ARCHIVE = $(7Z_BUILD_DIR)/7z$(7Z_VERSION)-src.tar.xz
+7Z_DL_URL = https://www.7-zip.org/a/7z$(7Z_VERSION)-src.tar.xz
+7Z_FORMAT_DIR = $(7Z_BUILD_DIR)/CPP/7zip/Bundles/Format7zF
+7Z_LIB = $(7Z_FORMAT_DIR)/$(7Z_OUT)/7z.so
 
 STALKER_GAMMA_BUILD_DIR = $(BUILD_DIR)/stalker-gamma-cli
 STALKER_RESOURCES_DIR = $(STALKER_GAMMA_BUILD_DIR)/resources
@@ -63,7 +72,9 @@ build:
 	# 7zip
 	mkdir $(7Z_BUILD_DIR)
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
-	tar -xvf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
+	tar -xf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
+	# drop -Werror: newer gcc (16+) emits false-positive -Warray-bounds warnings in 7-Zip sources
+	$(MAKE) -j -C $(7Z_FORMAT_DIR) -f ../../$(7Z_MAK) CFLAGS_WARN_WALL="-Wall -Wextra"
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
@@ -77,7 +88,7 @@ build:
 	mkdir $(STALKER_RESOURCES_DIR)
 	curl -Lo $(STALKER_GAMMA_BUILD_DIR)/cacert.pem "https://curl.se/ca/cacert.pem"
 	cp $(CURL_BUILD_DIR)/libcurl-impersonate.so.4.8.0 $(STALKER_GAMMA_BUILD_DIR)/libcurl-impersonate.so
-	cp $(7Z_BUILD_DIR)/7zz $(STALKER_RESOURCES_DIR)/
+	cp $(7Z_LIB) $(STALKER_RESOURCES_DIR)/7z.so
 	cp $(CUR_DIR)/README.md $(STALKER_GAMMA_BUILD_DIR)/
 
 	# build stalker-gamma-server
@@ -92,10 +103,12 @@ $(APPIMAGETOOL):
 appimage: $(APPIMAGETOOL)
 	mkdir -p $(APPDIR)/usr/bin/
 	cp -r $(STALKER_GAMMA_BUILD_DIR)/. $(APPDIR)/usr/bin/
+	chmod -R a+rX $(APPDIR)
 	$(APPIMAGETOOL) $(APPDIR) $(APPIMAGE)
 	chmod +x $(APPIMAGE)
 	mkdir -p $(SERVER_APPDIR)/usr/bin/
 	cp -r $(STALKER_GAMMA_SERVER_BUILD_DIR)/. $(SERVER_APPDIR)/usr/bin/
+	chmod -R a+rX $(SERVER_APPDIR)
 	$(APPIMAGETOOL) $(SERVER_APPDIR) $(SERVER_APPIMAGE)
 	chmod +x $(SERVER_APPIMAGE)
 

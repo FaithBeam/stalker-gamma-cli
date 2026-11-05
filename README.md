@@ -60,7 +60,7 @@ When reporting a bug, include your logs (`stalker-gamma debug logs` opens the fo
 - .NET 10 SDK
 - Native dependencies in `stalker-gamma-cli/bin/Debug/net10.0/`:
   - `libcurl-impersonate` (`.dll`, `.so` or `.dylib`) and `cacert.pem` next to the executable
-  - `resources/7zz` (`resources/7zz.exe` and `7z.dll` on Windows)
+  - `resources/7z.so` (`resources/7z.dll` on Windows), the 7-Zip library. Linux and macOS builds compile it from the 7-Zip source, so they need `make` and a C/C++ compiler (gcc/g++ on Linux, Xcode command line tools on macOS)
 
 The easiest way to get these is to run your platform's build below once, then copy them from its output folder.
 

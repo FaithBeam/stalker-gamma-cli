@@ -346,13 +346,12 @@ public class UpdateCmds(
                 handler => gammaInstaller.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
-        gammaProgressDisposable = gammaProgressObservable
-            .Sample(TimeSpan.FromMilliseconds(progressUpdateIntervalMs))
-            .Subscribe(
-                json ? JsonOutputUtility.WriteProgress
+        gammaProgressDisposable = gammaProgressObservable.SubscribeSampledOnDedicatedThread(
+            TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
+            json ? JsonOutputUtility.WriteProgress
                 : verbose ? OnProgressChangedVerbose
                 : OnProgressChangedInformational
-            );
+        );
     }
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>

@@ -17,7 +17,7 @@ case "$PACKAGE" in
         PKGDESC="a cli to install Stalker Anomaly and the GAMMA mod pack (appimage)"
         ASSET="stalker-gamma"
         BINARY="stalker-gamma"
-        DEPENDS="'unzip' 'fuse2'"
+        DEPENDS="'fuse2'"
         ;;
     server)
         PKGNAME="stalker-gamma-server-bin"
