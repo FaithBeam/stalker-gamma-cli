@@ -1,11 +1,3 @@
-# Requirements
-
-You need these applications installed to run stalker-gamma:
-
-1. unzip
-
-Refer to your distro how to install them if they're not installed.
-
 # Usage
 
 1. Create a config:
