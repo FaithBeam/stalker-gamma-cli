@@ -63,5 +63,3 @@ public class NetworkService(
 
     private readonly HttpClient _dlAddonHc = hcf.CreateClient("dlAddon");
 }
-
-public class ModDbBotDetectedException(string msg) : Exception(msg);

@@ -1,7 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.ModDb.Services;
-using Stalker.Gamma.Services;
+using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
