@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
@@ -275,94 +276,71 @@ public class GammaInstaller(
         using var batchCts = CancellationTokenSource.CreateLinkedTokenSource(
             args.CancellationToken
         );
-        var mainBatch = Task.Run(
-            async () =>
-            {
-                try
-                {
-                    await ProcessAddonsAsync(
-                        mainBatchRecords,
-                        brokenAddons,
-                        args.Minimal,
-                        cancellationToken: batchCts.Token
-                    );
-                }
-                catch (CloudflareChallengeException)
-                {
-                    await batchCts.CancelAsync();
-                    throw;
-                }
-            },
-            batchCts.Token
-        );
-        var teivazDlTask = Task.Run(
-            async () =>
-                await DownloadSpecialRepoAsync(
-                    args,
-                    args.TeivazAnomalyGunslingerRecord!,
-                    async () =>
-                    {
-                        await args.TeivazAnomalyGunslingerRecord!.DownloadAsync(batchCts.Token);
-                        await ((ISpecialRepo)args.TeivazAnomalyGunslingerRecord!).ExpandFilesAsync(
-                            batchCts.Token
-                        );
-                    }
-                ),
-            batchCts.Token
-        );
-        var gammaLargeFilesDlTask = Task.Run(
-            async () =>
-                await DownloadSpecialRepoAsync(
-                    args,
-                    args.GammaLargeFilesRecord!,
-                    async () =>
-                    {
-                        await args.GammaLargeFilesRecord!.DownloadAsync(batchCts.Token);
-                        await ((ISpecialRepo)args.GammaLargeFilesRecord!).ExpandFilesAsync(
-                            batchCts.Token
-                        );
-                    }
-                ),
-            batchCts.Token
-        );
-        var gammaSetupDownloadTask = Task.Run(
-            async () =>
-                await DownloadSpecialRepoAsync(
-                    args,
-                    args.GammaSetupRecord!,
-                    async () =>
-                    {
-                        await args.GammaSetupRecord!.DownloadAsync(batchCts.Token);
-                        await ((ISpecialRepo)args.GammaSetupRecord!).ExpandFilesAsync(
-                            batchCts.Token
-                        );
-                    }
-                ),
-            batchCts.Token
-        );
-        var stalkerGammaDownloadTask = Task.Run(
-            async () =>
-                await DownloadSpecialRepoAsync(
-                    args,
-                    args.StalkerGammaRecord!,
-                    async () =>
-                    {
-                        await args.StalkerGammaRecord!.DownloadAsync(batchCts.Token);
-                        await ((ISpecialRepo)args.StalkerGammaRecord!).ExpandFilesAsync(
-                            batchCts.Token
-                        );
-                    }
-                ),
-            batchCts.Token
-        );
+        // the first failure in the batch cancels the rest of it, so a broken special repo or a
+        // Cloudflare challenge stops the install right away instead of after every addon downloads
+        ExceptionDispatchInfo? batchFailure = null;
 
-        await Task.WhenAll(
-            mainBatch,
-            teivazDlTask,
-            gammaLargeFilesDlTask,
-            gammaSetupDownloadTask,
-            stalkerGammaDownloadTask
-        );
+        Task RunInBatch(Func<Task> work) =>
+            Task.Run(
+                async () =>
+                {
+                    try
+                    {
+                        await work();
+                    }
+                    catch (Exception e) when (!batchCts.IsCancellationRequested)
+                    {
+                        Interlocked.CompareExchange(
+                            ref batchFailure,
+                            ExceptionDispatchInfo.Capture(e),
+                            null
+                        );
+                        await batchCts.CancelAsync();
+                        throw;
+                    }
+                },
+                batchCts.Token
+            );
+
+        Task DownloadSpecialRepoInBatch(IDownloadableRecord record) =>
+            RunInBatch(() =>
+                DownloadSpecialRepoAsync(
+                    args,
+                    record,
+                    async () =>
+                    {
+                        await record.DownloadAsync(batchCts.Token);
+                        await ((ISpecialRepo)record).ExpandFilesAsync(batchCts.Token);
+                    }
+                )
+            );
+
+        Task[] batch =
+        [
+            RunInBatch(() =>
+                ProcessAddonsAsync(
+                    mainBatchRecords,
+                    brokenAddons,
+                    args.Minimal,
+                    cancellationToken: batchCts.Token
+                )
+            ),
+            DownloadSpecialRepoInBatch(args.TeivazAnomalyGunslingerRecord!),
+            DownloadSpecialRepoInBatch(args.GammaLargeFilesRecord!),
+            DownloadSpecialRepoInBatch(args.GammaSetupRecord!),
+            DownloadSpecialRepoInBatch(args.StalkerGammaRecord!),
+        ];
+        try
+        {
+            await Task.WhenAll(batch);
+        }
+        catch
+        {
+            // the rest of the batch fails with cancellations, or errors caused by being cancelled,
+            // so report the failure that cancelled it
+            batchFailure?.Throw();
+            throw;
+        }
 
         foreach (var brokenAddon in brokenAddons)
         {
