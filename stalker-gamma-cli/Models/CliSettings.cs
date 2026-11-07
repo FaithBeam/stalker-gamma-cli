@@ -16,13 +16,17 @@ public class CliSettings
         {
             Directory.CreateDirectory(_appDataPath);
         }
+        // write to a temp file first so the settings file isn't left truncated if the process is
+        // killed mid-write, which would make every command fail to start
+        var tmpPath = $"{SettingsPath}.tmp";
         await File.WriteAllTextAsync(
-            SettingsPath,
+            tmpPath,
             JsonSerializer.Serialize<CliSettings>(
                 this,
                 jsonTypeInfo: CliSettingsCtx.Default.CliSettings
             )
         );
+        File.Move(tmpPath, SettingsPath, overwrite: true);
         return ActiveProfile?.ProfileName;
     }
 
