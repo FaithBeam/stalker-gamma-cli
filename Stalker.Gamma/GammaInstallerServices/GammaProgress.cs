@@ -6,7 +6,6 @@ public interface IGammaProgress
 {
     int TotalMods { get; set; }
     event EventHandler<GammaProgress.GammaInstallProgressEventArgs>? ProgressChanged;
-    event EventHandler<GammaProgress.GammaInstallDebugProgressEventArgs>? DebugProgressChanged;
     event EventHandler<GammaProgress.GammaInstallWarningEventArgs>? Warning;
 }
 
@@ -60,12 +59,7 @@ public class GammaProgress : IGammaProgress
     }
 
     public event EventHandler<GammaInstallProgressEventArgs>? ProgressChanged;
-    public event EventHandler<GammaInstallDebugProgressEventArgs>? DebugProgressChanged;
-
     public event EventHandler<GammaInstallWarningEventArgs>? Warning;
-
-    internal void OnDebugProgressChanged(GammaInstallDebugProgressEventArgs e) =>
-        DebugProgressChanged?.Invoke(this, e);
 
     internal void OnWarning(GammaInstallWarningEventArgs e) => Warning?.Invoke(this, e);
 
@@ -74,11 +68,6 @@ public class GammaProgress : IGammaProgress
         e.Complete = _completedMods;
         e.Total = TotalMods;
         ProgressChanged?.Invoke(this, e);
-    }
-
-    public class GammaInstallDebugProgressEventArgs
-    {
-        public string? Text { get; set; }
     }
 
     /// <summary>
