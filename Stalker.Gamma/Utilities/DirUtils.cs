@@ -262,7 +262,8 @@ public static class DirUtils
                     ref copiedFiles,
                     totalFiles,
                     txtProgress,
-                    moveFile
+                    moveFile,
+                    cancellationToken
                 );
             }
         }
