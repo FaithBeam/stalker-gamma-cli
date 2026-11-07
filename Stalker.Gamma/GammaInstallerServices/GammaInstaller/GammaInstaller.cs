@@ -566,6 +566,14 @@ public class GammaInstaller(
                 catch (Exception e)
                     when (e is not CloudflareChallengeException and not OperationCanceledException)
                 {
+                    gammaProgress.OnWarning(
+                        new GammaProgress.GammaInstallWarningEventArgs
+                        {
+                            Message =
+                                $"{grs.Name} failed, retrying after the other addons finish: {e.Message}",
+                            Exception = e,
+                        }
+                    );
                     brokenAddons.Add(grs);
                 }
             }

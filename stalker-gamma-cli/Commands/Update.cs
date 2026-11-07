@@ -330,6 +330,8 @@ public class UpdateCmds(
         out IDisposable gammaWriteFileDisposable
     )
     {
+        gammaInstaller.Progress.Warning += OnWarning;
+
         var gammaWriteFileObs = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
                 handler => gammaInstaller.Progress.ProgressChanged += handler,
@@ -353,6 +355,9 @@ public class UpdateCmds(
                 : OnProgressChangedInformational
         );
     }
+
+    private void OnWarning(object? sender, GammaProgress.GammaInstallWarningEventArgs e) =>
+        _logger.Warning(e.Exception, "{Message}", e.Message);
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(

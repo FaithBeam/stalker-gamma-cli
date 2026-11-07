@@ -7,6 +7,7 @@ public interface IGammaProgress
     int TotalMods { get; set; }
     event EventHandler<GammaProgress.GammaInstallProgressEventArgs>? ProgressChanged;
     event EventHandler<GammaProgress.GammaInstallDebugProgressEventArgs>? DebugProgressChanged;
+    event EventHandler<GammaProgress.GammaInstallWarningEventArgs>? Warning;
 }
 
 public static class GammaProgressExtensions
@@ -61,8 +62,12 @@ public class GammaProgress : IGammaProgress
     public event EventHandler<GammaInstallProgressEventArgs>? ProgressChanged;
     public event EventHandler<GammaInstallDebugProgressEventArgs>? DebugProgressChanged;
 
+    public event EventHandler<GammaInstallWarningEventArgs>? Warning;
+
     internal void OnDebugProgressChanged(GammaInstallDebugProgressEventArgs e) =>
         DebugProgressChanged?.Invoke(this, e);
+
+    internal void OnWarning(GammaInstallWarningEventArgs e) => Warning?.Invoke(this, e);
 
     internal void OnProgressChanged(GammaInstallProgressEventArgs e)
     {
@@ -74,6 +79,16 @@ public class GammaProgress : IGammaProgress
     public class GammaInstallDebugProgressEventArgs
     {
         public string? Text { get; set; }
+    }
+
+    /// <summary>
+    /// Something went wrong that the install recovered from or will retry, e.g. an addon that
+    /// failed and is retried after the rest of the addons finish.
+    /// </summary>
+    public class GammaInstallWarningEventArgs : EventArgs
+    {
+        public required string Message { get; init; }
+        public Exception? Exception { get; init; }
     }
 
     public class GammaInstallProgressEventArgs

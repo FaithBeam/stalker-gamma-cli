@@ -363,6 +363,8 @@ public class FullInstallCmd(
         out IDisposable? gammaDbgDisposable
     )
     {
+        installer.Progress.Warning += OnWarning;
+
         gammaDbgDisposable = null;
         if (debug)
         {
@@ -404,6 +406,9 @@ public class FullInstallCmd(
         json ? JsonOutputUtility.WriteProgress
         : verbose ? OnProgressChangedVerbose
         : OnProgressChangedInformational;
+
+    private void OnWarning(object? sender, GammaProgress.GammaInstallWarningEventArgs e) =>
+        _logger.Warning(e.Exception, "{Message}", e.Message);
 
     private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
         File.AppendAllText("stalker-gamma-cli.log", $"{e.Text}{Environment.NewLine}");
