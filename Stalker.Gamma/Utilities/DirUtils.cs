@@ -163,10 +163,7 @@ public static class DirUtils
         CancellationToken cancellationToken = default
     )
     {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return;
-        }
+        cancellationToken.ThrowIfCancellationRequested();
         txtProgress?.Invoke(
             $"""
             sourceDir = {sourceDir}
@@ -189,10 +186,7 @@ public static class DirUtils
         var sourceDirInfo = new DirectoryInfo(sourceDir);
         foreach (var file in sourceDirInfo.GetFiles())
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
+            cancellationToken.ThrowIfCancellationRequested();
             if (txtProgress is not null)
             {
                 using var sha = SHA256.Create();
@@ -245,10 +239,7 @@ public static class DirUtils
 
         foreach (var subDir in sourceDirInfo.GetDirectories())
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
+            cancellationToken.ThrowIfCancellationRequested();
             txtProgress?.Invoke($"Copying {subDir.FullName}");
             // only copy directories if they're not empty
             if (subDir.EnumerateFiles("*.*", SearchOption.AllDirectories).Any())
