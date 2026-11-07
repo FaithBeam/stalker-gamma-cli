@@ -23,7 +23,7 @@ public class GetStalkerModsFromApi(StalkerGammaSettings settings, IHttpClientFac
         {
             return await _hc.GetStringAsync(modPackMakerListUrl, cancellationToken);
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new GetStalkerModsFromApiException(
                 $"""

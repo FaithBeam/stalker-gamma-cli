@@ -78,7 +78,7 @@ public partial class ModDbGetAddonMetadataService(NetworkServiceFactory networkS
             };
             return modDbPageMetadata;
         }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             throw new GetModDbAddonMetadataException(
                 $"""

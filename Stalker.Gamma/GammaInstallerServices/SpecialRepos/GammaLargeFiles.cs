@@ -51,7 +51,7 @@ public class GammaLargeFilesRepo(
 
             Downloaded = true;
         }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             throw new SpecialRepoException(
                 $"""
@@ -84,7 +84,7 @@ public class GammaLargeFilesRepo(
                 onProgress: pct => OnProgress(GammaProgressType.Extract, pct)
             );
         }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             throw new SpecialRepoException(
                 $"""

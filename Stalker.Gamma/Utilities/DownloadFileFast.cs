@@ -76,7 +76,7 @@ public static class DownloadFileFast
             // The size is known once the download finishes, so always report completion
             onProgress?.Invoke(new DownloadProgress(bytesRead, bytesRead));
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new DownloadFileFastException(
                 $"""

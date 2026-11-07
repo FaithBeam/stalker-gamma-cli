@@ -31,6 +31,7 @@ public class GetCanonicalLinkFromModDbStartLink(NetworkServiceFactory networkSer
                     is not CanonicalLinkNotFoundException
                         and not ModDbBotDetectedException
                         and not CloudflareChallengeException
+                && !ct.IsCancellationRequested
             )
         {
             throw new GetCanonicalLinkFromModDbStartLinkException(

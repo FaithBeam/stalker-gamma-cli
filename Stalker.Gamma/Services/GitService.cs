@@ -60,7 +60,7 @@ public partial class GitService
                 "Fetch updates"
             );
         }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             throw new GitUtilityException(
                 $"""
@@ -109,7 +109,7 @@ public partial class GitService
             using var repo = new Repository(outputDir);
             repo.Config.Set("core.longpaths", true);
         }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             throw new GitUtilityException(
                 $"""
@@ -171,7 +171,7 @@ public partial class GitService
             }
             await Task.Run(() => ExtractBlobs(pathToRepo, outputDir, blobs, onProgress, ct), ct);
         }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             throw new GitUtilityException(
                 $"""
