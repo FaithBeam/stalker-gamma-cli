@@ -83,7 +83,7 @@ public static class DirUtils
         CancellationToken cancellationToken = default
     )
     {
-        if (sourceDir.Contains(".git"))
+        if (IsGitDir(sourceDir))
         {
             return;
         }
@@ -111,9 +111,18 @@ public static class DirUtils
         );
     }
 
+    /// <summary>
+    /// Whether the directory itself is git metadata, e.g. .git or .github, which shouldn't be
+    /// copied into the install. Only the last path segment is checked so a parent folder that
+    /// merely contains ".git" in its name, e.g. "foo.github.io", doesn't skip everything under it.
+    /// </summary>
+    private static bool IsGitDir(string dir) =>
+        Path.GetFileName(Path.TrimEndingDirectorySeparator(dir))
+            .StartsWith(".git", StringComparison.OrdinalIgnoreCase);
+
     private static int CountFiles(string sourceDir, string? fileFilter)
     {
-        if (sourceDir.Contains(".git"))
+        if (IsGitDir(sourceDir))
         {
             return 0;
         }
@@ -169,7 +178,7 @@ public static class DirUtils
             """
         );
         txtProgress?.Invoke($"Copying {sourceDir} to {destDir}");
-        if (sourceDir.Contains(".git"))
+        if (IsGitDir(sourceDir))
         {
             txtProgress?.Invoke($"Skipping {sourceDir}, .git folder found");
             return;
