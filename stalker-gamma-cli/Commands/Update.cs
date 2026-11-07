@@ -239,6 +239,7 @@ public class UpdateCmds(
         LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        ValidateActiveProfile.ValidateDownloadThreads(_logger, _cliSettings.ActiveProfile!);
 
         InitializeSettings(out var anomaly, out var gamma, out var cache, out var mo2Profile);
 

@@ -6,6 +6,9 @@ namespace stalker_gamma_cli.Models;
 
 public partial class CliProfile
 {
+    public const int MinDownloadThreads = 1;
+    public const int MaxDownloadThreads = 20;
+
     public bool Active { get; set; }
     public string ProfileName { get; set; } = "Gamma";
     public string Anomaly { get; set; } = Path.Join("gamma", "anomaly");
@@ -162,9 +165,13 @@ public partial class CliProfile
                 return true;
 
             case "downloadthreads":
-                if (!int.TryParse(value, out var threads))
+                if (
+                    !int.TryParse(value, out var threads)
+                    || threads is < MinDownloadThreads or > MaxDownloadThreads
+                )
                 {
-                    error = "Value must be an integer.";
+                    error =
+                        $"Value must be an integer from {MinDownloadThreads} to {MaxDownloadThreads}.";
                     return false;
                 }
 

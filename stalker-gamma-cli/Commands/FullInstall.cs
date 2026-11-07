@@ -61,7 +61,8 @@ public class FullInstallCmd(
         string? modPackMakerPath = null,
         string? modListPath = null,
         string? offlineArchivePath = null,
-        [Range(1, 20)] int? downloadThreads = null,
+        [Range(CliProfile.MinDownloadThreads, CliProfile.MaxDownloadThreads)]
+            int? downloadThreads = null,
         bool resume = false,
         bool json = false,
         [Hidden] bool debug = false,
@@ -73,6 +74,10 @@ public class FullInstallCmd(
         LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        if (downloadThreads is null)
+        {
+            ValidateActiveProfile.ValidateDownloadThreads(_logger, _cliSettings.ActiveProfile!);
+        }
 
         var offline = !string.IsNullOrWhiteSpace(offlineArchivePath);
         ValidateOfflineArchivePath(offlineArchivePath);
