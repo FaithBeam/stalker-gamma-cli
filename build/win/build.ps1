@@ -66,7 +66,7 @@ Invoke-WebRequest @cacertSplat
 $stalkerCliDir = Join-Path $buildDir "stalker-gamma-cli"
 $pathToProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli") "stalker-gamma-cli.csproj")
 $dotnetRid = "win-$Arch"
-dotnet publish -c Release $pathToProject -o $stalkerCliDir -r $dotnetRid -p:AssemblyVersion=$Version
+dotnet publish -c Release $pathToProject -o $stalkerCliDir -r $dotnetRid -p:Version=$Version
 #endregion
 
 $stalkerCliResourceDir = Join-Path $stalkerCliDir "resources"
@@ -81,7 +81,7 @@ Remove-Item -Path (Join-Path $stalkerCliDir "*.pdb")
 #region stalker-gamma-server
 $stalkerCliServerDir = Join-Path $buildDir "stalker-gamma-server"
 $pathToServerProject = (Join-Path (Join-Path $repoRoot "stalker-gamma-cli-server") "stalker-gamma-cli-server.csproj")
-dotnet publish -c Release $pathToServerProject -o $stalkerCliServerDir -r $dotnetRid -p:AssemblyVersion=$Version
+dotnet publish -c Release $pathToServerProject -o $stalkerCliServerDir -r $dotnetRid -p:Version=$Version
 Remove-Item -Path (Join-Path $stalkerCliServerDir "*.pdb") -ErrorAction SilentlyContinue
 #endregion
 

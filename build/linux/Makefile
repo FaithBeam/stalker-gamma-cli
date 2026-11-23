@@ -78,7 +78,7 @@ build:
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
-	dotnet publish -c Release $(STALKER_GAMMA_CLI_PROJECT) -o $(STALKER_GAMMA_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	dotnet publish -c Release $(STALKER_GAMMA_CLI_PROJECT) -o $(STALKER_GAMMA_BUILD_DIR) -p:Version=$(VERSION)
 
 	# cleanup stalker-gamma-cli debug files
 	rm $(STALKER_GAMMA_BUILD_DIR)/*.pdb
@@ -93,7 +93,7 @@ build:
 
 	# build stalker-gamma-server
 	mkdir $(STALKER_GAMMA_SERVER_BUILD_DIR)
-	dotnet publish -c Release $(STALKER_GAMMA_SERVER_PROJECT) -r $(STALKER_GAMMA_SERVER_RID) -o $(STALKER_GAMMA_SERVER_BUILD_DIR) -p:AssemblyVersion=$(VERSION)
+	dotnet publish -c Release $(STALKER_GAMMA_SERVER_PROJECT) -r $(STALKER_GAMMA_SERVER_RID) -o $(STALKER_GAMMA_SERVER_BUILD_DIR) -p:Version=$(VERSION)
 	rm -f $(STALKER_GAMMA_SERVER_BUILD_DIR)/*.pdb
 
 $(APPIMAGETOOL):
