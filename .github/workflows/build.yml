@@ -187,12 +187,14 @@ jobs:
           HASHES: ${{ toJSON(needs.build.outputs) }}
         run: echo "$HASHES"
 
-  # release is skipped in a dry run, so don't let that skip cascade into the publish jobs
+  # release is skipped in a dry run, so don't let that skip cascade into the publish jobs.
+  # Check results explicitly: a build leg that never got a runner ends up cancelled, which
+  # doesn't trip failure(), and publishing then pointed packages at a release that didn't exist.
   update-aur:
     name: update-aur
     runs-on: ubuntu-22.04
     needs: [build, version, release]
-    if: ${{ !cancelled() && !failure() && (github.ref_type == 'tag' || inputs.dry_run) }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.version.result == 'success' && (needs.release.result == 'success' || (inputs.dry_run && needs.release.result == 'skipped')) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -235,7 +237,7 @@ jobs:
     name: update-chocolatey
     runs-on: windows-latest
     needs: [build, version, release]
-    if: ${{ !cancelled() && !failure() && (github.ref_type == 'tag' || inputs.dry_run) }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.version.result == 'success' && (needs.release.result == 'success' || (inputs.dry_run && needs.release.result == 'skipped')) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -249,7 +251,7 @@ jobs:
     name: update-homebrew
     runs-on: ubuntu-22.04
     needs: [build, version, release]
-    if: ${{ !cancelled() && !failure() && (github.ref_type == 'tag' || inputs.dry_run) }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.version.result == 'success' && (needs.release.result == 'success' || (inputs.dry_run && needs.release.result == 'skipped')) }}
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v7
