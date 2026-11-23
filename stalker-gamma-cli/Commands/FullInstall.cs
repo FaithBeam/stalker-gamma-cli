@@ -44,7 +44,6 @@ public class FullInstallCmd(
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="resume">Resume a previously failed full-install from resume.txt in your gamma folder</param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
-    /// <param name="debug"></param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
     public async Task<int> FullInstall(
         CancellationToken cancellationToken,
@@ -61,10 +60,10 @@ public class FullInstallCmd(
         string? modPackMakerPath = null,
         string? modListPath = null,
         string? offlineArchivePath = null,
-        [Range(1, 20)] int? downloadThreads = null,
+        [Range(CliProfile.MinDownloadThreads, CliProfile.MaxDownloadThreads)]
+            int? downloadThreads = null,
         bool resume = false,
         bool json = false,
-        [Hidden] bool debug = false,
         [Hidden] long progressUpdateIntervalMs = 250
     )
     {
@@ -73,6 +72,10 @@ public class FullInstallCmd(
         LogAndExitOnDependencyError.Check(_utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        if (downloadThreads is null)
+        {
+            ValidateActiveProfile.ValidateDownloadThreads(_logger, _cliSettings.ActiveProfile!);
+        }
 
         var offline = !string.IsNullOrWhiteSpace(offlineArchivePath);
         ValidateOfflineArchivePath(offlineArchivePath);
@@ -109,11 +112,9 @@ public class FullInstallCmd(
             installer,
             verbose,
             json,
-            debug,
             progressUpdateIntervalMs,
             out var gammaWriteFileDisposable,
-            out var gammaProgressDisposable,
-            out var gammaDbgDispo
+            out var gammaProgressDisposable
         );
 
         ResumeState? resumeState = null;
@@ -178,7 +179,6 @@ public class FullInstallCmd(
         {
             DeleteOfflineListsDir(offlineListsDir);
             _progressLoggingService.WriteToLogFile();
-            gammaDbgDispo?.Dispose();
             gammaProgressDisposable.Dispose();
             gammaWriteFileDisposable.Dispose();
         }
@@ -356,24 +356,12 @@ public class FullInstallCmd(
         IGammaInstaller installer,
         bool verbose,
         bool json,
-        bool debug,
         long progressUpdateIntervalMs,
         out IDisposable gammaWriteFileDisposable,
-        out IDisposable gammaProgressDisposable,
-        out IDisposable? gammaDbgDisposable
+        out IDisposable gammaProgressDisposable
     )
     {
-        gammaDbgDisposable = null;
-        if (debug)
-        {
-            var gammaDbgObs = Observable
-                .FromEventPattern<GammaProgress.GammaInstallDebugProgressEventArgs>(
-                    handler => installer.Progress.DebugProgressChanged += handler,
-                    handler => installer.Progress.DebugProgressChanged -= handler
-                )
-                .Select(x => x.EventArgs);
-            gammaDbgDisposable = gammaDbgObs.Subscribe(OnDebugProgressChanged);
-        }
+        installer.Progress.Warning += OnWarning;
 
         var gammaWriteFileObs = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
@@ -405,8 +393,8 @@ public class FullInstallCmd(
         : verbose ? OnProgressChangedVerbose
         : OnProgressChangedInformational;
 
-    private void OnDebugProgressChanged(GammaProgress.GammaInstallDebugProgressEventArgs e) =>
-        File.AppendAllText("stalker-gamma-cli.log", $"{e.Text}{Environment.NewLine}");
+    private void OnWarning(object? sender, GammaProgress.GammaInstallWarningEventArgs e) =>
+        _logger.Warning(e.Exception, "{Message}", e.Message);
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(

@@ -30,7 +30,10 @@ public partial class ModDbMirrorService(NetworkServiceFactory networkServiceFact
                 .OrderBy(_ => Guid.NewGuid())
                 .First();
         }
-        catch (Exception e) when (e is not CloudflareChallengeException)
+        catch (Exception e)
+            when (e is not CloudflareChallengeException
+                && !cancellationToken.IsCancellationRequested
+            )
         {
             throw new MirrorUtilityException(
                 $"""

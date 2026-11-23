@@ -1,7 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.ModDb.Services;
-using Stalker.Gamma.Services;
+using Stalker.Gamma.Proxies;
 
 namespace Stalker.Gamma.GammaInstallerServices;
 
@@ -31,6 +31,7 @@ public class GetCanonicalLinkFromModDbStartLink(NetworkServiceFactory networkSer
                     is not CanonicalLinkNotFoundException
                         and not ModDbBotDetectedException
                         and not CloudflareChallengeException
+                && !ct.IsCancellationRequested
             )
         {
             throw new GetCanonicalLinkFromModDbStartLinkException(

@@ -88,7 +88,7 @@ public class AnomalyInstaller(
                 Downloaded = true;
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new AnomalyInstallerException(
                 $"""
@@ -181,7 +181,7 @@ public class AnomalyInstaller(
             );
             _progress.IncrementCompletedMods();
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new AnomalyInstallerException(
                 $"""

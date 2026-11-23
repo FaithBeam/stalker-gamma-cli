@@ -54,7 +54,7 @@ public class GithubRecord(
             OnProgress(GammaProgressType.Download, 1);
             Downloaded = true;
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new GithubRecordException(
                 $"""
@@ -93,7 +93,7 @@ public class GithubRecord(
 
             WriteAddonMetaIni.Write(ExtractPath, ArchiveName, NiceUrl);
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new GithubRecordException(
                 $"""

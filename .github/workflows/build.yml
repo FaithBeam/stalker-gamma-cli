@@ -128,6 +128,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends appstream
 
+      # runs on every leg so path handling is exercised on each OS, Windows in particular
+      - name: Test
+        run: dotnet test LibSevenZip.Tests/LibSevenZip.Tests.csproj
+
       - name: Build
         env:
           FILE_VERSION: ${{ needs.version.outputs.file_version }}

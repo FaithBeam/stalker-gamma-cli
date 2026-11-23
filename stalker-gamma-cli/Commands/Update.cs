@@ -239,6 +239,7 @@ public class UpdateCmds(
         LogAndExitOnDependencyError.Check(utilitiesReady, _logger);
 
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        ValidateActiveProfile.ValidateDownloadThreads(_logger, _cliSettings.ActiveProfile!);
 
         InitializeSettings(out var anomaly, out var gamma, out var cache, out var mo2Profile);
 
@@ -330,6 +331,8 @@ public class UpdateCmds(
         out IDisposable gammaWriteFileDisposable
     )
     {
+        gammaInstaller.Progress.Warning += OnWarning;
+
         var gammaWriteFileObs = Observable
             .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
                 handler => gammaInstaller.Progress.ProgressChanged += handler,
@@ -353,6 +356,9 @@ public class UpdateCmds(
                 : OnProgressChangedInformational
         );
     }
+
+    private void OnWarning(object? sender, GammaProgress.GammaInstallWarningEventArgs e) =>
+        _logger.Warning(e.Exception, "{Message}", e.Message);
 
     private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         _logger.Information(

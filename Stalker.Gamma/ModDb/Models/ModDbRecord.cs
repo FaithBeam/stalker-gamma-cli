@@ -62,7 +62,10 @@ public class ModDbRecord(
                 Downloaded = true;
             }
         }
-        catch (Exception e) when (e is not CloudflareChallengeException)
+        catch (Exception e)
+            when (e is not CloudflareChallengeException
+                && !cancellationToken.IsCancellationRequested
+            )
         {
             throw new ModDbRecordException(
                 $"""
@@ -101,7 +104,7 @@ public class ModDbRecord(
 
             WriteAddonMetaIni.Write(ExtractPath, ArchiveName, NiceUrl);
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             throw new ModDbRecordException(
                 $"""
