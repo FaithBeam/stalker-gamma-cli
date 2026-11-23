@@ -167,25 +167,40 @@ public sealed unsafe class SevenZipArchive : IDisposable
     /// Joins an archive item path onto <paramref name="root"/>, treating backslashes as
     /// directory separators. Throws if the result would land outside <paramref name="root"/>.
     /// </summary>
+    /// <remarks>
+    /// The item path is checked segment by segment rather than by comparing the joined
+    /// path against <paramref name="root"/> after <see cref="Path.GetFullPath(string)"/>.
+    /// On Windows, GetFullPath expands short names whenever the path contains a '~', which
+    /// can rewrite the existing part of the path (e.g. its casing), so a plain file such as
+    /// "~sound.ogg" would no longer appear to be under <paramref name="root"/>.
+    /// </remarks>
     /// <param name="root">A full path.</param>
     public static string ResolveUnder(string root, string itemPath)
     {
-        var rootWithSeparator = Path.EndsInDirectorySeparator(root)
-            ? root
-            : root + Path.DirectorySeparatorChar;
-        var relative = itemPath.Replace('\\', '/').TrimStart('/');
-        var full = Path.GetFullPath(Path.Join(root, relative));
-        if (
-            !full.StartsWith(rootWithSeparator, StringComparison.Ordinal)
-            && !string.Equals(full, root, StringComparison.Ordinal)
-        )
+        var segments = new List<string>();
+        foreach (var segment in itemPath.Split(['/', '\\']))
         {
-            throw new SevenZipException(
-                $"Archive item would extract outside of the destination: {itemPath}"
-            );
+            if (segment.Length == 0 || segment == ".")
+            {
+                continue;
+            }
+
+            // ".." climbs out. Windows trims trailing dots and spaces from path segments,
+            // so "...", ".. " and " " are treated the same way. ':' would make the path
+            // drive-relative ("C:foo") or address an alternate data stream.
+            if (segment.TrimEnd('.', ' ').Length == 0 || segment.Contains(':'))
+            {
+                throw new SevenZipException(
+                    $"Archive item would extract outside of the destination: {itemPath}"
+                );
+            }
+
+            segments.Add(segment);
         }
 
-        return full;
+        return segments.Count == 0
+            ? root
+            : Path.Join(root, string.Join(Path.DirectorySeparatorChar, segments));
     }
 
     /// <summary>Runs <see cref="ExtractTo"/> on a thread pool thread.</summary>
