@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using System.Reactive.Subjects;
 using stalker_gamma_cli.Utilities;
+using Stalker.Gamma.GammaInstallerServices;
 
 namespace stalker_gamma_cli.Tests;
 
@@ -62,6 +64,65 @@ public class DedicatedThreadSamplerTests
 
         Assert.False(written.TryTake(out _, Interval * 4));
     }
+
+    [Fact]
+    public void Writes_every_operation_with_the_newest_addon_count()
+    {
+        var written = new BlockingCollection<(string Name, int Complete, int Total)>();
+        var blocked = new ManualResetEventSlim();
+        var release = new ManualResetEventSlim();
+        var source = new Subject<GammaProgress.GammaInstallProgressEventArgs>();
+        using var subscription = source.SubscribeSampledPerOperationOnDedicatedThread(
+            Interval,
+            e =>
+            {
+                if (e.Name == "hold")
+                {
+                    // keep the sampler thread here so the events below all land in one tick
+                    blocked.Set();
+                    release.Wait(Timeout);
+                    return;
+                }
+                written.Add((e.Name, e.Complete, e.Total));
+            }
+        );
+
+        source.OnNext(Progress("hold", 0, 417));
+        Assert.True(blocked.Wait(Timeout));
+
+        // "early" last reported before other addons finished, and one event arrives out of order
+        source.OnNext(Progress("early", 359, 417));
+        source.OnNext(Progress("late", 364, 417));
+        source.OnNext(Progress("racer", 363, 417));
+        release.Set();
+
+        Assert.Equal(
+            [("early", 364, 417), ("late", 364, 417), ("racer", 364, 417)],
+            Take(written, 3)
+        );
+
+        // a new total starts the count over
+        source.OnNext(Progress("next-phase", 2, 10));
+        Assert.Equal([("next-phase", 2, 10)], Take(written, 1));
+    }
+
+    private static GammaProgress.GammaInstallProgressEventArgs Progress(
+        string name,
+        int complete,
+        int total
+    ) =>
+        new()
+        {
+            Name = name,
+            ProgressType = GammaProgressType.Extract,
+            Progress = 0.5,
+            Url = "",
+            ArchiveName = name,
+            DownloadPath = "",
+            ExtractPath = "",
+            Complete = complete,
+            Total = total,
+        };
 
     private static List<T> Take<T>(BlockingCollection<T> collection, int count)
     {

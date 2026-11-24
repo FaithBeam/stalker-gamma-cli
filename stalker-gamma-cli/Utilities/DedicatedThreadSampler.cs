@@ -33,15 +33,78 @@ public static class DedicatedThreadSamplerExtensions
     /// Samples install progress separately for each download, extract, etc. so that every one
     /// running in parallel gets written at <paramref name="interval"/>.
     /// </summary>
+    /// <remarks>
+    /// An event's <see cref="GammaProgress.GammaInstallProgressEventArgs.Complete"/> count is taken
+    /// when it's raised, so an operation that last reported early in a tick would be written with
+    /// an older count than the operations after it. Every event is written with the newest count
+    /// seen instead, so the completed addon count never goes backwards.
+    /// </remarks>
     public static IDisposable SubscribeSampledPerOperationOnDedicatedThread(
         this IObservable<GammaProgress.GammaInstallProgressEventArgs> source,
         TimeSpan interval,
         Action<GammaProgress.GammaInstallProgressEventArgs> onNext
-    ) => source.SubscribeSampledOnDedicatedThread(interval, ProgressKey, onNext);
+    )
+    {
+        var counts = new AddonCountTracker();
+        return source.SubscribeSampledOnDedicatedThread(
+            interval,
+            e =>
+            {
+                counts.Observe(e);
+                return ProgressKey(e);
+            },
+            e =>
+            {
+                counts.Stamp(e);
+                onNext(e);
+            }
+        );
+    }
 
     private static (GammaProgressType, string, string, string) ProgressKey(
         GammaProgress.GammaInstallProgressEventArgs e
     ) => (e.ProgressType, e.Name, e.ArchiveName, e.DownloadPath);
+
+    /// <summary>
+    /// Tracks the newest completed/total addon count across every operation.
+    /// </summary>
+    private sealed class AddonCountTracker
+    {
+        private readonly Lock _gate = new();
+        private int _complete;
+        private int _total;
+
+        public void Observe(GammaProgress.GammaInstallProgressEventArgs e)
+        {
+            lock (_gate)
+            {
+                // a new total means a new phase whose count starts over; otherwise only move
+                // forward, since threads can raise events slightly out of order
+                if (e.Total != _total)
+                {
+                    _total = e.Total;
+                    _complete = e.Complete;
+                }
+                else if (e.Complete > _complete)
+                {
+                    _complete = e.Complete;
+                }
+            }
+        }
+
+        /// <remarks>
+        /// Overwrites the event's counts. The file logger has already written it by now, since it
+        /// subscribes synchronously, and nothing else holds on to it.
+        /// </remarks>
+        public void Stamp(GammaProgress.GammaInstallProgressEventArgs e)
+        {
+            lock (_gate)
+            {
+                e.Complete = _complete;
+                e.Total = _total;
+            }
+        }
+    }
 }
 
 /// <summary>
