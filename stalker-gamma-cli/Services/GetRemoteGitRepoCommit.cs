@@ -27,7 +27,8 @@ public class GetRemoteGitRepoCommit(IHttpClientFactory hcf)
             ?.FirstOrDefault()
             ?.Sha;
 
-    private const string GitHubApiUrl = "https://api.github.com/repos/{0}/{1}/commits?per_page=1&sha={2}";
+    private const string GitHubApiUrl =
+        "https://api.github.com/repos/{0}/{1}/commits?per_page=1&sha={2}";
 
     private readonly HttpClient _httpClient = hcf.CreateClient("dlAddon");
 }

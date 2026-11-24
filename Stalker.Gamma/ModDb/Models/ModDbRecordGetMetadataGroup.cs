@@ -38,6 +38,7 @@ public class ModDbRecordGetMetadataGroup(
     public bool ArchiveExists() => _modDbRecords.First().ArchiveExists();
 
     public void DeleteArchive() => _modDbRecords.First().DeleteArchive();
+
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly IList<ModDbRecordGetMetadata> _modDbRecords = modDbRecords;
 }
