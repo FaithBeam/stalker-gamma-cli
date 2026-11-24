@@ -427,7 +427,7 @@ public class GammaInstaller(
                         cancellationToken: args.CancellationToken
                     )
                 : !string.IsNullOrWhiteSpace(Settings.ModListUrl)
-                    ? await _hc.GetStringAsync(Settings.ModListUrl)
+                    ? await _hc.GetStringAsync(Settings.ModListUrl, args.CancellationToken)
                 : throw new InvalidOperationException("Mod list path or url is empty");
             Directory.CreateDirectory(mo2ProfilePath);
             await File.WriteAllTextAsync(Path.Join(mo2ProfilePath, "modlist.txt"), modList);
