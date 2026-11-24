@@ -79,6 +79,12 @@ public class FullInstallCmd(
 
         var offline = !string.IsNullOrWhiteSpace(offlineArchivePath);
         ValidateOfflineArchivePath(offlineArchivePath);
+        if (offline && skipExtractOnHashMatch)
+        {
+            _logger.Warning(
+                "--skip-extract-on-hash-match is ignored with --offline-archive-path, every archive is extracted"
+            );
+        }
 
         InitializeSettings(
             downloadThreads,
@@ -150,6 +156,7 @@ public class FullInstallCmd(
                 .WithSkipExtractOnHashMatch(skipExtractOnHashMatch)
                 .WithMo2Profile(mo2Profile)
                 .WithMinimal(minimal)
+                .WithOffline(offline)
                 .WithModPackMakerPath(modPackMakerPath)
                 .WithModListPath(modListPath)
                 .WithPreserveUserLtx(preserveUserSettings)

@@ -84,9 +84,12 @@ public class GammaInstaller(
     {
         var key = record.ResumeKey;
         // a record that was downloaded but not extracted before the previous run died must be extracted,
-        // even if this run doesn't need to download it again
+        // even if this run doesn't need to download it again.
+        // offline installs never download, so skipping records that weren't downloaded would skip all of them
         var inner =
-            skipExtractOnHashMatch && args.ResumeState.GetStatus(key) != ResumeStatus.Extract
+            skipExtractOnHashMatch
+            && !args.Offline
+            && args.ResumeState.GetStatus(key) != ResumeStatus.Extract
                 ? downloadableRecordFactory.CreateSkipExtractWhenNotDownloadedRecord(record)
                 : record;
         args.ResumeState.Register(key);
