@@ -25,10 +25,18 @@ public class GetStalkerModsFromLocal : IGetStalkerModsFromLocal
             );
         }
 
-        return JsonSerializer.Deserialize<List<ModPackMakerRecord>>(
+        var records =
+            JsonSerializer.Deserialize<List<ModPackMakerRecord>>(
                 await File.ReadAllTextAsync(pathToModPackMakerList),
                 jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
             ) ?? [];
+        // the counter isn't serialized, it's the record's line number in the list, same as
+        // ModPackMakerRecordFactory numbers the online list
+        for (var i = 0; i < records.Count; i++)
+        {
+            records[i].Counter = i + 1;
+        }
+        return records;
     }
 }
 

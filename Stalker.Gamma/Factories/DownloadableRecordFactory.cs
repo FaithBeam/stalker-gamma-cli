@@ -183,7 +183,7 @@ public class DownloadableRecordFactory(
             && record.DlLink.Contains("moddb")
         )
         {
-            var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
+            var outputDirName = GetOutputDirName(record);
             var instructions = ProcessInstructions(record.Instructions);
             downloadableRecord = new ModDbRecordGetMetadata(
                 record.AddonName!,
@@ -223,7 +223,7 @@ public class DownloadableRecordFactory(
             var instructions = ProcessInstructions(record.Instructions);
 
             var archiveName = $"{record.DlLink.Split('/')[4]}.zip";
-            var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
+            var outputDirName = GetOutputDirName(record);
             downloadableRecord = new GithubRecord(
                 gammaProgress,
                 record.AddonName,
@@ -263,7 +263,7 @@ public class DownloadableRecordFactory(
             }
 
             // normal mod pack maker with moddb metadata
-            var outputDirName = $"{record.Counter}- {record.AddonName} {record.Patch}";
+            var outputDirName = GetOutputDirName(record);
             var instructions = ProcessInstructions(record.Instructions);
             downloadableRecord = new ModDbRecord(
                 gammaProgress,
@@ -282,6 +282,12 @@ public class DownloadableRecordFactory(
         }
         return false;
     }
+
+    /// <summary>
+    /// The name of the folder in the mods folder a record is extracted to
+    /// </summary>
+    public static string GetOutputDirName(ModPackMakerRecord record) =>
+        $"{record.Counter}- {record.AddonName} {record.Patch}";
 
     private static List<string> ProcessInstructions(string? instructions) =>
         string.IsNullOrWhiteSpace(instructions) || instructions == "0"

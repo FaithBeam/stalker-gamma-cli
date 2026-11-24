@@ -460,6 +460,12 @@ public class GammaInstaller(
         public required List<ModPackMakerRecord> OnlineRecords { get; set; }
         public required List<ModPackMakerRecord> AddedOrModifiedRecords { get; set; }
         public required List<ModPackMakerRecord> LocalRecords { get; set; }
+
+        /// <summary>
+        /// The local records of addons that moved to another line in the online list, so their
+        /// addon folder is renamed
+        /// </summary>
+        public List<ModPackMakerRecord> RenumberedRecords { get; set; } = [];
     }
 
     public async Task<DiffedAddonRecords> DiffAddonRecordsAsync(GammaInstallerArgs args)
@@ -467,16 +473,24 @@ public class GammaInstaller(
         var modpackMakerTxt = await getStalkerModsFromApi.GetModsAsync(args.CancellationToken);
         var onlineModPackMakerRecords = ModListRecordFactory.Create(modpackMakerTxt);
         var localRecords = await getStalkerModsFromLocal.GetMods(args.Gamma, args.Mo2Profile);
-        var addedOrModifiedRecords = localRecords
-            .Diff(onlineModPackMakerRecords)
+        var diffs = localRecords.Diff(onlineModPackMakerRecords);
+        var addedOrModifiedRecords = diffs
             .Where(x => x.DiffType is DiffType.Added or DiffType.Modified)
             .Select(x => x.NewListRecord!)
+            .ToList();
+        var renumberedRecords = diffs
+            .Where(x =>
+                x.DiffType is DiffType.Modified
+                && DiffModPackMakerLists.IsRenumbered(x.OldListRecord!, x.NewListRecord!)
+            )
+            .Select(x => x.OldListRecord!)
             .ToList();
         return new DiffedAddonRecords
         {
             LocalRecords = localRecords,
             OnlineRecords = onlineModPackMakerRecords,
             AddedOrModifiedRecords = addedOrModifiedRecords,
+            RenumberedRecords = renumberedRecords,
         };
     }
 
@@ -485,6 +499,7 @@ public class GammaInstaller(
     )
     {
         var diffedAddonRecords = await DiffAddonRecordsAsync(args);
+        DeleteRenumberedAddonFolders(args, diffedAddonRecords);
         var addonRecords = diffedAddonRecords
             .AddedOrModifiedRecords.Select(rec =>
                 downloadableRecordFactory.TryCreate(args.Gamma, rec, out var dlRec) ? dlRec : null
@@ -509,6 +524,36 @@ public class GammaInstaller(
             .CreateGroupedDownloadableRecords(addonRecords)
             .Select(dlRec => CreateResumableRecord(args, dlRec, skipExtractOnHashMatch: false))
             .ToList();
+    }
+
+    /// <summary>
+    /// Renumbered addons are extracted to a folder with their new number, so the folder with
+    /// their old number would be left behind, unused by the new modlist.txt
+    /// </summary>
+    private static void DeleteRenumberedAddonFolders(
+        GammaInstallerArgs args,
+        DiffedAddonRecords diffedAddonRecords
+    )
+    {
+        var onlineDirNames = diffedAddonRecords
+            .OnlineRecords.Select(DownloadableRecordFactory.GetOutputDirName)
+            .ToHashSet();
+        foreach (var renumbered in diffedAddonRecords.RenumberedRecords)
+        {
+            var oldDirName = DownloadableRecordFactory.GetOutputDirName(renumbered);
+            // another addon may now be extracted to this folder
+            if (onlineDirNames.Contains(oldDirName))
+            {
+                continue;
+            }
+
+            var oldDir = Path.Join(args.Gamma, "mods", oldDirName);
+            if (Directory.Exists(oldDir))
+            {
+                DirUtils.NormalizePermissions(oldDir);
+                Directory.Delete(oldDir, true);
+            }
+        }
     }
 
     public IDownloadableRecord BuildAnomalyRecord(GammaInstallerArgs args)
