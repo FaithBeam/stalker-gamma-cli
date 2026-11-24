@@ -1,50 +1,73 @@
 using System.Reactive.Disposables;
+using Stalker.Gamma.GammaInstallerServices;
 
 namespace stalker_gamma_cli.Utilities;
 
 public static class DedicatedThreadSamplerExtensions
 {
     /// <summary>
-    /// Like <c>Sample(interval).Subscribe(onNext)</c>, but the sampling and <paramref name="onNext"/>
-    /// run on a dedicated thread instead of the thread pool.
+    /// Like <c>GroupBy(keySelector).SelectMany(g => g.Sample(interval)).Subscribe(onNext)</c>, but the
+    /// sampling and <paramref name="onNext"/> run on a dedicated thread instead of the thread pool.
+    /// Each key is throttled on its own, so a busy key can't crowd out the others.
     /// </summary>
     /// <remarks>
     /// Rx's <c>Sample</c> fires from a thread pool timer. When the pool is saturated with long
     /// synchronous work (7z extraction, hashing, libgit2 checkouts), the timer callback sits in the
     /// queue and progress stops being written. A dedicated thread doesn't compete for pool threads.
     /// </remarks>
-    public static IDisposable SubscribeSampledOnDedicatedThread<T>(
+    public static IDisposable SubscribeSampledOnDedicatedThread<T, TKey>(
         this IObservable<T> source,
         TimeSpan interval,
+        Func<T, TKey> keySelector,
         Action<T> onNext
     )
-        where T : class
+        where TKey : notnull
     {
-        var sampler = new DedicatedThreadSampler<T>(interval, onNext);
+        var sampler = new DedicatedThreadSampler<T, TKey>(interval, keySelector, onNext);
         var subscription = source.Subscribe(sampler.Post);
         // stop receiving values before stopping the thread
         return new CompositeDisposable(subscription, sampler);
     }
+
+    /// <summary>
+    /// Samples install progress separately for each download, extract, etc. so that every one
+    /// running in parallel gets written at <paramref name="interval"/>.
+    /// </summary>
+    public static IDisposable SubscribeSampledPerOperationOnDedicatedThread(
+        this IObservable<GammaProgress.GammaInstallProgressEventArgs> source,
+        TimeSpan interval,
+        Action<GammaProgress.GammaInstallProgressEventArgs> onNext
+    ) => source.SubscribeSampledOnDedicatedThread(interval, ProgressKey, onNext);
+
+    private static (GammaProgressType, string, string, string) ProgressKey(
+        GammaProgress.GammaInstallProgressEventArgs e
+    ) => (e.ProgressType, e.Name, e.ArchiveName, e.DownloadPath);
 }
 
 /// <summary>
-/// Holds the most recently posted value and hands it to a callback at a fixed interval
-/// from its own thread. Values posted between ticks are dropped except for the latest,
-/// and nothing is written on a tick where no new value arrived.
+/// Holds the most recently posted value for each key and hands them to a callback at a fixed
+/// interval from its own thread. Values posted between ticks are dropped except for the latest
+/// one per key, and nothing is written for a key on a tick where no new value arrived for it.
 /// </summary>
-public sealed class DedicatedThreadSampler<T> : IDisposable
-    where T : class
+public sealed class DedicatedThreadSampler<T, TKey> : IDisposable
+    where TKey : notnull
 {
     private readonly TimeSpan _interval;
+    private readonly Func<T, TKey> _keySelector;
     private readonly Action<T> _onNext;
     private readonly Thread _thread;
     private readonly ManualResetEventSlim _stop = new();
-    private T? _latest;
+    private readonly Lock _gate = new();
+
+    // only keys that received a value since the last tick, so it doesn't grow with the install
+    private Dictionary<TKey, T> _pending = [];
+    private Dictionary<TKey, T> _spare = [];
     private int _disposed;
 
-    public DedicatedThreadSampler(TimeSpan interval, Action<T> onNext)
+    public DedicatedThreadSampler(TimeSpan interval, Func<T, TKey> keySelector, Action<T> onNext)
     {
         _interval = interval;
+        _keySelector = keySelector;
         _onNext = onNext;
         _thread = new Thread(Run)
         {
@@ -56,17 +79,42 @@ public sealed class DedicatedThreadSampler<T> : IDisposable
         _thread.Start();
     }
 
-    /// <summary>Records <paramref name="value"/> as the latest value. Safe from any thread.</summary>
-    public void Post(T value) => Volatile.Write(ref _latest, value);
+    /// <summary>
+    /// Records <paramref name="value"/> as the latest value for its key. Safe from any thread.
+    /// </summary>
+    public void Post(T value)
+    {
+        var key = _keySelector(value);
+        lock (_gate)
+        {
+            _pending[key] = value;
+        }
+    }
 
     private void Run()
     {
         while (!_stop.Wait(_interval))
         {
-            if (Interlocked.Exchange(ref _latest, null) is { } value)
+            Dictionary<TKey, T> batch;
+            lock (_gate)
+            {
+                if (_pending.Count == 0)
+                {
+                    continue;
+                }
+
+                batch = _pending;
+                _pending = _spare;
+            }
+
+            // in the order each key first reported since the last tick
+            foreach (var value in batch.Values)
             {
                 _onNext(value);
             }
+
+            batch.Clear();
+            _spare = batch;
         }
     }
 

@@ -44,7 +44,7 @@ public class FullInstallCmd(
     /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
     /// <param name="resume">Resume a previously failed full-install from resume.txt in your gamma folder</param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
-    /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console in milliseconds</param>
+    /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console for each download, extract, etc. in milliseconds</param>
     public async Task<int> FullInstall(
         CancellationToken cancellationToken,
         bool skipGithubDownloads = false,
@@ -64,7 +64,7 @@ public class FullInstallCmd(
             int? downloadThreads = null,
         bool resume = false,
         bool json = false,
-        [Hidden] long progressUpdateIntervalMs = 250
+        [Hidden] long progressUpdateIntervalMs = 1000
     )
     {
         var statusCode = 0;
@@ -386,10 +386,11 @@ public class FullInstallCmd(
                 handler => installer.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
-        gammaProgressDisposable = gammaProgressObservable.SubscribeSampledOnDedicatedThread(
-            TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
-            GetProgressWriter(verbose, json)
-        );
+        gammaProgressDisposable =
+            gammaProgressObservable.SubscribeSampledPerOperationOnDedicatedThread(
+                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
+                GetProgressWriter(verbose, json)
+            );
     }
 
     private Action<GammaProgress.GammaInstallProgressEventArgs> GetProgressWriter(
