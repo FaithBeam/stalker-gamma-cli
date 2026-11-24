@@ -263,16 +263,29 @@ public class OfflineGammaInstaller(
     ) =>
         await Parallel.ForEachAsync(
             addons,
-            new ParallelOptions { MaxDegreeOfParallelism = Settings.DownloadThreads },
-            async (grs, _) =>
+            new ParallelOptions
             {
-                if (grs.ArchiveExists())
+                MaxDegreeOfParallelism = Settings.DownloadThreads,
+                CancellationToken = cancellationToken,
+            },
+            async (grs, ct) =>
+            {
+                if (!grs.ArchiveExists())
                 {
-                    await grs.ExtractAsync(cancellationToken);
-                    if (minimal)
-                    {
-                        grs.DeleteArchive();
-                    }
+                    ((GammaProgress)Progress).OnWarning(
+                        new GammaProgress.GammaInstallWarningEventArgs
+                        {
+                            Message =
+                                $"{grs.Name} was not installed, its archive is not in the cache: {grs.DownloadPath}",
+                        }
+                    );
+                    return;
+                }
+
+                await grs.ExtractAsync(ct);
+                if (minimal)
+                {
+                    grs.DeleteArchive();
                 }
             }
         );

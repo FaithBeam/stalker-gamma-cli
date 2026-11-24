@@ -44,7 +44,8 @@ public class ResumableRecord(
 
     public bool Downloaded => record.Downloaded;
 
-    public bool ArchiveExists() => record.ArchiveExists();
+    // a completed record isn't extracted again, so it doesn't need its archive
+    public bool ArchiveExists() => _alreadyComplete || record.ArchiveExists();
 
     // A skipped record never ran its download, so its download path may not be resolved
     public void DeleteArchive()
