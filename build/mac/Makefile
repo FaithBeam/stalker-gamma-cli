@@ -52,7 +52,9 @@ build:
 	mkdir $(7Z_BUILD_DIR)
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
-	$(MAKE) -j -C $(7Z_FORMAT_DIR) -f ../../cmpl_mac_$(ARCH).mak
+	# one job per core: an unlimited -j starts all ~290 compiles at once, which can stall a
+	# small CI runner until the job is cancelled
+	$(MAKE) -j$(shell sysctl -n hw.ncpu) -C $(7Z_FORMAT_DIR) -f ../../cmpl_mac_$(ARCH).mak
 	vtool -show-build $(7Z_LIB) | grep -q "minos $(MACOSX_DEPLOYMENT_TARGET)$$" \
 		|| (echo "7z.so doesn't target macOS $(MACOSX_DEPLOYMENT_TARGET)"; vtool -show-build $(7Z_LIB); exit 1)
 

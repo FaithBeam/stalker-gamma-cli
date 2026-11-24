@@ -74,7 +74,9 @@ build:
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
 	# drop -Werror: newer gcc (16+) emits false-positive -Warray-bounds warnings in 7-Zip sources
-	$(MAKE) -j -C $(7Z_FORMAT_DIR) -f ../../$(7Z_MAK) CFLAGS_WARN_WALL="-Wall -Wextra"
+	# one job per core: an unlimited -j starts all ~290 compiles at once, which can stall a
+	# small CI runner until the job is cancelled
+	$(MAKE) -j$(shell nproc) -C $(7Z_FORMAT_DIR) -f ../../$(7Z_MAK) CFLAGS_WARN_WALL="-Wall -Wextra"
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
