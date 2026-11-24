@@ -93,12 +93,11 @@ public abstract class PruneLogic(
         var statusCode = 0;
         string? error = null;
 
-        LogAndExitOnDependencyError.Check(UtilitiesReady, Logger);
-
-        ValidateActiveProfile.Validate(Logger, CliSettings.ActiveProfile);
-
         try
         {
+            ValidateDependencies.Validate(UtilitiesReady);
+            ValidateActiveProfile.Validate(CliSettings.ActiveProfile);
+
             var addonArchivesToDelete = await GetAddonsArchivesToDelete(cancellationToken);
 
             if (addonArchivesToDelete.Count == 0)
@@ -115,6 +114,11 @@ public abstract class PruneLogic(
 
                 HandlePrunableArchives(addonArchivesToDelete, maxPathLen, maxMbLen);
             }
+        }
+        catch (CommandValidationException e)
+        {
+            statusCode = 1;
+            error = JsonOutputUtility.LogError(Logger, e.Message);
         }
         catch (Exception e)
         {

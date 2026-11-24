@@ -67,7 +67,7 @@ public class AnomalyInstallCmd(
                 );
                 await anomalyInstaller.DownloadAsync(cancellationToken);
                 await anomalyInstaller.ExtractAsync(cancellationToken);
-                _logger.Information("Anomaly install complete");
+                logger.Information("Anomaly install complete");
             }
         );
     }
@@ -80,100 +80,90 @@ public class AnomalyInstallCmd(
     /// </param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     [Command("check")]
-    public async Task<int> CheckAnomaly(CancellationToken cancellationToken, bool json = false)
-    {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
-        var statusCode = 0;
-        string? error = null;
-
-        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
-        var anomaly = _cliSettings.ActiveProfile!.Anomaly;
-        try
-        {
-            if (!Directory.Exists(anomaly))
+    public Task<int> CheckAnomaly(CancellationToken cancellationToken, bool json = false) =>
+        JsonOutputUtility.RunAsync(
+            logger,
+            CheckCommand,
+            json,
+            async () =>
             {
-                throw new DirectoryNotFoundException($"Directory {anomaly} doesn't exist");
+                ValidateDependencies.Validate(utilitiesReady);
+                var anomaly = ValidateActiveProfile.Validate(cliSettings.ActiveProfile).Anomaly;
+                if (!Directory.Exists(anomaly))
+                {
+                    throw new DirectoryNotFoundException($"Directory {anomaly} doesn't exist");
+                }
+
+                var anomalyToolsPath = Path.Join(anomaly, "tools");
+                if (!Directory.Exists(anomalyToolsPath))
+                {
+                    throw new DirectoryNotFoundException(
+                        $"Directory {anomalyToolsPath} doesn't exist"
+                    );
+                }
+
+                var anomalyChecksumsPath = Path.Join(anomalyToolsPath, "checksums.md5");
+                if (!File.Exists(anomalyChecksumsPath))
+                {
+                    throw new FileNotFoundException($"File {anomalyChecksumsPath} doesn't exist");
+                }
+
+                var checksums = await GetChecksums(anomaly, anomalyChecksumsPath);
+                var actual = await GetActualHashes(cancellationToken, anomaly);
+                var longestPath = checksums.MaxBy(x => x.Path.Length).Path.Length + 5;
+                var failures = await ValidateChecksums(checksums, actual, longestPath, json);
+                return failures > 0 ? $"{failures} file(s) corrupt or missing" : null;
             }
-
-            var anomalyToolsPath = Path.Join(anomaly, "tools");
-            if (!Directory.Exists(anomalyToolsPath))
-            {
-                throw new DirectoryNotFoundException($"Directory {anomalyToolsPath} doesn't exist");
-            }
-
-            var anomalyChecksumsPath = Path.Join(anomalyToolsPath, "checksums.md5");
-            if (!File.Exists(anomalyChecksumsPath))
-            {
-                throw new FileNotFoundException($"File {anomalyChecksumsPath} doesn't exist");
-            }
-
-            var checksums = await GetChecksums(anomaly, anomalyChecksumsPath);
-            var actual = await GetActualHashes(cancellationToken, anomaly);
-            var longestPath = checksums.MaxBy(x => x.Path.Length).Path.Length + 5;
-            var failures = await ValidateChecksums(checksums, actual, longestPath, json);
-            if (failures > 0)
-            {
-                statusCode = 1;
-                error = $"{failures} file(s) corrupt or missing";
-            }
-        }
-        // Only catch in json mode so a GUI wrapper always gets a result message
-        catch (Exception e) when (json)
-        {
-            _logger.Error(e, "Anomaly check failed! {ExceptionMessage}", e.Message);
-            statusCode = 1;
-            error = e.Message;
-        }
-
-        if (json)
-        {
-            JsonOutputUtility.WriteResult(CheckCommand, statusCode, error);
-        }
-
-        return statusCode;
-    }
+        );
 
     /// <summary>
     /// Deletes the shader cache directory for the active Anomaly profile
     /// </summary>
-    public void PurgeShaderCache()
-    {
-        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
-        var anomalyAppDataShadersDir = Path.Join(
-            _cliSettings.ActiveProfile!.Anomaly,
-            "appdata",
-            "shaders_cache"
+    public Task<int> PurgeShaderCache() =>
+        JsonOutputUtility.RunAsync(
+            logger,
+            "anomaly purge-shader-cache",
+            json: false,
+            () =>
+            {
+                PurgeShaderCache(ValidateActiveProfile.Validate(cliSettings.ActiveProfile));
+                return Task.FromResult<string?>(null);
+            }
         );
+
+    private void PurgeShaderCache(CliProfile profile)
+    {
+        var anomalyAppDataShadersDir = Path.Join(profile.Anomaly, "appdata", "shaders_cache");
         if (Directory.Exists(anomalyAppDataShadersDir))
         {
             DirUtils.NormalizePermissions(anomalyAppDataShadersDir);
             Directory.Delete(anomalyAppDataShadersDir, true);
-            _logger.Information("Shader cache deleted");
+            logger.Information("Shader cache deleted");
         }
         else
         {
-            _logger.Information("Shader cache not found");
+            logger.Information("Shader cache not found");
         }
     }
 
     /// <summary>
     /// Deletes all ReShade-related files from the Anomaly bin directory
     /// </summary>
-    public void DeleteReshade()
+    public Task<int> DeleteReshade() =>
+        JsonOutputUtility.RunAsync(
+            logger,
+            "anomaly delete-reshade",
+            json: false,
+            () =>
+                Task.FromResult(
+                    DeleteReshade(ValidateActiveProfile.Validate(cliSettings.ActiveProfile))
+                )
+        );
+
+    /// <returns>An error, or null if it succeeded</returns>
+    private string? DeleteReshade(CliProfile profile)
     {
-        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
-        var anomalyBinDir = Path.Join(_cliSettings.ActiveProfile!.Anomaly, "bin");
+        var anomalyBinDir = Path.Join(profile.Anomaly, "bin");
         List<string> reshadeFiles =
         [
             "d3d9.dll",
@@ -191,21 +181,20 @@ public class AnomalyInstallCmd(
             foreach (var fi in files)
             {
                 fi.Delete();
-                _logger.Information("Deleted {File}", fi.FullName);
+                logger.Information("Deleted {File}", fi.FullName);
             }
 
             var reshadeShadersDir = Path.Join(anomalyBinDir, "reshade-shaders");
             if (Directory.Exists(reshadeShadersDir))
             {
                 Directory.Delete(reshadeShadersDir, true);
-                _logger.Information("Reshade shaders directory deleted");
+                logger.Information("Reshade shaders directory deleted");
             }
-            _logger.Information("Reshade files deleted");
+            logger.Information("Reshade files deleted");
+            return null;
         }
-        else
-        {
-            _logger.Error("Anomaly bin directory not found");
-        }
+
+        return JsonOutputUtility.LogError(logger, "Anomaly bin directory not found");
     }
 
     /// <returns>The number of files that are corrupt or missing</returns>
@@ -235,11 +224,11 @@ public class AnomalyInstallCmd(
             }
             else if (status == ChecksumStatus.Ok)
             {
-                _logger.Information(InformationalCheck, checksum.Path.PadRight(longestPath), "OK");
+                logger.Information(InformationalCheck, checksum.Path.PadRight(longestPath), "OK");
             }
             else
             {
-                _logger.Error(
+                logger.Error(
                     InformationalCheck,
                     checksum.Path.PadRight(longestPath),
                     status == ChecksumStatus.Corrupt ? "CORRUPT" : "NOT FOUND"
@@ -307,7 +296,4 @@ public class AnomalyInstallCmd(
     private const string InstallCommand = "anomaly install";
     private const string CheckCommand = "anomaly check";
     private const string InformationalCheck = "{File} | {Status}";
-
-    private readonly ILogger _logger = logger;
-    private readonly CliSettings _cliSettings = cliSettings;
 }

@@ -116,12 +116,21 @@ public class CliTests : IDisposable
         }
     }
 
-    [SevenZipFact]
-    public async Task Commands_that_need_a_profile_fail_without_one()
+    [SevenZipTheory]
+    [InlineData("full-install")]
+    [InlineData("update", "apply")]
+    [InlineData("update", "check")]
+    [InlineData("anomaly", "install")]
+    [InlineData("anomaly", "check")]
+    [InlineData("cache", "prune", "check")]
+    public async Task Commands_that_need_a_profile_fail_without_one(params string[] command)
     {
-        var result = await _cli.RunAsync("full-install", "--json");
+        var result = await _cli.RunAsync([.. command, "--json"]);
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(1, result.ExitCode);
+        // GUI wrappers rely on every --json command ending with a result message
+        Assert.False(result.Result.GetProperty("success").GetBoolean());
+        Assert.Contains("No active profile", result.Result.GetProperty("error").GetString());
         Assert.False(Directory.Exists(Path.Join(_fake.Gamma, "mods")));
     }
 
@@ -175,7 +184,8 @@ public class CliTests : IDisposable
             "--json"
         );
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(1, result.ExitCode);
+        Assert.Contains("missing.zip", result.Result.GetProperty("error").GetString());
         Assert.False(Directory.Exists(Path.Join(_fake.Gamma, "mods")));
     }
 

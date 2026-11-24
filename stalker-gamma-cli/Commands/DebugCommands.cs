@@ -19,7 +19,7 @@ public class Debug(ILogger logger, CliSettings cliSettings)
             json,
             () =>
             {
-                ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(cliSettings.ActiveProfile);
 
                 var stalkerGammaLogsPath = AppDataPathUtility.LogsPath;
                 Directory.CreateDirectory(stalkerGammaLogsPath);
@@ -44,7 +44,7 @@ public class Debug(ILogger logger, CliSettings cliSettings)
             json,
             async () =>
             {
-                ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(cliSettings.ActiveProfile);
                 var anomaly = cliSettings.ActiveProfile!.Anomaly;
                 var gamma = cliSettings.ActiveProfile!.Gamma;
                 var cache = cliSettings.ActiveProfile!.Cache;

@@ -164,7 +164,7 @@ public class FullInstallCmd(
     {
         if (!string.IsNullOrWhiteSpace(offlineArchivePath) && !File.Exists(offlineArchivePath))
         {
-            throw new ArgumentException(
+            throw new CommandValidationException(
                 $"--offline-archive-path {offlineArchivePath} does not exist"
             );
         }

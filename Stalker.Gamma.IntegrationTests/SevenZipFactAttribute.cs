@@ -20,6 +20,21 @@ public sealed class SevenZipFactAttribute : FactAttribute
 }
 
 /// <summary>
+/// A <see cref="SevenZipFactAttribute"/> that takes data
+/// </summary>
+public sealed class SevenZipTheoryAttribute : TheoryAttribute
+{
+    public SevenZipTheoryAttribute()
+    {
+        if (NativeSevenZip.Path is null && !NativeSevenZip.Required)
+        {
+            Skip =
+                $"The native 7-Zip library wasn't found. Build it, or set {NativeSevenZip.PathVariable} to it";
+        }
+    }
+}
+
+/// <summary>
 /// Finds the native 7-Zip library the CLI ships with: from STALKER_GAMMA_7Z_PATH, or else
 /// where the build scripts and a local debug build leave it
 /// </summary>

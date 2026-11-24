@@ -28,14 +28,14 @@ public class InstallCommandSupport(
     /// <param name="usesDownloadThreads">Whether the command downloads addons in parallel with the profile's downloadThreads</param>
     /// <param name="downloadThreads">The --download-threads override, the profile's is only validated without it</param>
     /// <returns>The active profile</returns>
+    /// <exception cref="CommandValidationException">The command can't run</exception>
     public CliProfile Validate(bool usesDownloadThreads = true, int? downloadThreads = null)
     {
-        LogAndExitOnDependencyError.Check(utilitiesReady, logger);
-        ValidateActiveProfile.Validate(logger, cliSettings.ActiveProfile);
-        var profile = cliSettings.ActiveProfile!;
+        ValidateDependencies.Validate(utilitiesReady);
+        var profile = ValidateActiveProfile.Validate(cliSettings.ActiveProfile);
         if (usesDownloadThreads && downloadThreads is null)
         {
-            ValidateActiveProfile.ValidateDownloadThreads(logger, profile);
+            ValidateActiveProfile.ValidateDownloadThreads(profile);
         }
         return profile;
     }
@@ -145,6 +145,10 @@ public class InstallCommandSupport(
         try
         {
             await action();
+        }
+        catch (CommandValidationException e)
+        {
+            error = JsonOutputUtility.LogError(logger, e.Message);
         }
         catch (Exception e)
         {
