@@ -6,6 +6,7 @@ using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -243,7 +244,7 @@ public abstract class PruneLogic(
     {
         "Anomaly-1.5.3-Full.2.7z",
         "Anomaly-1.5.3-Full.mt-mx5.7z",
-        "ModOrganizer.v2.5.2.7z",
+        $"ModOrganizer.{ModOrganizerRelease.Version}.7z",
     };
 }
 
