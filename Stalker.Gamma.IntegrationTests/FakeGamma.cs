@@ -13,6 +13,10 @@ namespace Stalker.Gamma.IntegrationTests;
 public sealed class FakeGamma : IDisposable
 {
     private readonly TempDir _root = new();
+    private readonly bool _offlineArchive;
+    private readonly Dictionary<string, ObjectId> _repoCommits = [];
+
+    public string Root => _root.Path;
 
     public string Anomaly => _root.Join("anomaly");
     public string Gamma => _root.Join("gamma");
@@ -22,8 +26,15 @@ public sealed class FakeGamma : IDisposable
     public string Cache =>
         OperatingSystem.IsWindows() ? _root.Join("gamma", "downloads") : _root.Join("cache");
 
-    public string ModPackMakerList => _root.Join("lists", "modpack_maker_list.txt");
-    public string ModList => _root.Join("lists", "modlist.txt");
+    /// <summary>
+    /// Where the fixture's archives and repos are written: the cache, or the folder that's
+    /// packed into an offline archive by <see cref="CreateOfflineArchive"/>
+    /// </summary>
+    public string SourceCache => _offlineArchive ? _root.Join("offline", "cache") : Cache;
+
+    private string ListsDir => _offlineArchive ? _root.Join("offline") : _root.Join("lists");
+    public string ModPackMakerList => System.IO.Path.Join(ListsDir, "modpack_maker_list.txt");
+    public string ModList => System.IO.Path.Join(ListsDir, "modlist.txt");
     public string Mods => System.IO.Path.Join(Gamma, "mods");
 
     public const string TeivazFolder =
@@ -116,11 +127,17 @@ public sealed class FakeGamma : IDisposable
         +1- Base_separator
         """;
 
-    public FakeGamma()
+    /// <param name="offlineArchive">
+    /// Write the fixture to be packed into an offline archive instead of into the cache
+    /// </param>
+    public FakeGamma(bool offlineArchive = false)
     {
+        _offlineArchive = offlineArchive;
         Directory.CreateDirectory(Cache);
-        _root.WriteFile(System.IO.Path.Join("lists", "modpack_maker_list.txt"), ListText);
-        _root.WriteFile(System.IO.Path.Join("lists", "modlist.txt"), ModListText);
+        Directory.CreateDirectory(SourceCache);
+        Directory.CreateDirectory(ListsDir);
+        File.WriteAllText(ModPackMakerList, ListText);
+        File.WriteAllText(ModList, ModListText);
 
         WriteZip(
             "Anomaly-1.5.3-Full.2.7z",
@@ -180,7 +197,7 @@ public sealed class FakeGamma : IDisposable
 
     public static string Line(params string[] columns) => string.Join('\t', columns);
 
-    public string CachePath(string name) => System.IO.Path.Join(Cache, name);
+    public string CachePath(string name) => System.IO.Path.Join(SourceCache, name);
 
     public string ModFile(params string[] segments) => System.IO.Path.Join([Mods, .. segments]);
 
@@ -221,7 +238,39 @@ public sealed class FakeGamma : IDisposable
             [],
             false
         );
-        repo.Refs.Add("refs/remotes/origin/main", commit.Id);
+        repo.Refs.Add(RemoteBranch, commit.Id);
+        _repoCommits[name] = commit.Id;
+    }
+
+    private const string RemoteBranch = "refs/remotes/origin/main";
+
+    /// <summary>
+    /// Removes or restores the branch a repo is installed from. Without it, installing the
+    /// repo fails.
+    /// </summary>
+    public void SetRepoBranch(string name, bool exists)
+    {
+        using var repo = new Repository(CachePath($"{name}.git"));
+        if (exists)
+        {
+            repo.Refs.Add(RemoteBranch, _repoCommits[name], allowOverwrite: true);
+        }
+        else
+        {
+            repo.Refs.Remove(RemoteBranch);
+        }
+    }
+
+    /// <summary>
+    /// Packs the cache folder and the lists into a zip, laid out like the offline archives
+    /// people make with <c>tar -cvf archive.tar ./cache/ modpack_maker_list.txt modlist.txt</c>
+    /// </summary>
+    public string CreateOfflineArchive(string name)
+    {
+        var path = _root.Join(name);
+        File.Delete(path);
+        ZipFile.CreateFromDirectory(ListsDir, path);
+        return path;
     }
 
     public void Dispose() => _root.Dispose();

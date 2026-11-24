@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using stalker_gamma_cli.Utilities;
 
 namespace stalker_gamma_cli.Models;
 
@@ -12,9 +13,9 @@ public class CliSettings
 
     public async Task<string?> SaveAsync()
     {
-        if (!Directory.Exists(_appDataPath))
+        if (!Directory.Exists(AppDataPathUtility.AppDataPath))
         {
-            Directory.CreateDirectory(_appDataPath);
+            Directory.CreateDirectory(AppDataPathUtility.AppDataPath);
         }
         // write to a temp file first so the settings file isn't left truncated if the process is
         // killed mid-write, which would make every command fail to start
@@ -30,12 +31,7 @@ public class CliSettings
         return ActiveProfile?.ProfileName;
     }
 
-    private static string _appDataPath = Path.Join(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "stalker-gamma"
-    );
-
-    public static string SettingsPath => Path.Join(_appDataPath, "settings.json");
+    public static string SettingsPath => Path.Join(AppDataPathUtility.AppDataPath, "settings.json");
 }
 
 [JsonSerializable(typeof(CliSettings))]

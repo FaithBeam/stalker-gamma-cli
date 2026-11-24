@@ -146,7 +146,8 @@ jobs:
           FILE_VERSION: ${{ needs.version.outputs.file_version }}
         run: ${{ matrix.build }}
 
-      # installs a small fake GAMMA offline, extracting with the 7-Zip library the build step made
+      # installs a small fake GAMMA offline through the installer and the CLI, extracting with the
+      # 7-Zip library the build step made
       - name: Integration test
         env:
           STALKER_GAMMA_7Z_PATH: ${{ github.workspace }}/${{ matrix.sevenzip_lib }}

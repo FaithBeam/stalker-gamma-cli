@@ -71,3 +71,13 @@ The easiest way to get these is to run your platform's build below once, then co
 | Windows  | `cd build/win; build.bat`      | `build/win/build/stalker-gamma-cli`      |
 | Linux    | `cd build/linux && make build` | `build/linux/build/stalker-gamma-cli`    |
 | macOS    | `cd build/mac && make build`   | `build/mac/build/stalker-gamma-cli`      |
+
+### Test
+
+```sh
+dotnet test
+```
+
+The unit tests need nothing else. `Stalker.Gamma.IntegrationTests` installs a small fake GAMMA offline, through the installer and through the CLI, so it needs the 7-Zip library: it uses the one in your platform's build output or `stalker-gamma-cli/bin/Debug/net10.0/resources/`, or the path in `STALKER_GAMMA_7Z_PATH`. Without one, those tests are skipped.
+
+The CLI keeps its settings and logs in a `stalker-gamma` folder in your user's app data folder. Set `STALKER_GAMMA_APPDATA` to use another folder, e.g. to try changes without touching your own profiles. The integration tests run the CLI this way.

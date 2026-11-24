@@ -22,5 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Stalker.Gamma\Stalker.Gamma.csproj" />
+    <ProjectReference Include="..\stalker-gamma-cli\stalker-gamma-cli.csproj" />
   </ItemGroup>
 </Project>

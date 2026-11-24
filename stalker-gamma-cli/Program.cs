@@ -16,11 +16,7 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        var stalkerGammaLogsPath = Path.Join(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "stalker-gamma",
-            "logs"
-        );
+        var stalkerGammaLogsPath = AppDataPathUtility.LogsPath;
         var logPath = Path.Join(stalkerGammaLogsPath, "stalker-gamma-cli.log");
         Directory.CreateDirectory(stalkerGammaLogsPath);
         var jsonOutput = JsonOutputUtility.IsEnabled(args);
