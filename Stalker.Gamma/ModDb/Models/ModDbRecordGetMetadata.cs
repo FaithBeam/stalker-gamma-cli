@@ -131,6 +131,17 @@ public class ModDbRecordGetMetadata(
 
     public bool Downloaded { get; set; }
 
+    // until the metadata is retrieved the archive name is unknown and DownloadPath is the downloads folder itself
+    public bool ArchiveExists() => !string.IsNullOrEmpty(ArchiveName) && File.Exists(DownloadPath);
+
+    public void DeleteArchive()
+    {
+        if (ArchiveExists())
+        {
+            File.Delete(DownloadPath);
+        }
+    }
+
     private void OnProgress(
         GammaProgressType operation,
         double? pct,

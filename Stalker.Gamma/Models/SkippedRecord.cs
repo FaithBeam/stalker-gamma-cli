@@ -7,9 +7,10 @@ public class SkippedRecord(GammaProgress gammaProgress, IDownloadableRecord reco
 {
     private readonly GammaProgress _gammaProgress = gammaProgress;
     private readonly IDownloadableRecord _record = record;
-    public string Name { get; } = record.Name;
-    public string ArchiveName { get; } = record.ArchiveName;
+    public string Name => _record.Name;
+    public string ArchiveName => _record.ArchiveName;
     public string DownloadPath => _record.DownloadPath;
+    public string ResumeKey => _record.ResumeKey;
 
     public Task DownloadAsync(CancellationToken cancellationToken)
     {
@@ -25,6 +26,10 @@ public class SkippedRecord(GammaProgress gammaProgress, IDownloadableRecord reco
     }
 
     public bool Downloaded { get; }
+
+    public bool ArchiveExists() => _record.ArchiveExists();
+
+    public void DeleteArchive() => _record.DeleteArchive();
 
     private void OnProgress(GammaProgressType operation, double pct) =>
         _gammaProgress.OnProgressChanged(ProgFunc(operation, pct));

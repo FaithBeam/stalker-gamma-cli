@@ -10,9 +10,11 @@ public class SkipExtractWhenNotDownloadedRecord(
     IDownloadableRecord record
 ) : IDownloadableRecord
 {
-    public string Name { get; } = record.Name;
-    public string ArchiveName { get; } = record.ArchiveName;
-    public string DownloadPath { get; } = record.DownloadPath;
+    // read through to the wrapped record because some only know their archive after downloading
+    public string Name => record.Name;
+    public string ArchiveName => record.ArchiveName;
+    public string DownloadPath => record.DownloadPath;
+    public string ResumeKey => record.ResumeKey;
 
     public async Task DownloadAsync(CancellationToken cancellationToken) =>
         await record.DownloadAsync(cancellationToken);
@@ -43,4 +45,8 @@ public class SkipExtractWhenNotDownloadedRecord(
     }
 
     public bool Downloaded => record.Downloaded;
+
+    public bool ArchiveExists() => record.ArchiveExists();
+
+    public void DeleteArchive() => record.DeleteArchive();
 }
