@@ -2,7 +2,6 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <PublishAot>false</PublishAot>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
