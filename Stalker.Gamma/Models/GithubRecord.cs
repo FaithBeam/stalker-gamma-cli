@@ -77,7 +77,7 @@ public class GithubRecord(
             if (Directory.Exists(ExtractPath))
             {
                 DirUtils.NormalizePermissions(ExtractPath);
-                DirUtils.RecursivelyDeleteDirectory(ExtractPath, doNotMatch: []);
+                Directory.Delete(ExtractPath, true);
             }
 
             Directory.CreateDirectory(ExtractPath);
