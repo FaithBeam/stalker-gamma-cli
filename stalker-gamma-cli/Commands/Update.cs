@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
@@ -311,6 +312,9 @@ public class UpdateCmds(
     /// <param name="preserveUserSettings">Preserve user settings (user.ltx)</param>
     /// <param name="preserveMcmSettings">Preserve MCM settings</param>
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
+    /// <param name="downloadThreads">Override downloadThreads defined in your profile</param>
+    /// <param name="addFoldersToWinDefenderExclusion">(Windows) Add the anomaly, gamma, and cache folders to the Windows Defender Exclusion list</param>
+    /// <param name="enableLongPaths">(Windows) Enable long paths</param>
     /// <param name="resume">Resume a previously failed update apply from resume.txt in your gamma folder</param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
     /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console for each download, extract, etc. in milliseconds</param>
@@ -321,6 +325,10 @@ public class UpdateCmds(
         bool preserveUserSettings = false,
         bool preserveMcmSettings = false,
         string? stalkerGammaServerUrl = null,
+        [Range(CliProfile.MinDownloadThreads, CliProfile.MaxDownloadThreads)]
+            int? downloadThreads = null,
+        bool addFoldersToWinDefenderExclusion = false,
+        bool enableLongPaths = false,
         bool resume = false,
         bool json = false,
         [Hidden] long progressUpdateIntervalMs = 1000
@@ -340,8 +348,14 @@ public class UpdateCmds(
             ),
             action: async () =>
             {
-                var profile = support.Validate();
-                support.ApplySettings(profile, stalkerGammaServerUrl: stalkerGammaServerUrl);
+                var profile = support.Validate(downloadThreads: downloadThreads);
+                support.ApplySettings(
+                    profile,
+                    downloadThreads,
+                    stalkerGammaServerUrl,
+                    addFoldersToWinDefenderExclusion: addFoldersToWinDefenderExclusion,
+                    enableLongPaths: enableLongPaths
+                );
                 gamma = profile.Gamma;
 
                 resumeState = await ResumeUtility.LoadAsync(
