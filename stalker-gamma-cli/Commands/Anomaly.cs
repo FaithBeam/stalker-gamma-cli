@@ -1,13 +1,12 @@
 using System.IO.Enumeration;
-using System.Reactive.Linq;
 using System.Security.Cryptography;
 using ConsoleAppFramework;
 using Serilog;
 using stalker_gamma_cli.Models;
+using stalker_gamma_cli.Services;
 using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
-using Stalker.Gamma.Models;
 using Stalker.Gamma.Utilities;
 
 namespace stalker_gamma_cli.Commands;
@@ -16,10 +15,10 @@ namespace stalker_gamma_cli.Commands;
 public class AnomalyInstallCmd(
     ILogger logger,
     CliSettings cliSettings,
-    StalkerGammaSettings stalkerGammaSettings,
     GammaProgress gammaProgress,
     IDownloadableRecordFactory downloadableRecordFactory,
-    UtilitiesReady utilitiesReady
+    UtilitiesReady utilitiesReady,
+    InstallCommandSupport support
 )
 {
     /// <summary>
@@ -47,65 +46,30 @@ public class AnomalyInstallCmd(
         [Hidden] long progressUpdateIntervalMs = 1000
     )
     {
-        if (!utilitiesReady.IsReady)
-        {
-            _logger.Error(
-                """
-                Dependency not found:
-                {Message}
-                """,
-                utilitiesReady.NotReadyReason
-            );
-            Environment.Exit(1);
-        }
-
-        var statusCode = 0;
-        string? error = null;
-
-        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
-        var anomaly = _cliSettings.ActiveProfile!.Anomaly;
-        var cache = _cliSettings.ActiveProfile!.Cache;
-        stalkerGammaSettings.UseAnomalyMirror = useAnomalyMirror;
-
-        var anomalyInstaller = (AnomalyInstaller)
-            downloadableRecordFactory.CreateAnomalyRecord(cache, anomaly);
         gammaProgress.TotalMods = 1;
-        var gammaProgressObservable = Observable
-            .FromEventPattern<GammaProgress.GammaInstallProgressEventArgs>(
-                handler => anomalyInstaller.Progress.ProgressChanged += handler,
-                handler => anomalyInstaller.Progress.ProgressChanged -= handler
-            )
-            .Select(x => x.EventArgs);
-        var gammaProgressDisposable =
-            gammaProgressObservable.SubscribeSampledPerOperationOnDedicatedThread(
-                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
-                json ? JsonOutputUtility.WriteProgress
-                    : verbose ? OnProgressChangedVerbose
-                    : OnProgressChangedInformational
-            );
-        try
-        {
-            await anomalyInstaller.DownloadAsync(cancellationToken);
-            await anomalyInstaller.ExtractAsync(cancellationToken);
-            _logger.Information("Anomaly install complete");
-        }
-        catch (Exception e)
-        {
-            _logger.Error(e, "Anomaly install failed! {ExceptionMessage}", e.Message);
-            statusCode = 1;
-            error = e.Message;
-        }
-        finally
-        {
-            gammaProgressDisposable.Dispose();
-        }
-
-        if (json)
-        {
-            JsonOutputUtility.WriteResult(InstallCommand, statusCode, error);
-        }
-
-        return statusCode;
+        return await support.RunAsync(
+            InstallCommand,
+            "Anomaly install failed!",
+            json,
+            progressReporting: support.ReportProgress(
+                gammaProgress,
+                verbose,
+                json,
+                progressUpdateIntervalMs
+            ),
+            action: async () =>
+            {
+                var profile = support.Validate(usesDownloadThreads: false);
+                support.ApplySettings(profile, useAnomalyMirror: useAnomalyMirror);
+                var anomalyInstaller = downloadableRecordFactory.CreateAnomalyRecord(
+                    profile.Cache,
+                    profile.Anomaly
+                );
+                await anomalyInstaller.DownloadAsync(cancellationToken);
+                await anomalyInstaller.ExtractAsync(cancellationToken);
+                _logger.Information("Anomaly install complete");
+            }
+        );
     }
 
     /// <summary>
@@ -344,28 +308,6 @@ public class AnomalyInstallCmd(
     private const string CheckCommand = "anomaly check";
     private const string InformationalCheck = "{File} | {Status}";
 
-    private void OnProgressChangedInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
-        _logger.Information(
-            Informational,
-            e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
-            e.ProgressType.GetHumanReadableString().PadRight(10),
-            e.GetHumanReadableProgress().PadRight(10),
-            $"[{e.Complete}/{e.Total}]"
-        );
-
-    private void OnProgressChangedVerbose(GammaProgress.GammaInstallProgressEventArgs e) =>
-        _logger.Information(
-            Verbose,
-            e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
-            e.ProgressType.GetHumanReadableString().PadRight(10),
-            e.GetHumanReadableProgress().PadRight(10),
-            $"[{e.Complete}/{e.Total}]",
-            e.Url
-        );
-
     private readonly ILogger _logger = logger;
     private readonly CliSettings _cliSettings = cliSettings;
-    private const string Informational = "{AddonName} | {Operation} | {Percent} | {CompleteTotal}";
-    private const string Verbose =
-        "{AddonName} | {Operation} | {Percent} | {CompleteTotal} | {Url}";
 }
