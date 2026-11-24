@@ -130,7 +130,10 @@ jobs:
 
       # runs on every leg so path handling is exercised on each OS, Windows in particular
       - name: Test
-        run: dotnet test LibSevenZip.Tests/LibSevenZip.Tests.csproj
+        run: |
+          dotnet test LibSevenZip.Tests/LibSevenZip.Tests.csproj
+          dotnet test Stalker.Gamma.Tests/Stalker.Gamma.Tests.csproj
+          dotnet test stalker-gamma-cli.Tests/stalker-gamma-cli.Tests.csproj
 
       - name: Build
         env:
