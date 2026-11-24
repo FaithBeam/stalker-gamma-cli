@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.ModDb.Models;
@@ -134,11 +136,38 @@ public class DownloadableRecordFactory(
                 .OfType<ModDbRecordGetMetadata>()
                 .GroupBy(r => r.StartLink)
                 .Select(r => new ModDbRecordGetMetadataGroup(gammaProgress, r.ToList())),
-            .. records
-                .OfType<GithubRecord>()
-                .GroupBy(r => r.ArchiveName)
-                .Select(r => new GithubRecordGroup(gammaProgress, r.ToList())),
+            .. GroupGithubRecords(records.OfType<GithubRecord>()),
         ];
+
+    /// <summary>
+    /// Groups records that download the same url. Archives are named after the repo, so
+    /// different urls from repos with the same name, e.g. another branch, tag or owner, get a
+    /// suffix from their url instead of overwriting each other's archive.
+    /// </summary>
+    private IEnumerable<GithubRecordGroup> GroupGithubRecords(IEnumerable<GithubRecord> records)
+    {
+        // case-insensitive because the cache may be on a case-insensitive file system
+        var archiveNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in records.GroupBy(r => r.Url).Select(g => g.ToList()))
+        {
+            var archiveName = group[0].ArchiveName;
+            if (!archiveNames.Add(archiveName))
+            {
+                var urlHash = Convert.ToHexStringLower(
+                    SHA256.HashData(Encoding.UTF8.GetBytes(group[0].Url))
+                )[..8];
+                archiveName =
+                    $"{Path.GetFileNameWithoutExtension(archiveName)}-{urlHash}{Path.GetExtension(archiveName)}";
+                archiveNames.Add(archiveName);
+            }
+
+            foreach (var record in group)
+            {
+                record.ArchiveName = archiveName;
+            }
+            yield return new GithubRecordGroup(gammaProgress, group);
+        }
+    }
 
     public bool TryCreate(
         string gammaDir,
@@ -222,7 +251,17 @@ public class DownloadableRecordFactory(
 
             var instructions = ProcessInstructions(record.Instructions);
 
-            var archiveName = $"{record.DlLink.Split('/')[4]}.zip";
+            // e.g. https://github.com/{owner}/{repo}/archive/refs/heads/main.zip
+            var segments = Uri.TryCreate(record.DlLink, UriKind.Absolute, out var uri)
+                ? uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries)
+                : [];
+            if (segments.Length < 2)
+            {
+                throw new DownloadableRecordFactoryException(
+                    $"Invalid github link, expected https://github.com/<owner>/<repo>/...: {record.DlLink}"
+                );
+            }
+            var archiveName = $"{segments[1]}.zip";
             var outputDirName = GetOutputDirName(record);
             downloadableRecord = new GithubRecord(
                 gammaProgress,

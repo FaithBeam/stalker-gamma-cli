@@ -19,9 +19,11 @@ public class GithubRecord(
 ) : IDownloadableRecord
 {
     public string Name { get; } = name;
-    private string Url { get; } = url;
+    public string Url { get; } = url;
     private string NiceUrl { get; } = niceUrl;
-    public string ArchiveName { get; } = archiveName;
+
+    // set when another addon's archive would have the same name
+    public string ArchiveName { get; internal set; } = archiveName;
     private string? Md5 { get; } = md5;
     public string DownloadPath => Path.Join(_gammaDir, "downloads", ArchiveName);
     public string OutputDirName => _outputDirName;

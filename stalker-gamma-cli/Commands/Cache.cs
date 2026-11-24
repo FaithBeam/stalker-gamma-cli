@@ -211,7 +211,9 @@ public abstract class PruneLogic(
         }
 
         // compare full paths so a relative gamma folder or different separators still match
-        var addonRecords = records
+        // grouping gives github archives that share a name the names they're downloaded as
+        var addonRecords = DownloadableRecordFactory
+            .CreateGroupedDownloadableRecords(records)
             .Select(x => Path.GetFullPath(x.DownloadPath))
             .ToHashSet(PathComparer);
         var gammaDownloadsPath = Path.Join(CliSettings.ActiveProfile.Gamma, "downloads");
