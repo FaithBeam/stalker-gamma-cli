@@ -187,47 +187,104 @@ public class UpdateCmds(
             })
             .Where(repoDir => Directory.Exists(repoDir.Path))
             .ToList();
-        var localRepoModPackMakerRecs = localRepos
-            .Select(repoDir =>
-            {
-                var sha = GetInstalledCommit(repoDir.Path, repoDir.Branch);
-                return new ModPackMakerRecord
-                {
-                    DlLink = repoDir.DlLink,
-                    AddonName = repoDir.Name,
-                    Md5ModDb = sha,
-                    ZipName = ShortSha(sha),
-                };
-            })
-            .ToList();
-        var remoteRepoModPackMakerRecs = localRepos
-            .ToAsyncEnumerable()
-            .Select(async repoDir =>
-            {
-                var sha =
-                    (
-                        TryGetGithubOwnerAndRepo(repoDir.DlLink, out var owner, out var repo)
-                            ? await getRemoteGitRepoCommit.ExecuteAsync(
-                                owner,
-                                repo,
-                                repoDir.Branch,
-                                cancellationToken
-                            )
-                            : null
-                    ) ?? "N/A";
-                return new ModPackMakerRecord
-                {
-                    DlLink = repoDir.DlLink,
-                    AddonName = repoDir.Name,
-                    Md5ModDb = sha,
-                    ZipName = ShortSha(sha),
-                };
-            })
-            .WithCancellation(cancellationToken);
-        var localGitRepoDiffs = await localRepoModPackMakerRecs.DiffAsync(
-            remoteRepoModPackMakerRecs
+        var remoteShas = await Task.WhenAll(
+            localRepos.Select(repoDir =>
+                GetRemoteCommitAsync(
+                    repoDir.Name,
+                    repoDir.DlLink,
+                    repoDir.Branch,
+                    cancellationToken
+                )
+            )
         );
-        return localGitRepoDiffs;
+        List<ModPackMakerRecord> localRepoModPackMakerRecs = [];
+        List<ModPackMakerRecord> remoteRepoModPackMakerRecs = [];
+        foreach (var (repoDir, remoteSha) in localRepos.Zip(remoteShas))
+        {
+            // a repo that couldn't be checked isn't reported as an update
+            if (remoteSha is null)
+            {
+                continue;
+            }
+            var installedSha = GetInstalledCommit(repoDir.Path, repoDir.Branch);
+            localRepoModPackMakerRecs.Add(RepoRecord(repoDir.Name, repoDir.DlLink, installedSha));
+            remoteRepoModPackMakerRecs.Add(RepoRecord(repoDir.Name, repoDir.DlLink, remoteSha));
+        }
+        return localRepoModPackMakerRecs.Diff(remoteRepoModPackMakerRecs);
+    }
+
+    private static ModPackMakerRecord RepoRecord(string name, string url, string sha) =>
+        new()
+        {
+            DlLink = url,
+            AddonName = name,
+            Md5ModDb = sha,
+            ZipName = ShortSha(sha),
+        };
+
+    /// <summary>
+    /// The commit the repo's branch is at upstream, from GitHub's API for GitHub repos, or
+    /// else like <c>git ls-remote</c>, which works with any host or a local folder.
+    /// Null, with a warning, if neither can tell.
+    /// </summary>
+    private async Task<string?> GetRemoteCommitAsync(
+        string name,
+        string url,
+        string branch,
+        CancellationToken cancellationToken
+    )
+    {
+        List<string> errors = [];
+        if (TryGetGithubOwnerAndRepo(url, out var owner, out var repo))
+        {
+            try
+            {
+                if (
+                    await getRemoteGitRepoCommit.ExecuteAsync(
+                        owner,
+                        repo,
+                        branch,
+                        cancellationToken
+                    ) is
+                    { } sha
+                )
+                {
+                    return sha;
+                }
+            }
+            // e.g. GitHub's rate limit for requests without a token
+            catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+            {
+                errors.Add(e.Message);
+            }
+        }
+
+        try
+        {
+            if (
+                await Task.Run(
+                    () => GitService.GetRemoteCommitSha(url, branch),
+                    cancellationToken
+                ) is
+                { } sha
+            )
+            {
+                return sha;
+            }
+            errors.Add($"it has no branch or tag named {branch}");
+        }
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+        {
+            errors.Add(e.InnerException?.Message ?? e.Message);
+        }
+
+        _logger.Warning(
+            "Unable to check {Repo} for updates from {Url}: {Reason}",
+            name,
+            url,
+            string.Join("; ", errors)
+        );
+        return null;
     }
 
     /// <summary>

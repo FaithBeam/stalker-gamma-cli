@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.Services;
 
 namespace Stalker.Gamma.IntegrationTests.Cli;
 
@@ -31,9 +32,9 @@ public class CliTests : IDisposable
 
     private string Relative(string path) => Path.GetRelativePath(_fake.Root, path);
 
-    private async Task CreateProfileAsync()
+    /// <param name="stalkerGammaRepoUrl">Defaults to the fixture's Stalker_GAMMA repo</param>
+    private async Task CreateProfileAsync(string? stalkerGammaRepoUrl = null)
     {
-        string repos = Path.Join(_fake.Root, "upstream");
         AssertSucceeded(
             await _cli.RunAsync(
                 "config",
@@ -47,15 +48,15 @@ public class CliTests : IDisposable
                 Relative(_fake.Cache),
                 "--mod-pack-maker-url",
                 _server.Url,
-                // not GitHub, so update check doesn't ask GitHub for their latest commits
+                // update check compares the installed repos with these local folders
                 "--gamma-setup-repo-url",
-                Path.Join(repos, "gamma_setup"),
+                _fake.RepoPath("gamma_setup"),
                 "--stalker-gamma-repo-url",
-                Path.Join(repos, "Stalker_GAMMA"),
+                stalkerGammaRepoUrl ?? _fake.RepoPath("Stalker_GAMMA"),
                 "--gamma-large-files-repo-url",
-                Path.Join(repos, "gamma_large_files_v2"),
+                _fake.RepoPath("gamma_large_files_v2"),
                 "--teivaz-anomaly-gunslinger-repo-url",
-                Path.Join(repos, "teivaz_anomaly_gunslinger"),
+                _fake.RepoPath("teivaz_anomaly_gunslinger"),
                 "--json"
             )
         );
@@ -268,35 +269,12 @@ public class CliTests : IDisposable
         var result = await _cli.RunAsync("update", "check", "--json");
 
         AssertSucceeded(result);
-        string[] repos =
-        [
-            "gamma_setup",
-            "gamma_large_files_v2",
-            "Stalker_GAMMA",
-            "teivaz_anomaly_gunslinger",
-        ];
-        var updates = result
-            .MessagesOfType("updates")
-            .Single()
-            .GetProperty("updates")
-            .EnumerateArray()
-            .Where(x => !repos.Contains(x.GetProperty("addonName").GetString()))
-            .Select(x =>
-                (
-                    Status: x.GetProperty("status").GetString(),
-                    Name: x.GetProperty("addonName").GetString(),
-                    Old: Text(x, "oldZipName"),
-                    New: Text(x, "newZipName")
-                )
-            )
-            .OrderBy(x => x.Name)
-            .ToList();
         Assert.Equal(
             [
                 ("Added", "New Addon", null, "new_addon.zip"),
                 ("Modified", "Simple Addon", "simple_addon.zip", "simple_addon_v2.zip"),
             ],
-            updates
+            Updates(result)
         );
     }
 
@@ -309,16 +287,72 @@ public class CliTests : IDisposable
         var result = await _cli.RunAsync("update", "check", "--json");
 
         AssertSucceeded(result);
-        var addonUpdates = result
+        Assert.Empty(Updates(result));
+        Assert.Empty(Warnings(result));
+    }
+
+    [SevenZipFact]
+    public async Task Update_check_lists_a_repo_with_new_commits()
+    {
+        await CreateProfileAsync();
+        AssertSucceeded(await FullInstallAsync());
+        var installed = GitService.GetCommitSha(
+            Path.Join(_fake.Gamma, "downloads", "Stalker_GAMMA.git")
+        );
+        var latest = _fake.AddUpstreamCommit(
+            "Stalker_GAMMA",
+            "G.A.M.M.A/modpack_addons/G.A.M.M.A. Core/gamedata/configs/new.ltx",
+            "new"
+        );
+
+        var result = await _cli.RunAsync("update", "check", "--json");
+
+        AssertSucceeded(result);
+        Assert.Equal([("Modified", "Stalker_GAMMA", installed[..7], latest[..7])], Updates(result));
+    }
+
+    [SevenZipFact]
+    public async Task Update_check_warns_about_a_repo_it_cant_check()
+    {
+        // e.g. a mirror that's down, or a typo in the url
+        var unreachable = Path.Join(_fake.Root, "no-such-repo");
+        await CreateProfileAsync(stalkerGammaRepoUrl: unreachable);
+        AssertSucceeded(await FullInstallAsync());
+
+        var result = await _cli.RunAsync("update", "check", "--json");
+
+        // it isn't reported as an update when its latest commit is unknown
+        AssertSucceeded(result);
+        Assert.Empty(Updates(result));
+        var warning = Assert.Single(Warnings(result));
+        Assert.StartsWith("Unable to check Stalker_GAMMA for updates", warning);
+    }
+
+    private static List<(string? Status, string? Name, string? Old, string? New)> Updates(
+        CliResult result
+    ) =>
+        result
             .MessagesOfType("updates")
             .Single()
             .GetProperty("updates")
             .EnumerateArray()
-            .Select(x => x.GetProperty("addonName").GetString())
+            .Select(x =>
+                (
+                    Status: x.GetProperty("status").GetString(),
+                    Name: x.GetProperty("addonName").GetString(),
+                    Old: Text(x, "oldZipName"),
+                    New: Text(x, "newZipName")
+                )
+            )
+            .OrderBy(x => x.Name, StringComparer.Ordinal)
             .ToList();
-        Assert.DoesNotContain("Simple Addon", addonUpdates);
-        Assert.DoesNotContain("Exos", addonUpdates);
-    }
+
+    private static List<string> Warnings(CliResult result) =>
+        result
+            .MessagesOfType("log")
+            .Where(x => x.GetProperty("level").GetString() == "Warning")
+            .Select(x => x.GetProperty("message").GetString()!)
+            .ToList();
 
     private static string? Text(JsonElement element, string property) =>
         element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String

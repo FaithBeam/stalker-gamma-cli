@@ -214,7 +214,9 @@ public sealed class FakeGamma : IDisposable
     }
 
     /// <summary>
-    /// A bare clone like the installer makes, with the branch it extracts as a remote branch
+    /// A bare clone like the installer makes, with the branch it extracts as a remote branch.
+    /// It has the branch itself too, so it can stand in for the upstream repo update check
+    /// compares with.
     /// </summary>
     private void WriteBareRepo(string name, params (string Path, string Contents)[] files)
     {
@@ -239,10 +241,44 @@ public sealed class FakeGamma : IDisposable
             false
         );
         repo.Refs.Add(RemoteBranch, commit.Id);
+        repo.Refs.Add(UpstreamBranch, commit.Id);
         _repoCommits[name] = commit.Id;
     }
 
     private const string RemoteBranch = "refs/remotes/origin/main";
+    private const string UpstreamBranch = "refs/heads/main";
+
+    /// <summary>
+    /// The folder a repo's upstream stand-in is in, for a profile's repo url
+    /// </summary>
+    public string RepoPath(string name) => CachePath($"{name}.git");
+
+    /// <summary>
+    /// Commits a file to a repo's upstream branch, as if the repo was updated after the
+    /// install. Returns the new commit's sha.
+    /// </summary>
+    public string AddUpstreamCommit(string name, string path, string contents)
+    {
+        using var repo = new Repository(RepoPath(name));
+        var parent = repo.Lookup<Commit>(UpstreamBranch);
+        var tree = TreeDefinition.From(parent);
+        tree.Add(
+            path,
+            repo.ObjectDatabase.CreateBlob(new MemoryStream(Encoding.UTF8.GetBytes(contents))),
+            Mode.NonExecutableFile
+        );
+        var signature = new Signature("test", "test@example.com", DateTimeOffset.UnixEpoch);
+        var commit = repo.ObjectDatabase.CreateCommit(
+            signature,
+            signature,
+            "update",
+            repo.ObjectDatabase.CreateTree(tree),
+            [parent],
+            false
+        );
+        repo.Refs.UpdateTarget(UpstreamBranch, commit.Sha);
+        return commit.Sha;
+    }
 
     /// <summary>
     /// Removes or restores the branch a repo is installed from. Without it, installing the
