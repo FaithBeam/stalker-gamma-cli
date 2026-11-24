@@ -246,8 +246,12 @@ internal static partial class LibCurl
     internal const int CURLOPT_XFERINFOFUNCTION = 20219;
     internal const int CURLOPT_XFERINFODATA = 10057;
     internal const int CURLOPT_HTTP_VERSION = 84;
+    internal const int CURLOPT_CONNECTTIMEOUT = 78;
+    internal const int CURLOPT_LOW_SPEED_LIMIT = 19;
+    internal const int CURLOPT_LOW_SPEED_TIME = 20;
     internal const long CURL_HTTP_VERSION_3 = 30;
     internal const int CURLINFO_HTTP_VERSION = 0x200000 + 46;
+    internal const int CURLINFO_RESPONSE_CODE = 0x200000 + 2;
     internal const int CURLINFO_SPEED_DOWNLOAD_T = 0x600000 + 9;
     internal const int CURLE_OK = 0;
     internal const int CURLE_UNSUPPORTED_PROTOCOL = 1;

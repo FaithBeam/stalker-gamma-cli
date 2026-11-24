@@ -119,6 +119,7 @@ public partial class ModDbService(
                     OnRetry = args => ValueTask.CompletedTask,
                 }
             )
+            .AddTimeout(CdnLinkAttemptTimeout)
             .Build();
     }
 
@@ -152,6 +153,12 @@ public partial class ModDbService(
 
         return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, ct: ct);
     }
+
+    /// <summary>
+    /// Finding a mirror and the CDN link happens while every other ModDB download waits on
+    /// <see cref="Lock"/>, so an attempt that hangs is abandoned and retried instead of stalling them all
+    /// </summary>
+    private static readonly TimeSpan CdnLinkAttemptTimeout = TimeSpan.FromMinutes(2);
 
     [GeneratedRegex("""window.location.href="(.+)";""")]
     private static partial Regex WindowLocationRx();
