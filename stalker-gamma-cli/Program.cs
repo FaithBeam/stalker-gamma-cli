@@ -109,7 +109,8 @@ public static class Program
         }
         finally
         {
-            await Log.CloseAndFlushAsync();
+            // the logger isn't Log.Logger, so Log.CloseAndFlushAsync wouldn't flush or close it
+            await log.DisposeAsync();
         }
     }
 }
