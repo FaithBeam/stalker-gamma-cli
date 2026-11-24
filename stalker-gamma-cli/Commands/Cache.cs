@@ -183,7 +183,7 @@ public abstract class PruneLogic(
             cancellationToken
         );
         var onlineAddons = ModListRecordFactory.Create(onlineAddonsTxt);
-        var addonRecords = onlineAddons
+        var records = onlineAddons
             .Select(rec =>
                 !DownloadableRecordFactory.TryCreate(
                     CliSettings.ActiveProfile.Gamma,
@@ -195,18 +195,40 @@ public abstract class PruneLogic(
             )
             .Where(x => x is not null)
             .Cast<IDownloadableRecord>()
-            .Select(x => x.DownloadPath)
-            .Order()
             .ToList();
+
+        // records without a zip name only learn their archive name from ModDB while downloading,
+        // so it can't be told whether any archive in the cache is still theirs
+        var unknownArchives = records
+            .Where(x => string.IsNullOrWhiteSpace(x.ArchiveName))
+            .Select(x => x.Name)
+            .ToList();
+        if (unknownArchives.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Unable to prune, the mod pack maker list has no archive name for: {string.Join(", ", unknownArchives)}"
+            );
+        }
+
+        // compare full paths so a relative gamma folder or different separators still match
+        var addonRecords = records
+            .Select(x => Path.GetFullPath(x.DownloadPath))
+            .ToHashSet(PathComparer);
         var gammaDownloadsPath = Path.Join(CliSettings.ActiveProfile.Gamma, "downloads");
         var localAddons = new DirectoryInfo(gammaDownloadsPath)
             .GetFiles()
             .Where(local => _ignoreAddons.All(ignore => !local.Name.Contains(ignore)))
             .OrderBy(x => x.Name)
             .ToList();
-        var addonArchivesToDelete = localAddons.ExceptBy(addonRecords, x => x.FullName).ToList();
+        var addonArchivesToDelete = localAddons
+            .Where(x => !addonRecords.Contains(Path.GetFullPath(x.FullName)))
+            .ToList();
         return addonArchivesToDelete;
     }
+
+    private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
 
     private const string Informational =
         "\e[96m{File}\e[0m "
