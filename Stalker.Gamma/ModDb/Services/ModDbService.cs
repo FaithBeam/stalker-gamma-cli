@@ -14,10 +14,15 @@ public partial class ModDbService(
 {
     private static readonly SemaphoreSlim Lock = new(1);
 
+    /// <param name="expectedMd5">
+    /// The archive's MD5 if it's known. The download is checked against it, and a retry
+    /// continues a partial download instead of starting over.
+    /// </param>
     public async Task DownloadAddonAsync(
         string url,
         string output,
         Action<DownloadProgress> onProgress,
+        string? expectedMd5 = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -94,7 +99,8 @@ public partial class ModDbService(
                         parentPath?.FullName ?? "./",
                         Path.GetFileName(output),
                         onProgress,
-                        cancellationToken: ct
+                        cancellationToken: ct,
+                        expectedMd5: string.IsNullOrWhiteSpace(expectedMd5) ? null : expectedMd5
                     );
             },
             cancellationToken

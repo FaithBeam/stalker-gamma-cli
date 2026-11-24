@@ -82,6 +82,7 @@ public class AnomalyInstaller(
                         StalkerAnomalyUrl,
                         ModDbDownloadPath,
                         p => OnProgress(GammaProgressType.Download, p.Percent, p),
+                        expectedMd5: StalkerAnomalyMd5,
                         cancellationToken: cancellationToken
                     );
                 }

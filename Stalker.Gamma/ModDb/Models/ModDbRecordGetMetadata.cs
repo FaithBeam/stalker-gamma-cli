@@ -54,6 +54,7 @@ public class ModDbRecordGetMetadata(
                     Url,
                     DownloadPath,
                     p => OnProgress(GammaProgressType.Download, p.Percent, p),
+                    expectedMd5: Md5,
                     cancellationToken: cancellationToken
                 );
                 Downloaded = true;

@@ -166,6 +166,126 @@ public class DownloadFileFastTests : IDisposable
         Assert.Equal(1.0, Assert.Single(progress).Percent);
     }
 
+    private static readonly string ContentMd5 = Convert.ToHexStringLower(
+        System.Security.Cryptography.MD5.HashData(Content)
+    );
+
+    [Fact]
+    public async Task Download_matching_its_md5_is_kept()
+    {
+        using var hc = FakeServer.Respond(_ => FakeServer.Ok(Content));
+
+        await DownloadFileFast.DownloadAsync(
+            hc,
+            Url,
+            Destination,
+            expectedMd5: ContentMd5.ToUpperInvariant()
+        );
+
+        Assert.Equal(Content, await File.ReadAllBytesAsync(Destination));
+        Assert.False(File.Exists($"{Destination}.part"));
+    }
+
+    [Fact]
+    public async Task Download_not_matching_its_md5_throws_and_leaves_nothing()
+    {
+        using var hc = FakeServer.Respond(_ => FakeServer.Ok(Content));
+
+        var e = await Assert.ThrowsAsync<DownloadFileFastMd5MismatchException>(() =>
+            DownloadFileFast.DownloadAsync(hc, Url, Destination, expectedMd5: "deadbeef")
+        );
+
+        Assert.Contains(Url, e.Message);
+        Assert.False(File.Exists(Destination));
+        Assert.False(File.Exists($"{Destination}.part"));
+    }
+
+    [Fact]
+    public async Task Interrupted_download_with_an_md5_keeps_its_partial_file()
+    {
+        using var hc = FakeServer.Respond(_ =>
+            FakeServer.Ok(new FailingStream(Content[..5]), Content.Length)
+        );
+
+        await Assert.ThrowsAsync<DownloadFileFastException>(() =>
+            DownloadFileFast.DownloadAsync(hc, Url, Destination, expectedMd5: ContentMd5)
+        );
+
+        Assert.False(File.Exists(Destination));
+        Assert.Equal(Content[..5], await File.ReadAllBytesAsync($"{Destination}.part"));
+    }
+
+    [Fact]
+    public async Task Download_with_an_md5_continues_its_partial_file()
+    {
+        await File.WriteAllBytesAsync($"{Destination}.part", Content[..8]);
+        HttpRequestMessage? sent = null;
+        using var hc = FakeServer.Respond(req =>
+        {
+            sent = req;
+            var response = FakeServer.Ok(Content[8..]);
+            response.StatusCode = HttpStatusCode.PartialContent;
+            return response;
+        });
+
+        await DownloadFileFast.DownloadAsync(hc, Url, Destination, expectedMd5: ContentMd5);
+
+        Assert.Equal("bytes=8-", sent!.Headers.Range!.ToString());
+        Assert.Equal(Content, await File.ReadAllBytesAsync(Destination));
+        Assert.False(File.Exists($"{Destination}.part"));
+    }
+
+    [Fact]
+    public async Task Continued_partial_file_from_another_archive_fails_its_md5_and_is_deleted()
+    {
+        // left over from an older version of the archive with the same name
+        await File.WriteAllBytesAsync($"{Destination}.part", "stale!!!"u8.ToArray());
+        using var hc = FakeServer.Respond(_ =>
+        {
+            var response = FakeServer.Ok(Content[8..]);
+            response.StatusCode = HttpStatusCode.PartialContent;
+            return response;
+        });
+
+        await Assert.ThrowsAsync<DownloadFileFastMd5MismatchException>(() =>
+            DownloadFileFast.DownloadAsync(hc, Url, Destination, expectedMd5: ContentMd5)
+        );
+
+        // so the retry starts over
+        Assert.False(File.Exists($"{Destination}.part"));
+        Assert.False(File.Exists(Destination));
+    }
+
+    [Fact]
+    public async Task Complete_partial_file_matching_its_md5_is_moved_into_place()
+    {
+        await File.WriteAllBytesAsync($"{Destination}.part", Content);
+        using var hc = FakeServer.Respond(_ => new HttpResponseMessage(
+            HttpStatusCode.RequestedRangeNotSatisfiable
+        ));
+
+        await DownloadFileFast.DownloadAsync(hc, Url, Destination, expectedMd5: ContentMd5);
+
+        Assert.Equal(Content, await File.ReadAllBytesAsync(Destination));
+    }
+
+    [Fact]
+    public async Task Partial_file_is_not_continued_without_an_md5()
+    {
+        await File.WriteAllBytesAsync($"{Destination}.part", Content[..8]);
+        HttpRequestMessage? sent = null;
+        using var hc = FakeServer.Respond(req =>
+        {
+            sent = req;
+            return FakeServer.Ok(Content);
+        });
+
+        await DownloadFileFast.DownloadAsync(hc, Url, Destination);
+
+        Assert.Null(sent!.Headers.Range);
+        Assert.Equal(Content, await File.ReadAllBytesAsync(Destination));
+    }
+
     private static class FakeServer
     {
         public static HttpClient Respond(Func<HttpRequestMessage, HttpResponseMessage> respond) =>

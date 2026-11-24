@@ -31,7 +31,8 @@ public class NetworkService(
         string pathToDownloads,
         string fileName,
         Action<DownloadProgress>? onProgress = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? expectedMd5 = null
     )
     {
         await DownloadFileFast.DownloadAsync(
@@ -39,7 +40,8 @@ public class NetworkService(
             url,
             Path.Join(pathToDownloads, fileName),
             onProgress,
-            cancellationToken
+            cancellationToken,
+            expectedMd5: expectedMd5
         );
     }
 
