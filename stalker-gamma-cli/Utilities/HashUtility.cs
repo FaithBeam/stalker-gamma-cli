@@ -53,10 +53,12 @@ public static class HashUtility
             "basic_games",
             "__pycache__",
         }.AsReadOnly();
+        // the filters use / so they match Windows paths too
         var files = GetFiles(anomaly, nameof(anomaly))
-            .Where(x => !anomalyFilters.Any(x.folderPath.Contains))
+            .Where(x => !anomalyFilters.Any(x.folderPath.Replace('\\', '/').Contains))
             .Concat(
-                GetFiles(gamma, nameof(gamma)).Where(x => !gammaFilters.Any(x.folderPath.Contains))
+                GetFiles(gamma, nameof(gamma))
+                    .Where(x => !gammaFilters.Any(x.folderPath.Replace('\\', '/').Contains))
             )
             .OrderBy(x => x.folderPath)
             .ToList();
@@ -74,8 +76,11 @@ public static class HashUtility
     private static IEnumerable<(FileSystemInfo fsi, string folderPath)> GetFiles(
         string path,
         string folderPathReplacement
-    ) =>
-        new FileSystemEnumerable<FileSystemInfo>(
+    )
+    {
+        // FullName is a full path, so the folder has to be one too for it to be replaced
+        path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        return new FileSystemEnumerable<FileSystemInfo>(
             path,
             transform: (ref entry) => entry.ToFileSystemInfo(),
             new EnumerationOptions { RecurseSubdirectories = true }
@@ -85,6 +90,7 @@ public static class HashUtility
                 && !x.Attributes.HasFlag(FileAttributes.Directory)
             )
             .Select(x => (x, folderName: x.FullName.Replace(path, folderPathReplacement)));
+    }
 
     private static IAsyncEnumerable<Task<KeyValuePair<string, string>>> GenerateFileHashesAsync(
         IEnumerable<(FileSystemInfo fsi, string folderPath)> paths,
