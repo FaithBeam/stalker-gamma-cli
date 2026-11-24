@@ -5,6 +5,11 @@ namespace Stalker.Gamma.Utilities;
 
 public static class DownloadFileFast
 {
+    /// <param name="resume">
+    /// Continue an existing partial file at <paramref name="downloadPath"/>. Otherwise the file
+    /// is downloaded next to it and only moved to <paramref name="downloadPath"/> once complete,
+    /// so an interrupted download never leaves a truncated archive that looks finished.
+    /// </param>
     public static async Task DownloadAsync(
         HttpClient hc,
         string url,
@@ -12,6 +17,38 @@ public static class DownloadFileFast
         Action<DownloadProgress>? onProgress = null,
         CancellationToken cancellationToken = default,
         bool resume = false
+    )
+    {
+        if (resume)
+        {
+            await DownloadToAsync(hc, url, downloadPath, onProgress, resume, cancellationToken);
+            return;
+        }
+
+        var partialPath = $"{downloadPath}.part";
+        try
+        {
+            await DownloadToAsync(hc, url, partialPath, onProgress, resume, cancellationToken);
+            File.Move(partialPath, downloadPath, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(partialPath);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+            throw;
+        }
+    }
+
+    private static async Task DownloadToAsync(
+        HttpClient hc,
+        string url,
+        string downloadPath,
+        Action<DownloadProgress>? onProgress,
+        bool resume,
+        CancellationToken cancellationToken
     )
     {
         const int bufferSize = 1024 * 1024;
