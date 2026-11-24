@@ -54,10 +54,10 @@ public partial class ModDbService(
             {
                 DirectoryInfo? parentPath;
 
+                // acquired outside the try so a cancelled wait doesn't release a lock it never held
+                await Lock.WaitAsync(ct);
                 try
                 {
-                    await Lock.WaitAsync(ct);
-
                     var diabolicalResilience = BuildRetry();
                     await diabolicalResilience.ExecuteAsync(
                         async innertCt =>
