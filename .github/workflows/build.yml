@@ -64,36 +64,42 @@ jobs:
             build: make build appimage -C build/linux VERSION=$FILE_VERSION ARCH=x64
             artifact: build/linux/stalker-gamma+linux.x64.AppImage
             server_artifact: build/linux/stalker-gamma-server+linux.x64.AppImage
+            sevenzip_lib: build/linux/build/stalker-gamma-cli/resources/7z.so
           - platform: linux
             arch: arm64
             runner: ubuntu-22.04-arm
             build: make build appimage -C build/linux VERSION=$FILE_VERSION ARCH=arm64
             artifact: build/linux/stalker-gamma+linux.arm64.AppImage
             server_artifact: build/linux/stalker-gamma-server+linux.arm64.AppImage
+            sevenzip_lib: build/linux/build/stalker-gamma-cli/resources/7z.so
           - platform: macos
             arch: x64
             runner: macos-15-intel
             build: make build archive -C build/mac VERSION=$FILE_VERSION ARCH=x64
             artifact: build/mac/stalker-gamma+mac.x64.tar.gz
             server_artifact: build/mac/stalker-gamma-server+mac.x64.tar.gz
+            sevenzip_lib: build/mac/build/stalker-gamma-cli/resources/7z.so
           - platform: macos
             arch: arm64
             runner: macos-15
             build: make build archive -C build/mac VERSION=$FILE_VERSION ARCH=arm64
             artifact: build/mac/stalker-gamma+mac.arm64.tar.gz
             server_artifact: build/mac/stalker-gamma-server+mac.arm64.tar.gz
+            sevenzip_lib: build/mac/build/stalker-gamma-cli/resources/7z.so
           - platform: win
             arch: x64
             runner: windows-latest
             build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $FILE_VERSION -Arch x64
             artifact: stalker-gamma+win.x64.zip
             server_artifact: stalker-gamma-server+win.x64.zip
+            sevenzip_lib: build/win/build/stalker-gamma-cli/resources/7z.dll
           - platform: win
             arch: arm64
             runner: windows-11-arm
             build: powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/win/build.ps1 -Version $FILE_VERSION -Arch arm64
             artifact: stalker-gamma+win.arm64.zip
             server_artifact: stalker-gamma-server+win.arm64.zip
+            sevenzip_lib: build/win/build/stalker-gamma-cli/resources/7z.dll
     # each leg only sets its own hash; the empty ones don't overwrite the other legs'
     outputs:
       linux_x64_sha256: ${{ steps.hash.outputs.linux_x64_sha256 }}
@@ -130,12 +136,23 @@ jobs:
 
       # runs on every leg so path handling is exercised on each OS, Windows in particular
       - name: Test
-        run: dotnet test LibSevenZip.Tests/LibSevenZip.Tests.csproj
+        run: |
+          dotnet test LibSevenZip.Tests/LibSevenZip.Tests.csproj
+          dotnet test Stalker.Gamma.Tests/Stalker.Gamma.Tests.csproj
+          dotnet test stalker-gamma-cli.Tests/stalker-gamma-cli.Tests.csproj
 
       - name: Build
         env:
           FILE_VERSION: ${{ needs.version.outputs.file_version }}
         run: ${{ matrix.build }}
+
+      # installs a small fake GAMMA offline through the installer and the CLI, extracting with the
+      # 7-Zip library the build step made
+      - name: Integration test
+        env:
+          STALKER_GAMMA_7Z_PATH: ${{ github.workspace }}/${{ matrix.sevenzip_lib }}
+          STALKER_GAMMA_REQUIRE_7Z: "1"
+        run: dotnet test Stalker.Gamma.IntegrationTests/Stalker.Gamma.IntegrationTests.csproj
 
       - name: Hash
         id: hash

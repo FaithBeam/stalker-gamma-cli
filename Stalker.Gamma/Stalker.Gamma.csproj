@@ -15,6 +15,9 @@
     <PackageReference Include="Microsoft.Kiota.Bundle" Version="2.1.6" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Stalker.Gamma.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\LibCurlImpersonate\LibCurlImpersonate.csproj" />
     <ProjectReference Include="..\LibSevenZip\LibSevenZip.csproj" />
   </ItemGroup>

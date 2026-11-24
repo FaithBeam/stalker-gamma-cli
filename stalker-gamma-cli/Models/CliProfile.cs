@@ -85,6 +85,10 @@ public partial class CliProfile
         }
     }
 
+    /// <remarks>
+    /// Paths are stored as full paths, like config create does, so they don't depend on the
+    /// directory a later command runs from
+    /// </remarks>
     public bool TrySet(string setting, string value, out string? error)
     {
         switch (setting.ToLowerInvariant())
@@ -95,17 +99,17 @@ public partial class CliProfile
                 return true;
 
             case "anomaly":
-                Anomaly = value;
+                Anomaly = Path.GetFullPath(value);
                 error = null;
                 return true;
 
             case "gamma":
-                Gamma = value;
+                Gamma = Path.GetFullPath(value);
                 error = null;
                 return true;
 
             case "cache":
-                Cache = value;
+                Cache = Path.GetFullPath(value);
                 error = null;
                 return true;
 

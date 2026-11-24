@@ -25,10 +25,15 @@ public partial class ModDbMirrorService(NetworkServiceFactory networkServiceFact
                     ? await GetMirrorsAsync(mirrorUrl, cancellationToken)
                     : _mirrors;
 
-            return _mirrors
+            var candidates = _mirrors
                 .Where(mirror => excludeMirrors.All(em => !mirror.Contains(em)))
-                .OrderBy(_ => Guid.NewGuid())
-                .First();
+                .ToList();
+            // every mirror was already tried, so retries start over instead of failing on an empty list
+            if (candidates.Count == 0)
+            {
+                candidates = [.. _mirrors];
+            }
+            return candidates.OrderBy(_ => Guid.NewGuid()).First();
         }
         catch (Exception e)
             when (e is not CloudflareChallengeException

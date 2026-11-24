@@ -32,6 +32,7 @@ public static partial class DiffModPackMakerLists
                 || matchingNewRec.Instructions != old.Instructions
                 || PatchRx().Match(matchingNewRec.Patch ?? "").Groups["author"].Value
                     != PatchRx().Match(old.Patch ?? "").Groups["author"].Value
+                || IsRenumbered(old, matchingNewRec)
             )
             {
                 diffs.Add(new ModPackMakerRecordDiff(DiffType.Modified, old, matchingNewRec));
@@ -52,6 +53,13 @@ public static partial class DiffModPackMakerLists
 
         return diffs;
     }
+
+    /// <summary>
+    /// The record moved to another line in the list, e.g. because one was added above it. Its
+    /// addon folder is named after its line number, so it has to be extracted to a new folder.
+    /// </summary>
+    public static bool IsRenumbered(ModPackMakerRecord oldRec, ModPackMakerRecord newRec) =>
+        oldRec.Counter > 0 && newRec.Counter > 0 && oldRec.Counter != newRec.Counter;
 
     [GeneratedRegex(@"^-\s+(?<author>.+)")]
     private static partial Regex PatchRx();

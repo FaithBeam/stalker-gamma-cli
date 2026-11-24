@@ -21,11 +21,7 @@ public class Debug(ILogger logger, CliSettings cliSettings)
             {
                 ValidateActiveProfile.Validate(_logger, cliSettings.ActiveProfile);
 
-                var stalkerGammaLogsPath = Path.Join(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "stalker-gamma",
-                    "logs"
-                );
+                var stalkerGammaLogsPath = AppDataPathUtility.LogsPath;
                 Directory.CreateDirectory(stalkerGammaLogsPath);
                 if (json)
                 {

@@ -35,7 +35,11 @@ public class UpdateSpecialRepoRecord(ISpecialRepo specialRepo, IReadOnlySet<stri
     /// The file the sha of the commit that was last extracted from a special repo is written to
     /// </summary>
     public static string GetAppliedCommitPath(IDownloadableRecord specialRepo) =>
-        Path.ChangeExtension(specialRepo.DownloadPath, ".applied-commit");
+        GetAppliedCommitPath(specialRepo.DownloadPath);
+
+    /// <param name="repoPath">The special repo's bare git repo in the downloads folder</param>
+    public static string GetAppliedCommitPath(string repoPath) =>
+        Path.ChangeExtension(repoPath, ".applied-commit");
 
     public async Task DownloadAsync(CancellationToken cancellationToken)
     {

@@ -8,6 +8,7 @@ using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
+using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 
@@ -21,7 +22,6 @@ public class UpdateCmds(
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IModListRecordFactory modListRecordFactory,
     GetRemoteGitRepoCommit getRemoteGitRepoCommit,
-    GitService gitService,
     IGammaInstaller gammaInstaller,
     UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
@@ -83,7 +83,7 @@ public class UpdateCmds(
                     .Select(x => x.NewListRecord!);
                 var joined = olds.Concat(news).ToList();
                 var padRightAddonName =
-                    joined.MaxBy(x => x.AddonName!.Length)!.AddonName!.Length + 5;
+                    (joined.Count > 0 ? joined.Max(x => x.AddonName!.Length) : 0) + 5;
                 var padRightOldZipName =
                     diffs
                         .MaxBy(x => x.OldListRecord?.ZipName?.Length)
@@ -100,9 +100,11 @@ public class UpdateCmds(
                         _logger.Information(
                             "{Status}: {AddonName} {OldZipName} -> {NewZipName}",
                             diff.DiffType.ToString().PadRight(padRightStatus),
-                            diff.OldListRecord!.AddonName!.PadRight(padRightAddonName),
-                            diff.OldListRecord.ZipName!.PadRight(padRightOldZipName),
-                            diff.NewListRecord!.ZipName
+                            (diff.OldListRecord!.AddonName ?? diff.OldListRecord.DlLink).PadRight(
+                                padRightAddonName
+                            ),
+                            (diff.OldListRecord.ZipName ?? "N/A").PadRight(padRightOldZipName),
+                            diff.NewListRecord!.ZipName ?? "N/A"
                         );
                     }
                     else
@@ -158,56 +160,173 @@ public class UpdateCmds(
         CancellationToken cancellationToken
     )
     {
-        var gammaDownloadsPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "downloads");
-        List<string> repos =
+        var profile = _cliSettings.ActiveProfile!;
+        var gammaDownloadsPath = Path.Join(profile.Gamma, "downloads");
+        List<(string Name, string Url, string Branch)> repos =
         [
-            "gamma_setup",
-            "gamma_large_files_v2",
-            "Stalker_GAMMA",
-            "teivaz_anomaly_gunslinger",
+            ("gamma_setup", profile.GammaSetupRepoUrl, profile.GammaSetupRepoBranch),
+            (
+                "gamma_large_files_v2",
+                profile.GammaLargeFilesRepoUrl,
+                profile.GammaLargeFilesRepoBranch
+            ),
+            ("Stalker_GAMMA", profile.StalkerGammaRepoUrl, profile.StalkerGammaRepoBranch),
+            (
+                "teivaz_anomaly_gunslinger",
+                profile.TeivazAnomalyGunslingerRepoUrl,
+                profile.TeivazAnomalyGunslingerRepoBranch
+            ),
         ];
-        const string repoOwner = "Grokitach";
         var localRepos = repos
-            .Select(x => new { Name = x, Path = Path.Join(gammaDownloadsPath, $"{x}.git") })
+            .Select(x => new
+            {
+                x.Name,
+                x.Branch,
+                DlLink = x.Url.TrimEnd('/'),
+                Path = Path.Join(gammaDownloadsPath, $"{x.Name}.git"),
+            })
             .Where(repoDir => Directory.Exists(repoDir.Path))
             .ToList();
-        var localRepoModPackMakerRecs = localRepos
-            .Select(repoDir =>
-            {
-                var sha = gitService.GetLatestCommitHash(repoDir.Path);
-                return new ModPackMakerRecord
-                {
-                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
-                    AddonName = repoDir.Name,
-                    Md5ModDb = sha,
-                    ZipName = sha[..7],
-                };
-            })
-            .ToList();
-        var remoteRepoModPackMakerRecs = localRepos
-            .ToAsyncEnumerable()
-            .Select(async repoDir =>
-            {
-                var sha =
-                    await getRemoteGitRepoCommit.ExecuteAsync(
-                        repoOwner,
-                        repoDir.Name,
-                        cancellationToken
-                    ) ?? "N/A";
-                return new ModPackMakerRecord
-                {
-                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
-                    AddonName = repoDir.Name,
-                    Md5ModDb = sha,
-                    ZipName = sha[..7],
-                };
-            })
-            .WithCancellation(cancellationToken);
-        var localGitRepoDiffs = await localRepoModPackMakerRecs.DiffAsync(
-            remoteRepoModPackMakerRecs
+        var remoteShas = await Task.WhenAll(
+            localRepos.Select(repoDir =>
+                GetRemoteCommitAsync(
+                    repoDir.Name,
+                    repoDir.DlLink,
+                    repoDir.Branch,
+                    cancellationToken
+                )
+            )
         );
-        return localGitRepoDiffs;
+        List<ModPackMakerRecord> localRepoModPackMakerRecs = [];
+        List<ModPackMakerRecord> remoteRepoModPackMakerRecs = [];
+        foreach (var (repoDir, remoteSha) in localRepos.Zip(remoteShas))
+        {
+            // a repo that couldn't be checked isn't reported as an update
+            if (remoteSha is null)
+            {
+                continue;
+            }
+            var installedSha = GetInstalledCommit(repoDir.Path, repoDir.Branch);
+            localRepoModPackMakerRecs.Add(RepoRecord(repoDir.Name, repoDir.DlLink, installedSha));
+            remoteRepoModPackMakerRecs.Add(RepoRecord(repoDir.Name, repoDir.DlLink, remoteSha));
+        }
+        return localRepoModPackMakerRecs.Diff(remoteRepoModPackMakerRecs);
     }
+
+    private static ModPackMakerRecord RepoRecord(string name, string url, string sha) =>
+        new()
+        {
+            DlLink = url,
+            AddonName = name,
+            Md5ModDb = sha,
+            ZipName = ShortSha(sha),
+        };
+
+    /// <summary>
+    /// The commit the repo's branch is at upstream, from GitHub's API for GitHub repos, or
+    /// else like <c>git ls-remote</c>, which works with any host or a local folder.
+    /// Null, with a warning, if neither can tell.
+    /// </summary>
+    private async Task<string?> GetRemoteCommitAsync(
+        string name,
+        string url,
+        string branch,
+        CancellationToken cancellationToken
+    )
+    {
+        List<string> errors = [];
+        if (TryGetGithubOwnerAndRepo(url, out var owner, out var repo))
+        {
+            try
+            {
+                if (
+                    await getRemoteGitRepoCommit.ExecuteAsync(
+                        owner,
+                        repo,
+                        branch,
+                        cancellationToken
+                    ) is
+                    { } sha
+                )
+                {
+                    return sha;
+                }
+            }
+            // e.g. GitHub's rate limit for requests without a token
+            catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+            {
+                errors.Add(e.Message);
+            }
+        }
+
+        try
+        {
+            if (
+                await Task.Run(
+                    () => GitService.GetRemoteCommitSha(url, branch),
+                    cancellationToken
+                ) is
+                { } sha
+            )
+            {
+                return sha;
+            }
+            errors.Add($"it has no branch or tag named {branch}");
+        }
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+        {
+            errors.Add(e.InnerException?.Message ?? e.Message);
+        }
+
+        _logger.Warning(
+            "Unable to check {Repo} for updates from {Url}: {Reason}",
+            name,
+            url,
+            string.Join("; ", errors)
+        );
+        return null;
+    }
+
+    /// <summary>
+    /// The commit whose files are installed: the one update apply last extracted, or else the
+    /// one the configured branch is at, which is what full-install extracted
+    /// </summary>
+    private static string GetInstalledCommit(string repoPath, string branch)
+    {
+        var appliedCommitPath = UpdateSpecialRepoRecord.GetAppliedCommitPath(repoPath);
+        var appliedCommit = File.Exists(appliedCommitPath)
+            ? File.ReadAllText(appliedCommitPath).Trim()
+            : null;
+        return string.IsNullOrWhiteSpace(appliedCommit)
+            ? GitService.GetCommitSha(repoPath, branch)
+            : appliedCommit;
+    }
+
+    private static bool TryGetGithubOwnerAndRepo(string url, out string owner, out string repo)
+    {
+        owner = repo = "";
+        if (
+            !Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            return false;
+        }
+
+        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2)
+        {
+            return false;
+        }
+
+        owner = segments[0];
+        repo = segments[1].EndsWith(".git", StringComparison.OrdinalIgnoreCase)
+            ? segments[1][..^4]
+            : segments[1];
+        return true;
+    }
+
+    private static string ShortSha(string sha) => sha.Length > 7 ? sha[..7] : sha;
 
     /// <summary>
     /// Apply any updates
@@ -241,7 +360,13 @@ public class UpdateCmds(
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         ValidateActiveProfile.ValidateDownloadThreads(_logger, _cliSettings.ActiveProfile!);
 
-        InitializeSettings(out var anomaly, out var gamma, out var cache, out var mo2Profile);
+        InitializeSettings(
+            stalkerGammaServerUrl,
+            out var anomaly,
+            out var gamma,
+            out var cache,
+            out var mo2Profile
+        );
 
         SetUpLogging(
             verbose,
@@ -305,6 +430,7 @@ public class UpdateCmds(
     }
 
     private void InitializeSettings(
+        string? stalkerGammaServerUrl,
         out string anomaly,
         out string gamma,
         out string cache,
@@ -318,9 +444,22 @@ public class UpdateCmds(
         mo2Profile = _cliSettings.ActiveProfile!.Mo2Profile;
         var modpackMakerUrl = _cliSettings.ActiveProfile!.ModPackMakerUrl;
         var modListUrl = _cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads = _cliSettings.ActiveProfile!.DownloadThreads;
+        var profile = _cliSettings.ActiveProfile!;
+        stalkerGammaSettings.DownloadThreads = profile.DownloadThreads;
         stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
         stalkerGammaSettings.ModListUrl = modListUrl;
+        // the special repos are fetched and extracted from these, same as full-install
+        stalkerGammaSettings.GammaSetupRepo = profile.GammaSetupRepoUrl;
+        stalkerGammaSettings.GammaSetupRepoBranch = profile.GammaSetupRepoBranch;
+        stalkerGammaSettings.StalkerGammaRepo = profile.StalkerGammaRepoUrl;
+        stalkerGammaSettings.StalkerGammaRepoBranch = profile.StalkerGammaRepoBranch;
+        stalkerGammaSettings.GammaLargeFilesRepo = profile.GammaLargeFilesRepoUrl;
+        stalkerGammaSettings.GammaLargeFilesRepoBranch = profile.GammaLargeFilesRepoBranch;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepo = profile.TeivazAnomalyGunslingerRepoUrl;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch =
+            profile.TeivazAnomalyGunslingerRepoBranch;
+        // ModDB requests only go through the server when this is set
+        stalkerGammaSettings.StalkerGammaServerUrl = stalkerGammaServerUrl;
     }
 
     private void SetUpLogging(

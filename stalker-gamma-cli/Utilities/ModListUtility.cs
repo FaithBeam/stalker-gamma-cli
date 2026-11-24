@@ -10,11 +10,16 @@ public static class ModListUtility
         }
 
         return (await File.ReadAllLinesAsync(pathToModList))
-            .Where(x => x[0] != '#')
-            .Select(x =>
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x[0] != '#')
+            .Select(x => new ModListRecord
             {
-                var active = x.StartsWith('-') ? ModStatus.Disabled : ModStatus.Enabled;
-                return new ModListRecord { Status = active, Name = x[1..] };
+                Status = x[0] switch
+                {
+                    '-' => ModStatus.Disabled,
+                    '*' => ModStatus.Unmanaged,
+                    _ => ModStatus.Enabled,
+                },
+                Name = x[1..],
             })
             .ToList();
     }
@@ -22,7 +27,14 @@ public static class ModListUtility
     public static async Task SaveModListAsync(string pathToModList, List<ModListRecord> mods) =>
         await File.WriteAllLinesAsync(
             pathToModList,
-            mods.Select(x => $"{(x.Status == ModStatus.Enabled ? "+" : "-")}{x.Name}")
+            mods.Select(x =>
+                $"{x.Status switch
+                {
+                    ModStatus.Disabled => '-',
+                    ModStatus.Unmanaged => '*',
+                    _ => '+',
+                }}{x.Name}"
+            )
         );
 }
 
@@ -30,6 +42,11 @@ public enum ModStatus
 {
     Enabled,
     Disabled,
+
+    /// <summary>
+    /// Not managed by MO2, e.g. DLC, written with a * prefix
+    /// </summary>
+    Unmanaged,
 }
 
 public class ModListRecord

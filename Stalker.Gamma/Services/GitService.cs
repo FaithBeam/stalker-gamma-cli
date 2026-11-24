@@ -218,6 +218,55 @@ public partial class GitService
     }
 
     /// <summary>
+    /// The sha of the commit a branch or tag is at in the repo at <paramref name="url"/>,
+    /// like <c>git ls-remote</c>, or null if it has neither. A full commit sha is returned as
+    /// is, because it never moves.
+    /// </summary>
+    /// <param name="url">A url or path git can fetch from</param>
+    /// <param name="branch">The branch, tag or full commit sha</param>
+    public static string? GetRemoteCommitSha(string url, string branch)
+    {
+        try
+        {
+            var refs = Repository
+                .ListRemoteReferences(url)
+                .Where(x => x.TargetIdentifier is not null)
+                .ToDictionary(x => x.CanonicalName, x => x.TargetIdentifier);
+            // an annotated tag points at a tag object, and its ^{} entry at the tagged commit
+            foreach (
+                var name in new[]
+                {
+                    $"refs/heads/{branch}",
+                    $"refs/tags/{branch}^{{}}",
+                    $"refs/tags/{branch}",
+                }
+            )
+            {
+                if (refs.TryGetValue(name, out var sha))
+                {
+                    return sha;
+                }
+            }
+            return IsFullSha(branch) ? branch.ToLowerInvariant() : null;
+        }
+        catch (Exception e)
+        {
+            throw new GitUtilityException(
+                $"""
+                Error listing remote references
+                Url: {url}
+                Branch: {branch}
+                Exception Message: {e.Message}
+                """,
+                e
+            );
+        }
+    }
+
+    private static bool IsFullSha(string value) =>
+        value.Length == 40 && value.All(char.IsAsciiHexDigit);
+
+    /// <summary>
     /// The repo relative paths of the files that changed between two commits,
     /// or null if either commit isn't in the repo
     /// </summary>
