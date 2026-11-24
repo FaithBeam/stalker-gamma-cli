@@ -339,7 +339,7 @@ public class UpdateCmds(
     /// <param name="stalkerGammaServerUrl">URL to the experimental stalker gamma cli server when connecting to moddb for addons</param>
     /// <param name="resume">Resume a previously failed update apply from resume.txt in your gamma folder</param>
     /// <param name="json">Write output as newline-delimited JSON for GUI wrappers</param>
-    /// <param name="progressUpdateIntervalMs"></param>
+    /// <param name="progressUpdateIntervalMs">How frequently to write progress to the console for each download, extract, etc. in milliseconds</param>
     public async Task<int> Apply(
         CancellationToken cancellationToken,
         bool verbose = false,
@@ -349,7 +349,7 @@ public class UpdateCmds(
         string? stalkerGammaServerUrl = null,
         bool resume = false,
         bool json = false,
-        [Hidden] long progressUpdateIntervalMs = 250
+        [Hidden] long progressUpdateIntervalMs = 1000
     )
     {
         var statusCode = 0;
@@ -488,12 +488,13 @@ public class UpdateCmds(
                 handler => gammaInstaller.Progress.ProgressChanged -= handler
             )
             .Select(x => x.EventArgs);
-        gammaProgressDisposable = gammaProgressObservable.SubscribeSampledOnDedicatedThread(
-            TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
-            json ? JsonOutputUtility.WriteProgress
-                : verbose ? OnProgressChangedVerbose
-                : OnProgressChangedInformational
-        );
+        gammaProgressDisposable =
+            gammaProgressObservable.SubscribeSampledPerOperationOnDedicatedThread(
+                TimeSpan.FromMilliseconds(progressUpdateIntervalMs),
+                json ? JsonOutputUtility.WriteProgress
+                    : verbose ? OnProgressChangedVerbose
+                    : OnProgressChangedInformational
+            );
     }
 
     private void OnWarning(object? sender, GammaProgress.GammaInstallWarningEventArgs e) =>
