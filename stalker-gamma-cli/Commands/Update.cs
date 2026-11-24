@@ -241,7 +241,13 @@ public class UpdateCmds(
         ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
         ValidateActiveProfile.ValidateDownloadThreads(_logger, _cliSettings.ActiveProfile!);
 
-        InitializeSettings(out var anomaly, out var gamma, out var cache, out var mo2Profile);
+        InitializeSettings(
+            stalkerGammaServerUrl,
+            out var anomaly,
+            out var gamma,
+            out var cache,
+            out var mo2Profile
+        );
 
         SetUpLogging(
             verbose,
@@ -305,6 +311,7 @@ public class UpdateCmds(
     }
 
     private void InitializeSettings(
+        string? stalkerGammaServerUrl,
         out string anomaly,
         out string gamma,
         out string cache,
@@ -318,9 +325,22 @@ public class UpdateCmds(
         mo2Profile = _cliSettings.ActiveProfile!.Mo2Profile;
         var modpackMakerUrl = _cliSettings.ActiveProfile!.ModPackMakerUrl;
         var modListUrl = _cliSettings.ActiveProfile!.ModListUrl;
-        stalkerGammaSettings.DownloadThreads = _cliSettings.ActiveProfile!.DownloadThreads;
+        var profile = _cliSettings.ActiveProfile!;
+        stalkerGammaSettings.DownloadThreads = profile.DownloadThreads;
         stalkerGammaSettings.ModpackMakerList = modpackMakerUrl;
         stalkerGammaSettings.ModListUrl = modListUrl;
+        // the special repos are fetched and extracted from these, same as full-install
+        stalkerGammaSettings.GammaSetupRepo = profile.GammaSetupRepoUrl;
+        stalkerGammaSettings.GammaSetupRepoBranch = profile.GammaSetupRepoBranch;
+        stalkerGammaSettings.StalkerGammaRepo = profile.StalkerGammaRepoUrl;
+        stalkerGammaSettings.StalkerGammaRepoBranch = profile.StalkerGammaRepoBranch;
+        stalkerGammaSettings.GammaLargeFilesRepo = profile.GammaLargeFilesRepoUrl;
+        stalkerGammaSettings.GammaLargeFilesRepoBranch = profile.GammaLargeFilesRepoBranch;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepo = profile.TeivazAnomalyGunslingerRepoUrl;
+        stalkerGammaSettings.TeivazAnomalyGunslingerRepoBranch =
+            profile.TeivazAnomalyGunslingerRepoBranch;
+        // ModDB requests only go through the server when this is set
+        stalkerGammaSettings.StalkerGammaServerUrl = stalkerGammaServerUrl;
     }
 
     private void SetUpLogging(
