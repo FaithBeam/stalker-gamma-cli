@@ -186,7 +186,7 @@ public class InstallCommandSupport(
 
     private void WriteProgressInformational(GammaProgress.GammaInstallProgressEventArgs e) =>
         logger.Information(
-            Informational,
+            TerminalColor.Enabled ? InformationalColor : Informational,
             DateTimeOffset.Now.ToString("HH:mm:ss"),
             e.Name[..Math.Min(e.Name.Length, 35)].PadRight(40),
             e.ProgressType.GetHumanReadableString().PadRight(10),
@@ -205,6 +205,9 @@ public class InstallCommandSupport(
         );
 
     private const string Informational =
+        "[{DateTime}] {AddonName} | {Operation} | {Percent} | {CompleteTotal}";
+
+    private const string InformationalColor =
         "\e[97m[{DateTime}]\e[0m "
         + "\e[96m{AddonName}\e[0m "
         + "\e[97m|\e[0m "

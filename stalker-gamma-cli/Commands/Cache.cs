@@ -170,7 +170,12 @@ public abstract class PruneLogic(
         var date = archive.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
         var paddedArchiveName = archive.FullName.PadRight(maxPathLen);
         var paddedMb = $"{mb}mb".PadRight(maxMbLen);
-        Logger.Information(Informational, paddedArchiveName, paddedMb, date);
+        Logger.Information(
+            TerminalColor.Enabled ? InformationalColor : Informational,
+            paddedArchiveName,
+            paddedMb,
+            date
+        );
     }
 
     protected static long MbToReclaim(List<FileInfo> addonArchivesToDelete)
@@ -237,7 +242,9 @@ public abstract class PruneLogic(
         ? StringComparer.OrdinalIgnoreCase
         : StringComparer.Ordinal;
 
-    private const string Informational =
+    private const string Informational = "{File} | {Mb} | {Date}";
+
+    private const string InformationalColor =
         "\e[96m{File}\e[0m "
         + "\e[97m|\e[0m "
         + "\e[96m{Mb}\e[0m "
