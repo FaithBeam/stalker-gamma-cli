@@ -31,6 +31,13 @@ public sealed class TempDir : IDisposable
     {
         try
         {
+            // git writes its objects read-only, which Windows won't delete
+            foreach (
+                var file in new DirectoryInfo(Path).EnumerateFiles("*", SearchOption.AllDirectories)
+            )
+            {
+                file.IsReadOnly = false;
+            }
             Directory.Delete(Path, true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
