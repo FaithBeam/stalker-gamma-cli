@@ -83,7 +83,7 @@ public class UpdateCmds(
                     .Select(x => x.NewListRecord!);
                 var joined = olds.Concat(news).ToList();
                 var padRightAddonName =
-                    joined.MaxBy(x => x.AddonName!.Length)!.AddonName!.Length + 5;
+                    (joined.Count > 0 ? joined.Max(x => x.AddonName!.Length) : 0) + 5;
                 var padRightOldZipName =
                     diffs
                         .MaxBy(x => x.OldListRecord?.ZipName?.Length)
@@ -100,9 +100,11 @@ public class UpdateCmds(
                         _logger.Information(
                             "{Status}: {AddonName} {OldZipName} -> {NewZipName}",
                             diff.DiffType.ToString().PadRight(padRightStatus),
-                            diff.OldListRecord!.AddonName!.PadRight(padRightAddonName),
-                            diff.OldListRecord.ZipName!.PadRight(padRightOldZipName),
-                            diff.NewListRecord!.ZipName
+                            (diff.OldListRecord!.AddonName ?? diff.OldListRecord.DlLink).PadRight(
+                                padRightAddonName
+                            ),
+                            (diff.OldListRecord.ZipName ?? "N/A").PadRight(padRightOldZipName),
+                            diff.NewListRecord!.ZipName ?? "N/A"
                         );
                     }
                     else
@@ -180,7 +182,7 @@ public class UpdateCmds(
                     DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
                     AddonName = repoDir.Name,
                     Md5ModDb = sha,
-                    ZipName = sha[..7],
+                    ZipName = ShortSha(sha),
                 };
             })
             .ToList();
@@ -199,7 +201,7 @@ public class UpdateCmds(
                     DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
                     AddonName = repoDir.Name,
                     Md5ModDb = sha,
-                    ZipName = sha[..7],
+                    ZipName = ShortSha(sha),
                 };
             })
             .WithCancellation(cancellationToken);
@@ -208,6 +210,8 @@ public class UpdateCmds(
         );
         return localGitRepoDiffs;
     }
+
+    private static string ShortSha(string sha) => sha.Length > 7 ? sha[..7] : sha;
 
     /// <summary>
     /// Apply any updates
