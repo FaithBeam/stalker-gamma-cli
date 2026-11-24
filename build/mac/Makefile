@@ -1,6 +1,11 @@
 VERSION ?= 1.0.0
 ARCH ?= arm64
 
+# The oldest macOS the native libraries we compile run on. Without it clang targets the macOS
+# version it builds on, so 7z.so would stop loading on older macOS whenever the runner is
+# upgraded. 12.0 matches the minimum of the stalker-gamma executable .NET builds.
+export MACOSX_DEPLOYMENT_TARGET = 12.0
+
 CUR_DIR = $(realpath .)
 ROOT = $(realpath ../../)
 
@@ -47,7 +52,11 @@ build:
 	mkdir $(7Z_BUILD_DIR)
 	curl -Lo $(7Z_ARCHIVE) $(7Z_DL_URL)
 	tar -xf $(7Z_ARCHIVE) -C $(7Z_BUILD_DIR)
-	$(MAKE) -j -C $(7Z_FORMAT_DIR) -f ../../cmpl_mac_$(ARCH).mak
+	# one job per core: an unlimited -j starts all ~290 compiles at once, which can stall a
+	# small CI runner until the job is cancelled
+	$(MAKE) -j$(shell sysctl -n hw.ncpu) -C $(7Z_FORMAT_DIR) -f ../../cmpl_mac_$(ARCH).mak
+	vtool -show-build $(7Z_LIB) | grep -q "minos $(MACOSX_DEPLOYMENT_TARGET)$$" \
+		|| (echo "7z.so doesn't target macOS $(MACOSX_DEPLOYMENT_TARGET)"; vtool -show-build $(7Z_LIB); exit 1)
 
 	# build stalker-gamma-cli
 	mkdir $(STALKER_GAMMA_BUILD_DIR)
