@@ -5,14 +5,21 @@ namespace stalker_gamma_cli.Services;
 
 public class GetRemoteGitRepoCommit(IHttpClientFactory hcf)
 {
+    /// <param name="branch">The branch or commit sha to get the latest commit of</param>
     public async Task<string?> ExecuteAsync(
         string owner,
         string repo,
+        string branch,
         CancellationToken cancellationToken = default
     ) =>
         (
             await _httpClient.GetFromJsonAsync(
-                string.Format(GitHubApiUrl, owner, repo),
+                string.Format(
+                    GitHubApiUrl,
+                    Uri.EscapeDataString(owner),
+                    Uri.EscapeDataString(repo),
+                    Uri.EscapeDataString(branch)
+                ),
                 jsonTypeInfo: RootObjectCtx.Default.ListRootObject,
                 cancellationToken: cancellationToken
             )
@@ -20,7 +27,7 @@ public class GetRemoteGitRepoCommit(IHttpClientFactory hcf)
             ?.FirstOrDefault()
             ?.Sha;
 
-    private const string GitHubApiUrl = "https://api.github.com/repos/{0}/{1}/commits?per_page=1";
+    private const string GitHubApiUrl = "https://api.github.com/repos/{0}/{1}/commits?per_page=1&sha={2}";
 
     private readonly HttpClient _httpClient = hcf.CreateClient("dlAddon");
 }

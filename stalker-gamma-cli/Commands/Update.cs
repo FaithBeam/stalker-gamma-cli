@@ -8,6 +8,7 @@ using Stalker.Gamma.Extensions;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.GammaInstallerServices.GammaInstaller;
+using Stalker.Gamma.GammaInstallerServices.SpecialRepos;
 using Stalker.Gamma.Models;
 using Stalker.Gamma.Services;
 
@@ -21,7 +22,6 @@ public class UpdateCmds(
     IGetStalkerModsFromApi getStalkerModsFromApi,
     IModListRecordFactory modListRecordFactory,
     GetRemoteGitRepoCommit getRemoteGitRepoCommit,
-    GitService gitService,
     IGammaInstaller gammaInstaller,
     UtilitiesReady utilitiesReady,
     ProgressLoggingService progressLoggingService
@@ -160,26 +160,40 @@ public class UpdateCmds(
         CancellationToken cancellationToken
     )
     {
-        var gammaDownloadsPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "downloads");
-        List<string> repos =
+        var profile = _cliSettings.ActiveProfile!;
+        var gammaDownloadsPath = Path.Join(profile.Gamma, "downloads");
+        List<(string Name, string Url, string Branch)> repos =
         [
-            "gamma_setup",
-            "gamma_large_files_v2",
-            "Stalker_GAMMA",
-            "teivaz_anomaly_gunslinger",
+            ("gamma_setup", profile.GammaSetupRepoUrl, profile.GammaSetupRepoBranch),
+            (
+                "gamma_large_files_v2",
+                profile.GammaLargeFilesRepoUrl,
+                profile.GammaLargeFilesRepoBranch
+            ),
+            ("Stalker_GAMMA", profile.StalkerGammaRepoUrl, profile.StalkerGammaRepoBranch),
+            (
+                "teivaz_anomaly_gunslinger",
+                profile.TeivazAnomalyGunslingerRepoUrl,
+                profile.TeivazAnomalyGunslingerRepoBranch
+            ),
         ];
-        const string repoOwner = "Grokitach";
         var localRepos = repos
-            .Select(x => new { Name = x, Path = Path.Join(gammaDownloadsPath, $"{x}.git") })
+            .Select(x => new
+            {
+                x.Name,
+                x.Branch,
+                DlLink = x.Url.TrimEnd('/'),
+                Path = Path.Join(gammaDownloadsPath, $"{x.Name}.git"),
+            })
             .Where(repoDir => Directory.Exists(repoDir.Path))
             .ToList();
         var localRepoModPackMakerRecs = localRepos
             .Select(repoDir =>
             {
-                var sha = gitService.GetLatestCommitHash(repoDir.Path);
+                var sha = GetInstalledCommit(repoDir.Path, repoDir.Branch);
                 return new ModPackMakerRecord
                 {
-                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
+                    DlLink = repoDir.DlLink,
                     AddonName = repoDir.Name,
                     Md5ModDb = sha,
                     ZipName = ShortSha(sha),
@@ -191,14 +205,19 @@ public class UpdateCmds(
             .Select(async repoDir =>
             {
                 var sha =
-                    await getRemoteGitRepoCommit.ExecuteAsync(
-                        repoOwner,
-                        repoDir.Name,
-                        cancellationToken
+                    (
+                        TryGetGithubOwnerAndRepo(repoDir.DlLink, out var owner, out var repo)
+                            ? await getRemoteGitRepoCommit.ExecuteAsync(
+                                owner,
+                                repo,
+                                repoDir.Branch,
+                                cancellationToken
+                            )
+                            : null
                     ) ?? "N/A";
                 return new ModPackMakerRecord
                 {
-                    DlLink = $"https://github.com/{repoOwner}/{repoDir.Name}",
+                    DlLink = repoDir.DlLink,
                     AddonName = repoDir.Name,
                     Md5ModDb = sha,
                     ZipName = ShortSha(sha),
@@ -209,6 +228,45 @@ public class UpdateCmds(
             remoteRepoModPackMakerRecs
         );
         return localGitRepoDiffs;
+    }
+
+    /// <summary>
+    /// The commit whose files are installed: the one update apply last extracted, or else the
+    /// one the configured branch is at, which is what full-install extracted
+    /// </summary>
+    private static string GetInstalledCommit(string repoPath, string branch)
+    {
+        var appliedCommitPath = UpdateSpecialRepoRecord.GetAppliedCommitPath(repoPath);
+        var appliedCommit = File.Exists(appliedCommitPath)
+            ? File.ReadAllText(appliedCommitPath).Trim()
+            : null;
+        return string.IsNullOrWhiteSpace(appliedCommit)
+            ? GitService.GetCommitSha(repoPath, branch)
+            : appliedCommit;
+    }
+
+    private static bool TryGetGithubOwnerAndRepo(string url, out string owner, out string repo)
+    {
+        owner = repo = "";
+        if (
+            !Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            return false;
+        }
+
+        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2)
+        {
+            return false;
+        }
+
+        owner = segments[0];
+        repo = segments[1].EndsWith(".git", StringComparison.OrdinalIgnoreCase)
+            ? segments[1][..^4]
+            : segments[1];
+        return true;
     }
 
     private static string ShortSha(string sha) => sha.Length > 7 ? sha[..7] : sha;
