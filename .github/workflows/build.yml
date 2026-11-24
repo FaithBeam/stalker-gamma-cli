@@ -81,7 +81,7 @@ jobs:
             sevenzip_lib: build/mac/build/stalker-gamma-cli/resources/7z.so
           - platform: macos
             arch: arm64
-            runner: macos-15
+            runner: macos-26
             build: make build archive -C build/mac VERSION=$FILE_VERSION ARCH=arm64
             artifact: build/mac/stalker-gamma+mac.arm64.tar.gz
             server_artifact: build/mac/stalker-gamma-server+mac.arm64.tar.gz
