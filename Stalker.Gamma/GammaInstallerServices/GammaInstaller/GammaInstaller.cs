@@ -349,6 +349,10 @@ public class GammaInstaller(
         {
             await brokenAddon.DownloadAsync(args.CancellationToken);
             await brokenAddon.ExtractAsync(args.CancellationToken);
+            if (args.Minimal)
+            {
+                brokenAddon.DeleteArchive();
+            }
         }
 
         await ExtractSpecialRepoAsync(args, args.GammaSetupRecord!);
