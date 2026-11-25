@@ -14,7 +14,6 @@ public sealed class FakeGamma : IDisposable
 {
     private readonly TempDir _root = new();
     private readonly bool _offlineArchive;
-    private readonly Dictionary<string, ObjectId> _repoCommits = [];
 
     public string Root => _root.Path;
 
@@ -242,7 +241,6 @@ public sealed class FakeGamma : IDisposable
         );
         repo.Refs.Add(RemoteBranch, commit.Id);
         repo.Refs.Add(UpstreamBranch, commit.Id);
-        _repoCommits[name] = commit.Id;
     }
 
     private const string RemoteBranch = "refs/remotes/origin/main";
@@ -278,23 +276,6 @@ public sealed class FakeGamma : IDisposable
         );
         repo.Refs.UpdateTarget(UpstreamBranch, commit.Sha);
         return commit.Sha;
-    }
-
-    /// <summary>
-    /// Removes or restores the branch a repo is installed from. Without it, installing the
-    /// repo fails.
-    /// </summary>
-    public void SetRepoBranch(string name, bool exists)
-    {
-        using var repo = new Repository(CachePath($"{name}.git"));
-        if (exists)
-        {
-            repo.Refs.Add(RemoteBranch, _repoCommits[name], allowOverwrite: true);
-        }
-        else
-        {
-            repo.Refs.Remove(RemoteBranch);
-        }
     }
 
     /// <summary>
