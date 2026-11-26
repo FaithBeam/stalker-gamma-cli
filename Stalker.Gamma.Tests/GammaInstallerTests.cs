@@ -7,6 +7,75 @@ namespace Stalker.Gamma.Tests;
 public class GammaInstallerTests
 {
     [Fact]
+    public async Task Batch_reports_the_failure_that_cancelled_the_rest()
+    {
+        var otherWorkCancelled = false;
+
+        var e = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            GammaInstaller.RunBatchAsync(
+                CancellationToken.None,
+                [
+                    async ct =>
+                    {
+                        try
+                        {
+                            await Task.Delay(Timeout.Infinite, ct);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            otherWorkCancelled = true;
+                            throw;
+                        }
+                    },
+                    async _ =>
+                    {
+                        await Task.Yield();
+                        throw new InvalidOperationException("special repo failed");
+                    },
+                ]
+            )
+        );
+
+        Assert.Equal("special repo failed", e.Message);
+        Assert.True(otherWorkCancelled);
+    }
+
+    [Fact]
+    public async Task Batch_completes_when_all_work_succeeds()
+    {
+        var done = 0;
+
+        await GammaInstaller.RunBatchAsync(
+            CancellationToken.None,
+            Enumerable
+                .Range(0, 4)
+                .Select<int, Func<CancellationToken, Task>>(_ =>
+                    async _ =>
+                    {
+                        await Task.Yield();
+                        Interlocked.Increment(ref done);
+                    }
+                )
+        );
+
+        Assert.Equal(4, done);
+    }
+
+    [Fact]
+    public async Task Cancelled_batch_throws_a_cancellation()
+    {
+        using var cts = new CancellationTokenSource();
+
+        var batch = GammaInstaller.RunBatchAsync(
+            cts.Token,
+            [ct => Task.Delay(Timeout.Infinite, ct)]
+        );
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => batch);
+    }
+
+    [Fact]
     public async Task Every_broken_addon_is_retried_and_all_failures_are_reported()
     {
         var first = new FakeRecord("First") { FailDownload = true };

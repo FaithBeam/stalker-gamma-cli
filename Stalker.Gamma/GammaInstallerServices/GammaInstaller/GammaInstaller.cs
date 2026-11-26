@@ -367,7 +367,7 @@ public class GammaInstaller(
     /// Runs the work concurrently. The first failure cancels the rest, so a broken special repo or
     /// a Cloudflare challenge stops the install right away instead of after every addon downloads.
     /// </summary>
-    private static async Task RunBatchAsync(
+    internal static async Task RunBatchAsync(
         CancellationToken cancellationToken,
         IEnumerable<Func<CancellationToken, Task>> work
     )

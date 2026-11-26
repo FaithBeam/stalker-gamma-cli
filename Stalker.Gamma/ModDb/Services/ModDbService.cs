@@ -27,75 +27,19 @@ public partial class ModDbService(
     )
     {
         List<string> visitedMirrors = [];
-
-        string? diabolicalLink = null;
-        var invalidateCache = false;
-
-        var outerRetry = new ResiliencePipelineBuilder()
-            .AddRetry(
-                new RetryStrategyOptions
-                {
-                    MaxRetryAttempts = 3,
-                    UseJitter = true,
-                    ShouldHandle = arguments =>
-                        arguments.Outcome.Exception switch
-                        {
-                            CloudflareChallengeException => ValueTask.FromResult(false),
-                            not null => ValueTask.FromResult(true),
-                            _ => ValueTask.FromResult(false),
-                        },
-                    OnRetry = args =>
-                    {
-                        // failed downloading from a mirror, likely couldn't connect to CDN for some reason
-                        // invalidate the mirror cache and try again
-                        invalidateCache = true;
-                        return ValueTask.CompletedTask;
-                    },
-                }
-            )
-            .Build();
-        await outerRetry.ExecuteAsync(
-            async ct =>
+        await DownloadWithRetriesAsync(
+            (invalidateCache, ct) => GetCdnLinkAsync(url, visitedMirrors, invalidateCache, ct),
+            async (cdnLink, ct) =>
             {
-                DirectoryInfo? parentPath;
-
-                // acquired outside the try so a cancelled wait doesn't release a lock it never held
-                await Lock.WaitAsync(ct);
-                try
+                var parentPath = Directory.GetParent(output);
+                if (parentPath is not null && !parentPath.Exists)
                 {
-                    var diabolicalResilience = BuildRetry();
-                    await diabolicalResilience.ExecuteAsync(
-                        async innertCt =>
-                            diabolicalLink = await GetCdnLinkAsync(
-                                url,
-                                visitedMirrors,
-                                invalidateCache,
-                                ct: innertCt
-                            ),
-                        ct
-                    );
-
-                    // if bad mirror
-                    if (string.IsNullOrWhiteSpace(diabolicalLink))
-                    {
-                        throw new ModDbUtilityException("Failed to get diabolical link");
-                    }
-
-                    parentPath = Directory.GetParent(output);
-                    if (parentPath is not null && !parentPath.Exists)
-                    {
-                        parentPath.Create();
-                    }
+                    parentPath.Create();
                 }
-                finally
-                {
-                    Lock.Release();
-                }
-
                 await networkServiceFactory
                     .Create()
                     .DownloadFileAsync(
-                        diabolicalLink,
+                        cdnLink,
                         parentPath?.FullName ?? "./",
                         Path.GetFileName(output),
                         onProgress,
@@ -103,31 +47,94 @@ public partial class ModDbService(
                         expectedMd5: string.IsNullOrWhiteSpace(expectedMd5) ? null : expectedMd5
                     );
             },
+            RetryDelay,
             cancellationToken
         );
     }
 
-    private static ResiliencePipeline BuildRetry()
+    /// <summary>
+    /// Gets the CDN link while holding <see cref="Lock"/>, retrying that on its own, then
+    /// downloads from it. A failed download starts over with a new CDN link from a mirror that
+    /// hasn't been tried, and the mirror list is fetched again in case it's stale. A Cloudflare
+    /// challenge is never retried, since every request fails the same way until it's solved.
+    /// </summary>
+    /// <param name="getCdnLink">Gets the CDN link, refetching the mirror list when its argument is true</param>
+    /// <param name="download">Downloads from the CDN link</param>
+    internal static async Task DownloadWithRetriesAsync(
+        Func<bool, CancellationToken, Task<string?>> getCdnLink,
+        Func<string, CancellationToken, Task> download,
+        TimeSpan retryDelay,
+        CancellationToken cancellationToken
+    )
     {
-        return new ResiliencePipelineBuilder()
-            .AddRetry(
-                new RetryStrategyOptions
+        var invalidateCache = false;
+        // failed downloading from a mirror, likely couldn't connect to CDN for some reason
+        var outerRetry = BuildRetry(retryDelay, onRetry: () => invalidateCache = true);
+        await outerRetry.ExecuteAsync(
+            async ct =>
+            {
+                string? cdnLink = null;
+                // acquired outside the try so a cancelled wait doesn't release a lock it never held
+                await Lock.WaitAsync(ct);
+                try
                 {
-                    MaxRetryAttempts = 3,
-                    UseJitter = true,
-                    ShouldHandle = arguments =>
-                        arguments.Outcome.Exception switch
-                        {
-                            CloudflareChallengeException => ValueTask.FromResult(false),
-                            not null => ValueTask.FromResult(true),
-                            _ => ValueTask.FromResult(false),
-                        },
-                    OnRetry = args => ValueTask.CompletedTask,
+                    await BuildRetry(retryDelay, attemptTimeout: CdnLinkAttemptTimeout)
+                        .ExecuteAsync(
+                            async innerCt => cdnLink = await getCdnLink(invalidateCache, innerCt),
+                            ct
+                        );
+
+                    // if bad mirror
+                    if (string.IsNullOrWhiteSpace(cdnLink))
+                    {
+                        throw new ModDbUtilityException("Failed to get diabolical link");
+                    }
                 }
-            )
-            .AddTimeout(CdnLinkAttemptTimeout)
-            .Build();
+                finally
+                {
+                    Lock.Release();
+                }
+
+                await download(cdnLink, ct);
+            },
+            cancellationToken
+        );
     }
+
+    private static ResiliencePipeline BuildRetry(
+        TimeSpan delay,
+        Action? onRetry = null,
+        TimeSpan? attemptTimeout = null
+    )
+    {
+        var builder = new ResiliencePipelineBuilder().AddRetry(
+            new RetryStrategyOptions
+            {
+                MaxRetryAttempts = 3,
+                Delay = delay,
+                UseJitter = true,
+                ShouldHandle = arguments =>
+                    ValueTask.FromResult(
+                        arguments.Outcome.Exception is not null and not CloudflareChallengeException
+                    ),
+                OnRetry = _ =>
+                {
+                    onRetry?.Invoke();
+                    return ValueTask.CompletedTask;
+                },
+            }
+        );
+        if (attemptTimeout is not null)
+        {
+            builder.AddTimeout(attemptTimeout.Value);
+        }
+        return builder.Build();
+    }
+
+    /// <summary>
+    /// Polly's default delay between attempts
+    /// </summary>
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
 
     private async Task<string?> GetCdnLinkAsync(
         string url,
