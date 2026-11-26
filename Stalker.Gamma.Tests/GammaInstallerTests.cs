@@ -55,6 +55,54 @@ public class GammaInstallerTests
         Assert.False(next.Extracted);
     }
 
+    [Fact]
+    public async Task Waiting_for_the_server_returns_once_it_is_ready()
+    {
+        var checks = 0;
+
+        await GammaInstaller.WaitUntilReadyAsync(
+            () => Task.FromResult(++checks == 3),
+            "http://localhost:8000",
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromMilliseconds(1),
+            default
+        );
+
+        Assert.Equal(3, checks);
+    }
+
+    [Fact]
+    public async Task Waiting_for_a_server_that_never_gets_ready_times_out()
+    {
+        var e = await Assert.ThrowsAsync<TimeoutException>(() =>
+            GammaInstaller.WaitUntilReadyAsync(
+                () => Task.FromResult(false),
+                "http://localhost:8000",
+                TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(10),
+                default
+            )
+        );
+
+        Assert.Contains("http://localhost:8000", e.Message);
+    }
+
+    [Fact]
+    public async Task Cancelling_the_wait_for_the_server_throws_a_cancellation()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            GammaInstaller.WaitUntilReadyAsync(
+                () => Task.FromResult(false),
+                "http://localhost:8000",
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromMilliseconds(10),
+                cts.Token
+            )
+        );
+    }
+
     private class FakeRecord(string name) : IDownloadableRecord
     {
         public bool FailDownload { get; init; }

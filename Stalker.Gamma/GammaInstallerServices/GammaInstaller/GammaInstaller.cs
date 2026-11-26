@@ -451,16 +451,54 @@ public class GammaInstaller(
     /// <summary>
     /// Waits for the experimental stalker gamma server when ModDB requests go through it
     /// </summary>
+    /// <exception cref="TimeoutException">It isn't ready within <see cref="ServerReadyTimeout"/></exception>
     protected virtual async Task WaitForStalkerGammaServerAsync(GammaInstallerArgs args)
     {
         if (args is { StalkerGammaServerUrl: not null, ExperimentalPythonServerSettings: not null })
         {
-            while (!await stalkerGammaServerProxy.Ready())
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
-            }
+            await WaitUntilReadyAsync(
+                stalkerGammaServerProxy.Ready,
+                args.StalkerGammaServerUrl,
+                ServerReadyTimeout,
+                TimeSpan.FromSeconds(1),
+                args.CancellationToken
+            );
         }
     }
+
+    /// <summary>
+    /// Polls <paramref name="ready"/> until it's true
+    /// </summary>
+    /// <exception cref="TimeoutException">It isn't true within <paramref name="timeout"/></exception>
+    internal static async Task WaitUntilReadyAsync(
+        Func<Task<bool>> ready,
+        string serverUrl,
+        TimeSpan timeout,
+        TimeSpan pollInterval,
+        CancellationToken cancellationToken
+    )
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(timeout);
+        try
+        {
+            while (!await ready())
+            {
+                await Task.Delay(pollInterval, timeoutCts.Token);
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"The stalker gamma server at {serverUrl} wasn't ready after {timeout.TotalSeconds:0.###} seconds. Check that it started without errors."
+            );
+        }
+    }
+
+    /// <summary>
+    /// The server starts a browser, which can take a while on a slow machine
+    /// </summary>
+    private static readonly TimeSpan ServerReadyTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
     /// Gets a special repo's files ready to be extracted
