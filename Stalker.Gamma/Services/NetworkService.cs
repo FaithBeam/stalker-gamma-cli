@@ -1,3 +1,4 @@
+using System.Net;
 using LibCurlImpersonate;
 using Stalker.Gamma.ModDb.Services;
 using Stalker.Gamma.Proxies;
@@ -30,7 +31,8 @@ public class NetworkService(
         string pathToDownloads,
         string fileName,
         Action<DownloadProgress>? onProgress = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? expectedMd5 = null
     )
     {
         await DownloadFileFast.DownloadAsync(
@@ -38,23 +40,40 @@ public class NetworkService(
             url,
             Path.Join(pathToDownloads, fileName),
             onProgress,
-            cancellationToken
+            cancellationToken,
+            expectedMd5: expectedMd5
         );
     }
 
     public async Task<string> GetStringAsync(
         string url,
         CancellationToken cancellationToken = default
-    ) =>
-        CloudflareChallenge.ThrowIfChallenged(
-            useCurl
-                ? await Task.Run(
-                    () => CurlHttp.Fetch(url, http3: true, ct: cancellationToken),
-                    cancellationToken
-                )
-                : await stalkerGammaServerProxy.GetStringAsync(url, cancellationToken),
-            url
+    )
+    {
+        if (!useCurl)
+        {
+            return CloudflareChallenge.ThrowIfChallenged(
+                await stalkerGammaServerProxy.GetStringAsync(url, cancellationToken),
+                url
+            );
+        }
+
+        var response = await Task.Run(
+            () => CurlHttp.FetchResponse(url, http3: true, ct: cancellationToken),
+            cancellationToken
         );
+        // Cloudflare serves its challenge with an error status, so check for it first to report it as one
+        CloudflareChallenge.ThrowIfChallenged(response.Body, url);
+        if (response.StatusCode >= 400)
+        {
+            throw new HttpRequestException(
+                $"Request to {url} failed with HTTP status {response.StatusCode}",
+                null,
+                (HttpStatusCode)response.StatusCode
+            );
+        }
+        return response.Body;
+    }
 
     /// <summary>
     /// Whether curl service found curl-impersonate-win.exe and can execute.

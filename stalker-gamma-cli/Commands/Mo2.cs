@@ -21,7 +21,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
             json,
             async () =>
             {
-                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
 
                 var gamma = _cliSettings.ActiveProfile!.Gamma;
                 var modOrganizerIniPath = Path.Join(gamma, "ModOrganizer.ini");
@@ -62,7 +62,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
             json,
             async () =>
             {
-                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
                 var gamma = _cliSettings.ActiveProfile!.Gamma;
                 var modOrganizerIniPath = Path.Join(gamma, "ModOrganizer.ini");
                 if (!File.Exists(modOrganizerIniPath))
@@ -116,7 +116,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
             json,
             () =>
             {
-                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
                 var gamma = _cliSettings.ActiveProfile!.Gamma;
                 var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);
                 var profiles = new DirectoryInfo(gammaProfilesPath)
@@ -150,7 +150,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
             json,
             async () =>
             {
-                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
                 var gamma = _cliSettings.ActiveProfile!.Gamma;
                 var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);
                 var modListPath = Path.Join(gammaProfilesPath, profile, "modlist.txt");
@@ -186,7 +186,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
             json,
             () =>
             {
-                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
                 var gamma = _cliSettings.ActiveProfile!.Gamma;
                 var gammaProfilesPath = Path.Join(gamma, "profiles");
                 if (!Directory.Exists(gammaProfilesPath))
@@ -295,7 +295,7 @@ public partial class Mo2Cmds(ILogger logger, CliSettings cliSettings)
         ModListRecord Mod
     )> FindModAsync(string mod)
     {
-        ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+        ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
         var gamma = _cliSettings.ActiveProfile!.Gamma;
         var profile = _cliSettings.ActiveProfile!.Mo2Profile;
         var gammaProfilesPath = ProfileUtility.ValidateProfileExists(gamma);

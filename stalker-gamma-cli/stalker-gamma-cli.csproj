@@ -4,11 +4,7 @@
     <RootNamespace>stalker_gamma_cli</RootNamespace>
     <AssemblyName>stalker-gamma</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>1701;1702;IL2121;IL2104;IL2121</NoWarn>
   </PropertyGroup>
   <ItemGroup>

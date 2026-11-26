@@ -6,6 +6,7 @@ using stalker_gamma_cli.Utilities;
 using Stalker.Gamma.Factories;
 using Stalker.Gamma.GammaInstallerServices;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 
 namespace stalker_gamma_cli.Commands;
 
@@ -92,12 +93,11 @@ public abstract class PruneLogic(
         var statusCode = 0;
         string? error = null;
 
-        LogAndExitOnDependencyError.Check(UtilitiesReady, Logger);
-
-        ValidateActiveProfile.Validate(Logger, CliSettings.ActiveProfile);
-
         try
         {
+            ValidateDependencies.Validate(UtilitiesReady);
+            ValidateActiveProfile.Validate(CliSettings.ActiveProfile);
+
             var addonArchivesToDelete = await GetAddonsArchivesToDelete(cancellationToken);
 
             if (addonArchivesToDelete.Count == 0)
@@ -114,6 +114,11 @@ public abstract class PruneLogic(
 
                 HandlePrunableArchives(addonArchivesToDelete, maxPathLen, maxMbLen);
             }
+        }
+        catch (CommandValidationException e)
+        {
+            statusCode = 1;
+            error = JsonOutputUtility.LogError(Logger, e.Message);
         }
         catch (Exception e)
         {
@@ -165,7 +170,12 @@ public abstract class PruneLogic(
         var date = archive.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
         var paddedArchiveName = archive.FullName.PadRight(maxPathLen);
         var paddedMb = $"{mb}mb".PadRight(maxMbLen);
-        Logger.Information(Informational, paddedArchiveName, paddedMb, date);
+        Logger.Information(
+            TerminalColor.Enabled ? InformationalColor : Informational,
+            paddedArchiveName,
+            paddedMb,
+            date
+        );
     }
 
     protected static long MbToReclaim(List<FileInfo> addonArchivesToDelete)
@@ -232,7 +242,9 @@ public abstract class PruneLogic(
         ? StringComparer.OrdinalIgnoreCase
         : StringComparer.Ordinal;
 
-    private const string Informational =
+    private const string Informational = "{File} | {Mb} | {Date}";
+
+    private const string InformationalColor =
         "\e[96m{File}\e[0m "
         + "\e[97m|\e[0m "
         + "\e[96m{Mb}\e[0m "
@@ -243,7 +255,7 @@ public abstract class PruneLogic(
     {
         "Anomaly-1.5.3-Full.2.7z",
         "Anomaly-1.5.3-Full.mt-mx5.7z",
-        "ModOrganizer.v2.5.2.7z",
+        $"ModOrganizer.{ModOrganizerRelease.Version}.7z",
     };
 }
 

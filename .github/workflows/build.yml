@@ -4,6 +4,11 @@ on:
   push:
     paths-ignore:
       - README.md
+  # PRs from forks don't trigger push in this repo, so build and test them here.
+  # The publish jobs only run for tags or a successful release, so a PR never publishes.
+  pull_request:
+    paths-ignore:
+      - README.md
   workflow_dispatch:
     inputs:
       dry_run:

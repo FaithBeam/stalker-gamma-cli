@@ -14,10 +14,15 @@ public partial class ModDbService(
 {
     private static readonly SemaphoreSlim Lock = new(1);
 
+    /// <param name="expectedMd5">
+    /// The archive's MD5 if it's known. The download is checked against it, and a retry
+    /// continues a partial download instead of starting over.
+    /// </param>
     public async Task DownloadAddonAsync(
         string url,
         string output,
         Action<DownloadProgress> onProgress,
+        string? expectedMd5 = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -94,7 +99,8 @@ public partial class ModDbService(
                         parentPath?.FullName ?? "./",
                         Path.GetFileName(output),
                         onProgress,
-                        cancellationToken: ct
+                        cancellationToken: ct,
+                        expectedMd5: string.IsNullOrWhiteSpace(expectedMd5) ? null : expectedMd5
                     );
             },
             cancellationToken
@@ -119,6 +125,7 @@ public partial class ModDbService(
                     OnRetry = args => ValueTask.CompletedTask,
                 }
             )
+            .AddTimeout(CdnLinkAttemptTimeout)
             .Build();
     }
 
@@ -141,17 +148,45 @@ public partial class ModDbService(
         var results = await Task.WhenAll(mirrorTask, getContentTask);
 
         var (mirror, content) = (results[0], results[1]);
-        var link = WindowLocationRx().Match(content).Groups[1].Value;
-        var linkSplit = link.Split('/');
-
-        linkSplit[6] = mirror;
-
-        var downloadLink = string.Join("/", linkSplit);
+        var downloadLink = BuildMirrorDownloadLink(url, content, mirror);
 
         mirrorsVisited.Add(mirror);
 
         return await modDbGetCdnLinkServiceSvc.ExecuteAsync(downloadLink, ct: ct);
     }
+
+    /// <summary>
+    /// Finds the download link in a ModDB download page and points it at <paramref name="mirror"/>
+    /// </summary>
+    /// <param name="url">The download page's url, for the error message</param>
+    /// <param name="content">The download page's html</param>
+    /// <param name="mirror">The mirror to download from</param>
+    internal static string BuildMirrorDownloadLink(string url, string content, string mirror)
+    {
+        var match = WindowLocationRx().Match(content);
+        // e.g. https://www.moddb.com/downloads/mirror/{id}/{mirror}/{hash}
+        var linkSplit = match.Success ? match.Groups[1].Value.Split('/') : [];
+        if (linkSplit.Length <= MirrorSegment)
+        {
+            throw new ModDbUtilityException(
+                $"Unable to find the download link on {url}, ModDB may have changed its page or served an error page"
+            );
+        }
+
+        linkSplit[MirrorSegment] = mirror;
+        return string.Join("/", linkSplit);
+    }
+
+    /// <summary>
+    /// The index of the mirror in the '/' split download link
+    /// </summary>
+    private const int MirrorSegment = 6;
+
+    /// <summary>
+    /// Finding a mirror and the CDN link happens while every other ModDB download waits on
+    /// <see cref="Lock"/>, so an attempt that hangs is abandoned and retried instead of stalling them all
+    /// </summary>
+    private static readonly TimeSpan CdnLinkAttemptTimeout = TimeSpan.FromMinutes(2);
 
     [GeneratedRegex("""window.location.href="(.+)";""")]
     private static partial Regex WindowLocationRx();

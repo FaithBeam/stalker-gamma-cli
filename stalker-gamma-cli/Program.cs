@@ -78,6 +78,7 @@ public static class Program
                     .AddSingleton<ILogger>(log)
                     .AddScoped<UtilitiesReady>()
                     .AddScoped<ProgressLoggingService>()
+                    .AddScoped<InstallCommandSupport>()
                     .AddScoped<GetRemoteGitRepoCommit>()
                     .AddScoped<SetupUtilitiesService>()
                     .RegisterCoreGammaServices();
@@ -109,7 +110,8 @@ public static class Program
         }
         finally
         {
-            await Log.CloseAndFlushAsync();
+            // the logger isn't Log.Logger, so Log.CloseAndFlushAsync wouldn't flush or close it
+            await log.DisposeAsync();
         }
     }
 }

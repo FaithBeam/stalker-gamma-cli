@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Stalker.Gamma.Models;
+using Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 using Stalker.Gamma.Services;
 
 namespace Stalker.Gamma.IntegrationTests.Cli;
@@ -116,12 +117,21 @@ public class CliTests : IDisposable
         }
     }
 
-    [SevenZipFact]
-    public async Task Commands_that_need_a_profile_fail_without_one()
+    [SevenZipTheory]
+    [InlineData("full-install")]
+    [InlineData("update", "apply")]
+    [InlineData("update", "check")]
+    [InlineData("anomaly", "install")]
+    [InlineData("anomaly", "check")]
+    [InlineData("cache", "prune", "check")]
+    public async Task Commands_that_need_a_profile_fail_without_one(params string[] command)
     {
-        var result = await _cli.RunAsync("full-install", "--json");
+        var result = await _cli.RunAsync([.. command, "--json"]);
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(1, result.ExitCode);
+        // GUI wrappers rely on every --json command ending with a result message
+        Assert.False(result.Result.GetProperty("success").GetBoolean());
+        Assert.Contains("No active profile", result.Result.GetProperty("error").GetString());
         Assert.False(Directory.Exists(Path.Join(_fake.Gamma, "mods")));
     }
 
@@ -175,7 +185,8 @@ public class CliTests : IDisposable
             "--json"
         );
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(1, result.ExitCode);
+        Assert.Contains("missing.zip", result.Result.GetProperty("error").GetString());
         Assert.False(Directory.Exists(Path.Join(_fake.Gamma, "mods")));
     }
 
@@ -183,22 +194,29 @@ public class CliTests : IDisposable
     public async Task Failed_install_resumes_where_it_stopped()
     {
         await CreateProfileAsync();
-        // the repos are installed after every addon, so all of them are done when it fails
-        _fake.SetRepoBranch("Stalker_GAMMA", exists: false);
+        // Mod Organizer is installed after every addon and repo, so all of them are done when it
+        // fails. A failure while they're still running cancels the rest, which leaves which of them
+        // finished up to timing.
+        var mo2Archive = _fake.CachePath($"ModOrganizer.{ModOrganizerRelease.Version}.7z");
+        var mo2ArchiveAside = Path.Join(_fake.Root, Path.GetFileName(mo2Archive));
+        File.Move(mo2Archive, mo2ArchiveAside);
 
         var failed = await FullInstallAsync();
 
         Assert.Equal(1, failed.ExitCode);
         Assert.False(failed.Result.GetProperty("success").GetBoolean());
-        Assert.Contains("Stalker_GAMMA", failed.Result.GetProperty("error").GetString());
+        Assert.Contains(
+            Path.GetFileName(mo2Archive),
+            failed.Result.GetProperty("error").GetString()
+        );
         var resumePath = ResumeState.GetPath(_fake.Gamma);
         Assert.Contains("Complete\tSimple Addon | simple_addon.zip", File.ReadAllLines(resumePath));
-        Assert.False(Directory.Exists(_fake.ModFile("G.A.M.M.A. Core")));
+        Assert.False(File.Exists(Path.Join(_fake.Gamma, "ModOrganizer.exe")));
 
         // left in an addon that's already installed, so it's only kept if the addon is skipped
         var marker = _fake.ModFile("2- Simple Addon - Author A", "gamedata", "marker.txt");
         File.WriteAllText(marker, "");
-        _fake.SetRepoBranch("Stalker_GAMMA", exists: true);
+        File.Move(mo2ArchiveAside, mo2Archive);
 
         var resumed = await FullInstallAsync("--resume");
 
@@ -208,6 +226,7 @@ public class CliTests : IDisposable
             "core",
             File.ReadAllText(_fake.ModFile("G.A.M.M.A. Core", "gamedata", "configs", "core.ltx"))
         );
+        Assert.Equal("mo2", File.ReadAllText(Path.Join(_fake.Gamma, "ModOrganizer.exe")));
         Assert.False(File.Exists(resumePath));
     }
 

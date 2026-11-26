@@ -8,10 +8,18 @@ using GetReleaseByTagCtx = Stalker.Gamma.ModOrganizer.DownloadModOrganizer.Entit
 
 namespace Stalker.Gamma.ModOrganizer.DownloadModOrganizer;
 
+public static class ModOrganizerRelease
+{
+    /// <summary>
+    /// The Mod Organizer 2 release that's installed
+    /// </summary>
+    public const string Version = "v2.5.2";
+}
+
 public interface IDownloadModOrganizerService
 {
     Task DownloadAsync(
-        string version = "v2.5.2",
+        string version = ModOrganizerRelease.Version,
         string cachePath = "",
         string? extractPath = null,
         CancellationToken cancellationToken = default
@@ -20,7 +28,7 @@ public interface IDownloadModOrganizerService
     void DeleteArchive(string cachePath = "");
 
     Task ExtractAsync(
-        string version = "v2.5.2",
+        string version = ModOrganizerRelease.Version,
         string cachePath = "",
         string? extractPath = null,
         string dlUrl = "",
@@ -36,7 +44,7 @@ public class DownloadModOrganizerService(
 ) : IDownloadModOrganizerService
 {
     public async Task ExtractAsync(
-        string version = "v2.5.2",
+        string version = ModOrganizerRelease.Version,
         string cachePath = "",
         string? extractPath = null,
         string dlUrl = "",
@@ -104,7 +112,7 @@ public class DownloadModOrganizerService(
     }
 
     public async Task DownloadAsync(
-        string version = "v2.5.2",
+        string version = ModOrganizerRelease.Version,
         string cachePath = "",
         string? extractPath = null,
         CancellationToken cancellationToken = default

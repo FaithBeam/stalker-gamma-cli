@@ -24,7 +24,7 @@ public partial class Gog(
             json,
             async () =>
             {
-                ValidateActiveProfile.Validate(_logger, _cliSettings.ActiveProfile);
+                ValidateActiveProfile.Validate(_cliSettings.ActiveProfile);
                 var mo2IniPath = Path.Join(_cliSettings.ActiveProfile!.Gamma, "ModOrganizer.ini");
                 var pathTxtFilePath = Path.Join(_cliSettings.ActiveProfile.Gamma, "..", "path.txt");
                 var pathIniPath = Path.Join(_cliSettings.ActiveProfile.Gamma, "..", "path.ini");

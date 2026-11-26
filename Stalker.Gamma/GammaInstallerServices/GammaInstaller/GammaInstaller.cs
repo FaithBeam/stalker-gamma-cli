@@ -207,22 +207,14 @@ public class GammaInstaller(
         args.ResumeState.SetStatus(record.ResumeKey, ResumeStatus.Complete);
     }
 
-    public virtual async Task InstallAsync(GammaInstallerArgs args)
+    public async Task InstallAsync(GammaInstallerArgs args)
     {
-        if (args is { StalkerGammaServerUrl: not null, ExperimentalPythonServerSettings: not null })
-        {
-            while (!await stalkerGammaServerProxy.Ready())
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
-            }
-        }
+        await WaitForStalkerGammaServerAsync(args);
 
-        args.Mo2Version = "v2.5.2";
-        args.Cache = Path.IsPathRooted(args.Cache) ? args.Cache : Path.GetFullPath(args.Cache);
-        args.Gamma = Path.IsPathRooted(args.Gamma) ? args.Gamma : Path.GetFullPath(args.Gamma);
-        args.Anomaly = Path.IsPathRooted(args.Anomaly)
-            ? args.Anomaly
-            : Path.GetFullPath(args.Anomaly);
+        args.Mo2Version ??= ModOrganizerRelease.Version;
+        args.Cache = ToFullPath(args.Cache);
+        args.Gamma = ToFullPath(args.Gamma);
+        args.Anomaly = ToFullPath(args.Anomaly);
 
         var anomalyBinPath = Path.Join(args.Anomaly, "bin");
         var gammaModsPath = Path.Join(args.Gamma, "mods");
@@ -255,15 +247,17 @@ public class GammaInstaller(
         var modpackMakerRecords = ModListRecordFactory.Create(modpackMakerTxt);
         var separators = SeparatorsFactory.Create(modpackMakerRecords);
 
-        var internalProgress = Progress as GammaProgress;
-        internalProgress!.TotalMods =
-            new List<IDownloadableRecord>(args.GroupedAddonRecords)
-            {
-                args.GammaLargeFilesRecord!,
-                args.TeivazAnomalyGunslingerRecord!,
-                args.GammaSetupRecord!,
-                args.StalkerGammaRecord!,
-            }.Count + (args.AnomalyRecord is not null ? 1 : 0);
+        IDownloadableRecord[] specialRepos =
+        [
+            args.TeivazAnomalyGunslingerRecord!,
+            args.GammaLargeFilesRecord!,
+            args.GammaSetupRecord!,
+            args.StalkerGammaRecord!,
+        ];
+        gammaProgress.TotalMods =
+            args.GroupedAddonRecords.Count
+            + specialRepos.Length
+            + (args.AnomalyRecord is not null ? 1 : 0);
 
         foreach (var separator in separators)
         {
@@ -275,80 +269,29 @@ public class GammaInstaller(
             : [.. args.GroupedAddonRecords];
 
         ConcurrentBag<IDownloadableRecord> brokenAddons = [];
-
-        using var batchCts = CancellationTokenSource.CreateLinkedTokenSource(
-            args.CancellationToken
+        await RunBatchAsync(
+            args.CancellationToken,
+            [
+                ct => ProcessAddonsAsync(mainBatchRecords, brokenAddons, args.Minimal, ct),
+                .. specialRepos.Select<IDownloadableRecord, Func<CancellationToken, Task>>(record =>
+                    ct =>
+                        DownloadSpecialRepoAsync(
+                            args,
+                            record,
+                            () => PrepareSpecialRepoAsync((ISpecialRepo)record, ct)
+                        )
+                ),
+            ]
         );
-        // the first failure in the batch cancels the rest of it, so a broken special repo or a
-        // Cloudflare challenge stops the install right away instead of after every addon downloads
-        ExceptionDispatchInfo? batchFailure = null;
-
-        Task RunInBatch(Func<Task> work) =>
-            Task.Run(
-                async () =>
-                {
-                    try
-                    {
-                        await work();
-                    }
-                    catch (Exception e) when (!batchCts.IsCancellationRequested)
-                    {
-                        Interlocked.CompareExchange(
-                            ref batchFailure,
-                            ExceptionDispatchInfo.Capture(e),
-                            null
-                        );
-                        await batchCts.CancelAsync();
-                        throw;
-                    }
-                },
-                batchCts.Token
-            );
-
-        Task DownloadSpecialRepoInBatch(IDownloadableRecord record) =>
-            RunInBatch(() =>
-                DownloadSpecialRepoAsync(
-                    args,
-                    record,
-                    async () =>
-                    {
-                        await record.DownloadAsync(batchCts.Token);
-                        await ((ISpecialRepo)record).ExpandFilesAsync(batchCts.Token);
-                    }
-                )
-            );
-
-        Task[] batch =
-        [
-            RunInBatch(() =>
-                ProcessAddonsAsync(
-                    mainBatchRecords,
-                    brokenAddons,
-                    args.Minimal,
-                    cancellationToken: batchCts.Token
-                )
-            ),
-            DownloadSpecialRepoInBatch(args.TeivazAnomalyGunslingerRecord!),
-            DownloadSpecialRepoInBatch(args.GammaLargeFilesRecord!),
-            DownloadSpecialRepoInBatch(args.GammaSetupRecord!),
-            DownloadSpecialRepoInBatch(args.StalkerGammaRecord!),
-        ];
-        try
-        {
-            await Task.WhenAll(batch);
-        }
-        catch
-        {
-            // the rest of the batch fails with cancellations, or errors caused by being cancelled,
-            // so report the failure that cancelled it
-            batchFailure?.Throw();
-            throw;
-        }
 
         foreach (var brokenAddon in brokenAddons)
         {
             await brokenAddon.DownloadAsync(args.CancellationToken);
             await brokenAddon.ExtractAsync(args.CancellationToken);
+            if (args.Minimal)
+            {
+                brokenAddon.DeleteArchive();
+            }
         }
 
         await ExtractSpecialRepoAsync(args, args.GammaSetupRecord!);
@@ -357,10 +300,10 @@ public class GammaInstaller(
         await ExtractSpecialRepoAsync(args, args.StalkerGammaRecord!);
         if (args.Minimal)
         {
-            args.GammaSetupRecord!.DeleteArchive();
-            args.StalkerGammaRecord!.DeleteArchive();
-            args.GammaLargeFilesRecord!.DeleteArchive();
-            args.TeivazAnomalyGunslingerRecord!.DeleteArchive();
+            foreach (var specialRepo in specialRepos)
+            {
+                specialRepo.DeleteArchive();
+            }
         }
 
         DeleteReshadeDlls.Delete(anomalyBinPath);
@@ -377,19 +320,7 @@ public class GammaInstaller(
             await PreserveMcmSettings.WriteAxrOptionsAsync(args.CancellationToken);
         }
 
-        await DownloadModOrganizerService.DownloadAsync(
-            cachePath: args.Cache,
-            extractPath: args.Gamma,
-            version: args.Mo2Version,
-            cancellationToken: args.CancellationToken
-        );
-        await DownloadModOrganizerService.ExtractAsync(
-            version: args.Mo2Version,
-            cachePath: args.Cache,
-            extractPath: args.Gamma,
-            cancellationToken: args.CancellationToken
-        );
-
+        await InstallModOrganizerAsync(args);
         if (args.Minimal)
         {
             DownloadModOrganizerService.DeleteArchive(args.Cache);
@@ -411,38 +342,135 @@ public class GammaInstaller(
 
         var mo2ProfilePath = Path.Join(args.Gamma, "profiles", args.Mo2Profile);
         Directory.CreateDirectory(mo2ProfilePath);
-        if (
-            !string.IsNullOrWhiteSpace(args.ModListPath)
-            || !string.IsNullOrWhiteSpace(Settings.ModListUrl)
-        )
+        if (await GetModListAsync(args) is { } modList)
         {
-            var modList =
-                !string.IsNullOrWhiteSpace(args.ModListPath)
-                    ? await File.ReadAllTextAsync(
-                        args.ModListPath,
-                        cancellationToken: args.CancellationToken
-                    )
-                : !string.IsNullOrWhiteSpace(Settings.ModListUrl)
-                    ? await _hc.GetStringAsync(Settings.ModListUrl)
-                : throw new InvalidOperationException("Mod list path or url is empty");
-            Directory.CreateDirectory(mo2ProfilePath);
-            await File.WriteAllTextAsync(Path.Join(mo2ProfilePath, "modlist.txt"), modList);
+            await File.WriteAllTextAsync(
+                Path.Join(mo2ProfilePath, "modlist.txt"),
+                modList,
+                args.CancellationToken
+            );
         }
 
         await File.WriteAllTextAsync(
             Path.Join(mo2ProfilePath, "modpack_maker_list.txt"),
-            modpackMakerTxt
+            modpackMakerTxt,
+            args.CancellationToken
         );
         await File.WriteAllTextAsync(
             Path.Join(mo2ProfilePath, "modpack_maker_list.json"),
             JsonSerializer.Serialize(
                 modpackMakerRecords,
                 jsonTypeInfo: ModPackMakerCtx.Default.ListModPackMakerRecord
-            )
+            ),
+            args.CancellationToken
         );
 
-        internalProgress.Reset();
+        gammaProgress.Reset();
     }
+
+    private static string ToFullPath(string path) =>
+        Path.IsPathRooted(path) ? path : Path.GetFullPath(path);
+
+    /// <summary>
+    /// Runs the work concurrently. The first failure cancels the rest, so a broken special repo or
+    /// a Cloudflare challenge stops the install right away instead of after every addon downloads.
+    /// </summary>
+    private static async Task RunBatchAsync(
+        CancellationToken cancellationToken,
+        IEnumerable<Func<CancellationToken, Task>> work
+    )
+    {
+        using var batchCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        ExceptionDispatchInfo? batchFailure = null;
+
+        var tasks = work.Select(w =>
+                Task.Run(
+                    async () =>
+                    {
+                        try
+                        {
+                            await w(batchCts.Token);
+                        }
+                        catch (Exception e) when (!batchCts.IsCancellationRequested)
+                        {
+                            Interlocked.CompareExchange(
+                                ref batchFailure,
+                                ExceptionDispatchInfo.Capture(e),
+                                null
+                            );
+                            await batchCts.CancelAsync();
+                            throw;
+                        }
+                    },
+                    batchCts.Token
+                )
+            )
+            .ToList();
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch
+        {
+            // the rest of the batch fails with cancellations, or errors caused by being cancelled,
+            // so report the failure that cancelled it
+            batchFailure?.Throw();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Waits for the experimental stalker gamma server when ModDB requests go through it
+    /// </summary>
+    protected virtual async Task WaitForStalkerGammaServerAsync(GammaInstallerArgs args)
+    {
+        if (args is { StalkerGammaServerUrl: not null, ExperimentalPythonServerSettings: not null })
+        {
+            while (!await stalkerGammaServerProxy.Ready())
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets a special repo's files ready to be extracted
+    /// </summary>
+    protected virtual async Task PrepareSpecialRepoAsync(
+        ISpecialRepo record,
+        CancellationToken cancellationToken
+    )
+    {
+        await record.DownloadAsync(cancellationToken);
+        await record.ExpandFilesAsync(cancellationToken);
+    }
+
+    protected virtual async Task InstallModOrganizerAsync(GammaInstallerArgs args)
+    {
+        await DownloadModOrganizerService.DownloadAsync(
+            cachePath: args.Cache,
+            extractPath: args.Gamma,
+            version: args.Mo2Version!,
+            cancellationToken: args.CancellationToken
+        );
+        await DownloadModOrganizerService.ExtractAsync(
+            version: args.Mo2Version!,
+            cachePath: args.Cache,
+            extractPath: args.Gamma,
+            cancellationToken: args.CancellationToken
+        );
+    }
+
+    /// <summary>
+    /// The modlist.txt to install, from --mod-list-path or else the profile's url, or null to keep
+    /// the one the GAMMA profile came with
+    /// </summary>
+    protected virtual async Task<string?> GetModListAsync(GammaInstallerArgs args) =>
+        !string.IsNullOrWhiteSpace(args.ModListPath)
+            ? await File.ReadAllTextAsync(args.ModListPath, args.CancellationToken)
+        : !string.IsNullOrWhiteSpace(Settings.ModListUrl)
+            ? await _hc.GetStringAsync(Settings.ModListUrl, args.CancellationToken)
+        : null;
 
     protected async Task<string> GetModpackMakerTxt(GammaInstallerArgs args)
     {

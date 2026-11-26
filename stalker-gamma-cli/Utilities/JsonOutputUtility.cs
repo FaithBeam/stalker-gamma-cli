@@ -41,6 +41,10 @@ public static class JsonOutputUtility
         {
             error = await action();
         }
+        catch (CommandValidationException e)
+        {
+            error = LogError(logger, e.Message);
+        }
         // Only catch in json mode so a GUI wrapper always gets a result message
         catch (Exception e) when (json)
         {

@@ -32,6 +32,18 @@ public class CurlHttp : IDisposable
         bool http3 = false,
         Action<string>? onHttpVersion = null,
         CancellationToken ct = default
+    ) => FetchResponse(url, onSpeed, http3, onHttpVersion, ct).Body;
+
+    /// <summary>
+    /// Fetches a url and returns its body with the HTTP status code. Error statuses aren't thrown
+    /// so callers can inspect the body, e.g. for a Cloudflare challenge page served with 403.
+    /// </summary>
+    public static CurlResponse FetchResponse(
+        string url,
+        Action<double>? onSpeed = null,
+        bool http3 = false,
+        Action<string>? onHttpVersion = null,
+        CancellationToken ct = default
     )
     {
         IntPtr handle = LibCurl.curl_easy_init();
@@ -55,6 +67,7 @@ public class CurlHttp : IDisposable
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_FOLLOWLOCATION, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, PathToCacert);
+            ApplyTimeouts(handle);
             LibCurl.curl_easy_setopt_ptr(handle, LibCurl.CURLOPT_ERRORBUFFER, errBuf);
             if (http3)
                 LibCurl.curl_easy_setopt_long(
@@ -70,7 +83,8 @@ public class CurlHttp : IDisposable
                 throw CurlException.Create(code, url, Marshal.PtrToStringUTF8(errBuf));
 
             ReportHttpVersion(handle, onHttpVersion);
-            return sb.ToString();
+            LibCurl.curl_easy_getinfo_long(handle, LibCurl.CURLINFO_RESPONSE_CODE, out long status);
+            return new CurlResponse((int)status, sb.ToString());
         }
         finally
         {
@@ -109,6 +123,7 @@ public class CurlHttp : IDisposable
             );
             LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_NOBODY, 1L);
             LibCurl.curl_easy_setopt_str(handle, LibCurl.CURLOPT_CAINFO, PathToCacert);
+            ApplyTimeouts(handle);
             LibCurl.curl_easy_setopt_ptr(handle, LibCurl.CURLOPT_ERRORBUFFER, errBuf);
             if (http3)
                 LibCurl.curl_easy_setopt_long(
@@ -135,6 +150,29 @@ public class CurlHttp : IDisposable
             Marshal.FreeHGlobal(errBuf);
         }
     }
+
+    /// <summary>
+    /// Fail a request that can't connect, or that stalls, instead of waiting forever. libcurl has no
+    /// total timeout by default, so one hung request would block everything waiting on it.
+    /// </summary>
+    private static void ApplyTimeouts(IntPtr handle)
+    {
+        LibCurl.curl_easy_setopt_long(
+            handle,
+            LibCurl.CURLOPT_CONNECTTIMEOUT,
+            (long)ConnectTimeout.TotalSeconds
+        );
+        // abort when the transfer is slower than 1 byte/s for StallTimeout
+        LibCurl.curl_easy_setopt_long(handle, LibCurl.CURLOPT_LOW_SPEED_LIMIT, 1L);
+        LibCurl.curl_easy_setopt_long(
+            handle,
+            LibCurl.CURLOPT_LOW_SPEED_TIME,
+            (long)StallTimeout.TotalSeconds
+        );
+    }
+
+    private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
     // Buffer for CURLOPT_ERRORBUFFER; libcurl writes a detailed message here on failure.
     private static IntPtr AllocErrorBuffer()
@@ -246,3 +284,7 @@ public class CurlHttp : IDisposable
         Random.Shared.Next(Impersonations.Count)
     );
 }
+
+/// <param name="StatusCode">The HTTP status code of the last response, after redirects</param>
+/// <param name="Body">The response body</param>
+public readonly record struct CurlResponse(int StatusCode, string Body);
