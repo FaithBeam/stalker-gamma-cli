@@ -34,7 +34,12 @@ public partial class GitService
         try
         {
             using var repo = new Repository(pathToRepo);
-            var remote = repo.Network.Remotes["origin"] ?? repo.Network.Remotes["Grokitach"];
+            var remote =
+                repo.Network.Remotes["origin"]
+                ?? repo.Network.Remotes["Grokitach"]
+                ?? throw new InvalidOperationException(
+                    "The repo has neither an origin nor a Grokitach remote to fetch from"
+                );
             var options = new FetchOptions
             {
                 OnTransferProgress = progress =>
