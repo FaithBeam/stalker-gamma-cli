@@ -49,10 +49,7 @@ public class UpdateCmds(
 
                 var localGitRepoDiffs = await GetLocalGitRepoDiffs(cancellationToken);
 
-                var diffs = diffed
-                    .LocalRecords.Diff(diffed.OnlineRecords)
-                    .Concat(localGitRepoDiffs)
-                    .ToList();
+                var diffs = diffed.Diffs.Concat(localGitRepoDiffs).ToList();
                 if (json)
                 {
                     JsonOutputUtility.WriteUpdates(diffs);

@@ -561,6 +561,11 @@ public class GammaInstaller(
         /// addon folder is renamed
         /// </summary>
         public List<ModPackMakerRecord> RenumberedRecords { get; set; } = [];
+
+        /// <summary>
+        /// How the online list differs from the installed one
+        /// </summary>
+        public List<ModPackMakerRecordDiff> Diffs { get; set; } = [];
     }
 
     public async Task<DiffedAddonRecords> DiffAddonRecordsAsync(GammaInstallerArgs args)
@@ -586,6 +591,7 @@ public class GammaInstaller(
             OnlineRecords = onlineModPackMakerRecords,
             AddedOrModifiedRecords = addedOrModifiedRecords,
             RenumberedRecords = renumberedRecords,
+            Diffs = diffs,
         };
     }
 
