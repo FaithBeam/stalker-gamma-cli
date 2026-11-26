@@ -284,15 +284,7 @@ public class GammaInstaller(
             ]
         );
 
-        foreach (var brokenAddon in brokenAddons)
-        {
-            await brokenAddon.DownloadAsync(args.CancellationToken);
-            await brokenAddon.ExtractAsync(args.CancellationToken);
-            if (args.Minimal)
-            {
-                brokenAddon.DeleteArchive();
-            }
-        }
+        await RetryBrokenAddonsAsync(brokenAddons, args.Minimal, args.CancellationToken);
 
         await ExtractSpecialRepoAsync(args, args.GammaSetupRecord!);
         await ExtractSpecialRepoAsync(args, args.GammaLargeFilesRecord!);
@@ -416,6 +408,43 @@ public class GammaInstaller(
             // so report the failure that cancelled it
             batchFailure?.Throw();
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Retries the addons that failed while the others were installing. Every one is retried
+    /// before the failures are reported, so one run finds all the addons that still fail.
+    /// </summary>
+    /// <exception cref="AddonsFailedException">Some addons failed again</exception>
+    internal static async Task RetryBrokenAddonsAsync(
+        IEnumerable<IDownloadableRecord> brokenAddons,
+        bool minimal,
+        CancellationToken cancellationToken
+    )
+    {
+        List<(string Name, Exception Error)> failures = [];
+        foreach (var brokenAddon in brokenAddons)
+        {
+            try
+            {
+                await brokenAddon.DownloadAsync(cancellationToken);
+                await brokenAddon.ExtractAsync(cancellationToken);
+                if (minimal)
+                {
+                    brokenAddon.DeleteArchive();
+                }
+            }
+            // a challenge fails every ModDB addon the same way, so there's no point going on
+            catch (Exception e)
+                when (e is not CloudflareChallengeException and not OperationCanceledException)
+            {
+                failures.Add((brokenAddon.Name, e));
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            throw new AddonsFailedException(failures);
         }
     }
 
@@ -637,4 +666,28 @@ public class GammaInstaller(
     {
         _hc.Dispose();
     }
+}
+
+/// <summary>
+/// Addons failed again when they were retried after the others finished
+/// </summary>
+public class AddonsFailedException : AggregateException
+{
+    public AddonsFailedException(IReadOnlyList<(string Name, Exception Error)> failures)
+        : base(failures.Select(x => x.Error))
+    {
+        AddonNames = failures.Select(x => x.Name).ToList();
+        _message =
+            $"{failures.Count} addon{(failures.Count == 1 ? "" : "s")} failed after retrying:"
+            + string.Concat(
+                failures.Select(x => $"{Environment.NewLine}  {x.Name}: {x.Error.Message}")
+            );
+    }
+
+    public IReadOnlyList<string> AddonNames { get; }
+
+    // AggregateException's message would repeat every inner message without the addon names
+    public override string Message => _message;
+
+    private readonly string _message;
 }
