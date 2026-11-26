@@ -3,7 +3,7 @@ using System.Text;
 
 namespace LibCurlImpersonate;
 
-public class CurlHttp : IDisposable
+public static class CurlHttp
 {
     static CurlHttp() => LibCurl.curl_global_init(LibCurl.CURL_GLOBAL_DEFAULT);
 
@@ -247,14 +247,6 @@ public class CurlHttp : IDisposable
         return total;
     }
 
-    private static unsafe nuint OnWriteFile(IntPtr data, nuint size, nuint nmemb, IntPtr userdata)
-    {
-        nuint total = size * nmemb;
-        var fs = (FileStream)GCHandle.FromIntPtr(userdata).Target!;
-        fs.Write(new ReadOnlySpan<byte>((void*)data, (int)total));
-        return total;
-    }
-
     private static nuint OnHeader(IntPtr data, nuint size, nuint nmemb, IntPtr userdata)
     {
         nuint total = size * nmemb;
@@ -269,11 +261,6 @@ public class CurlHttp : IDisposable
             headers[line[..colon].Trim()] = line[(colon + 1)..].Trim();
         }
         return total;
-    }
-
-    public void Dispose()
-    {
-        LibCurl.curl_global_cleanup();
     }
 
     private static readonly HashSet<string> Impersonations =

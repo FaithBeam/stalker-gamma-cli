@@ -75,10 +75,5 @@ public class NetworkService(
         return response.Body;
     }
 
-    /// <summary>
-    /// Whether curl service found curl-impersonate-win.exe and can execute.
-    /// </summary>
-    public bool Ready => true;
-
     private readonly HttpClient _dlAddonHc = hcf.CreateClient("dlAddon");
 }

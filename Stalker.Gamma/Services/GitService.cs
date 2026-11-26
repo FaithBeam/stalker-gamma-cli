@@ -414,8 +414,6 @@ public partial class GitService
             repo => repo.Dispose()
         );
     }
-
-    public static bool Ready => true;
 }
 
 public record GitTreeChanges(
