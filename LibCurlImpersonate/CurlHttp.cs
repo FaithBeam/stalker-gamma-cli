@@ -50,8 +50,10 @@ public class CurlHttp : IDisposable
         if (handle == IntPtr.Zero)
             throw new InvalidOperationException("curl_easy_init failed");
 
-        var sb = new StringBuilder();
-        var writePin = GCHandle.Alloc(sb);
+        // the body is collected as bytes and decoded once, since a chunk can end partway
+        // through a multi-byte UTF-8 character
+        using var body = new MemoryStream();
+        var writePin = GCHandle.Alloc(body);
         var xferPin = InstallXferCallback(handle, ct, onSpeed: onSpeed);
         var errBuf = AllocErrorBuffer();
         try
@@ -84,7 +86,10 @@ public class CurlHttp : IDisposable
 
             ReportHttpVersion(handle, onHttpVersion);
             LibCurl.curl_easy_getinfo_long(handle, LibCurl.CURLINFO_RESPONSE_CODE, out long status);
-            return new CurlResponse((int)status, sb.ToString());
+            return new CurlResponse(
+                (int)status,
+                Encoding.UTF8.GetString(body.GetBuffer(), 0, (int)body.Length)
+            );
         }
         finally
         {
@@ -234,11 +239,11 @@ public class CurlHttp : IDisposable
         return pin;
     }
 
-    private static nuint OnWrite(IntPtr data, nuint size, nuint nmemb, IntPtr userdata)
+    private static unsafe nuint OnWrite(IntPtr data, nuint size, nuint nmemb, IntPtr userdata)
     {
         nuint total = size * nmemb;
-        var sb = (StringBuilder)GCHandle.FromIntPtr(userdata).Target!;
-        sb.Append(Marshal.PtrToStringUTF8(data, (int)total));
+        var body = (MemoryStream)GCHandle.FromIntPtr(userdata).Target!;
+        body.Write(new ReadOnlySpan<byte>((void*)data, (int)total));
         return total;
     }
 
