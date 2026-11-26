@@ -53,19 +53,30 @@ public static class Program
                 }
             })
             .CreateLogger();
+
+        CliSettings settings;
+        try
+        {
+            settings = CliSettings.Load();
+        }
+        catch (InvalidSettingsFileException e)
+        {
+            // every command needs the settings, so report it like a command failure instead of
+            // letting the framework print a stack trace, which isn't json or in the log file
+            log.Error("{Error}", e.Message);
+            if (jsonOutput)
+            {
+                JsonOutputUtility.WriteResult(GetCommandName(args), 1, e.Message);
+            }
+            Environment.ExitCode = 1;
+            await log.DisposeAsync();
+            return;
+        }
+
         var app = ConsoleApp
             .Create()
             .ConfigureServices(services =>
             {
-                var settings = File.Exists(CliSettings.SettingsPath)
-                    ? JsonSerializer.Deserialize<CliSettings>(
-                        File.ReadAllText(CliSettings.SettingsPath),
-                        jsonTypeInfo: CliSettingsCtx.Default.CliSettings
-                    )
-                        ?? throw new InvalidOperationException(
-                            $"Unable to deserialize settings file {CliSettings.SettingsPath}"
-                        )
-                    : new CliSettings();
                 log.Verbose(
                     "Settings: {Settings}",
                     JsonSerializer.Serialize(
@@ -114,4 +125,11 @@ public static class Program
             await log.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// The command words before the first option, e.g. "update apply" for
+    /// <c>update apply --json</c>, as commands name themselves in their json result
+    /// </summary>
+    private static string GetCommandName(string[] args) =>
+        string.Join(" ", args.TakeWhile(arg => !arg.StartsWith('-')));
 }
