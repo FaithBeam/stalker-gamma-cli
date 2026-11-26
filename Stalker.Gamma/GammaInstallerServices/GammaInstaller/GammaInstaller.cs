@@ -544,7 +544,7 @@ public class GammaInstaller(
         return string.IsNullOrWhiteSpace(args.ModPackMakerPath)
                 ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
             : File.Exists(args.ModPackMakerPath)
-                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
+                ? await File.ReadAllTextAsync(args.ModPackMakerPath, args.CancellationToken)
             : throw new FileNotFoundException(
                 $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
             );
