@@ -286,6 +286,47 @@ public class DownloadFileFastTests : IDisposable
         Assert.Equal(Content, await File.ReadAllBytesAsync(Destination));
     }
 
+    [Fact]
+    public async Task Stalled_download_fails_instead_of_hanging()
+    {
+        // the connection goes quiet after 5 bytes without being closed
+        using var hc = FakeServer.Respond(_ =>
+            FakeServer.Ok(new StallingStream(Content[..5]), Content.Length)
+        );
+
+        var e = await Assert.ThrowsAsync<DownloadFileFastException>(() =>
+            DownloadFileFast.DownloadAsync(
+                hc,
+                Url,
+                Destination,
+                stallTimeout: TimeSpan.FromMilliseconds(100)
+            )
+        );
+
+        Assert.IsType<TimeoutException>(e.InnerException);
+        Assert.False(File.Exists(Destination));
+        Assert.False(File.Exists($"{Destination}.part"));
+    }
+
+    [Fact]
+    public async Task Cancelling_a_stalled_download_throws_a_cancellation()
+    {
+        using var hc = FakeServer.Respond(_ =>
+            FakeServer.Ok(new StallingStream(Content[..5]), Content.Length)
+        );
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            DownloadFileFast.DownloadAsync(
+                hc,
+                Url,
+                Destination,
+                cancellationToken: cts.Token,
+                stallTimeout: TimeSpan.FromMinutes(5)
+            )
+        );
+    }
+
     private static class FakeServer
     {
         public static HttpClient Respond(Func<HttpRequestMessage, HttpResponseMessage> respond) =>
@@ -312,6 +353,27 @@ public class DownloadFileFastTests : IDisposable
                 cancellationToken.ThrowIfCancellationRequested();
                 return Task.FromResult(respond(request));
             }
+        }
+    }
+
+    /// <summary>
+    /// Returns some bytes, then waits for data that never comes, like a connection that died
+    /// without being closed
+    /// </summary>
+    private class StallingStream(byte[] before) : MemoryStream(before)
+    {
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var read = base.Read(buffer.Span);
+            if (read > 0)
+            {
+                return read;
+            }
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return 0;
         }
     }
 

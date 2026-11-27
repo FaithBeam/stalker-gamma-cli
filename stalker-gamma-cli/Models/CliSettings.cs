@@ -32,7 +32,37 @@ public class CliSettings
     }
 
     public static string SettingsPath => Path.Join(AppDataPathUtility.AppDataPath, "settings.json");
+
+    /// <summary>
+    /// Reads the settings file, or returns empty settings when there isn't one
+    /// </summary>
+    /// <exception cref="InvalidSettingsFileException">The file isn't valid settings</exception>
+    public static CliSettings Load()
+    {
+        if (!File.Exists(SettingsPath))
+        {
+            return new CliSettings();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize(
+                    File.ReadAllText(SettingsPath),
+                    jsonTypeInfo: CliSettingsCtx.Default.CliSettings
+                ) ?? throw new JsonException("It contains null instead of settings.");
+        }
+        catch (JsonException e)
+        {
+            throw new InvalidSettingsFileException(
+                $"The settings file {SettingsPath} is invalid: {e.Message} Fix it, or delete it and create your profile again with `stalker-gamma config create`.",
+                e
+            );
+        }
+    }
 }
+
+public class InvalidSettingsFileException(string message, Exception innerException)
+    : Exception(message, innerException);
 
 [JsonSerializable(typeof(CliSettings))]
 [JsonSourceGenerationOptions(WriteIndented = true)]

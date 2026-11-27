@@ -284,15 +284,7 @@ public class GammaInstaller(
             ]
         );
 
-        foreach (var brokenAddon in brokenAddons)
-        {
-            await brokenAddon.DownloadAsync(args.CancellationToken);
-            await brokenAddon.ExtractAsync(args.CancellationToken);
-            if (args.Minimal)
-            {
-                brokenAddon.DeleteArchive();
-            }
-        }
+        await RetryBrokenAddonsAsync(brokenAddons, args.Minimal, args.CancellationToken);
 
         await ExtractSpecialRepoAsync(args, args.GammaSetupRecord!);
         await ExtractSpecialRepoAsync(args, args.GammaLargeFilesRecord!);
@@ -375,7 +367,7 @@ public class GammaInstaller(
     /// Runs the work concurrently. The first failure cancels the rest, so a broken special repo or
     /// a Cloudflare challenge stops the install right away instead of after every addon downloads.
     /// </summary>
-    private static async Task RunBatchAsync(
+    internal static async Task RunBatchAsync(
         CancellationToken cancellationToken,
         IEnumerable<Func<CancellationToken, Task>> work
     )
@@ -420,18 +412,93 @@ public class GammaInstaller(
     }
 
     /// <summary>
+    /// Retries the addons that failed while the others were installing. Every one is retried
+    /// before the failures are reported, so one run finds all the addons that still fail.
+    /// </summary>
+    /// <exception cref="AddonsFailedException">Some addons failed again</exception>
+    internal static async Task RetryBrokenAddonsAsync(
+        IEnumerable<IDownloadableRecord> brokenAddons,
+        bool minimal,
+        CancellationToken cancellationToken
+    )
+    {
+        List<(string Name, Exception Error)> failures = [];
+        foreach (var brokenAddon in brokenAddons)
+        {
+            try
+            {
+                await brokenAddon.DownloadAsync(cancellationToken);
+                await brokenAddon.ExtractAsync(cancellationToken);
+                if (minimal)
+                {
+                    brokenAddon.DeleteArchive();
+                }
+            }
+            // a challenge fails every ModDB addon the same way, so there's no point going on
+            catch (Exception e)
+                when (e is not CloudflareChallengeException and not OperationCanceledException)
+            {
+                failures.Add((brokenAddon.Name, e));
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            throw new AddonsFailedException(failures);
+        }
+    }
+
+    /// <summary>
     /// Waits for the experimental stalker gamma server when ModDB requests go through it
     /// </summary>
+    /// <exception cref="TimeoutException">It isn't ready within <see cref="ServerReadyTimeout"/></exception>
     protected virtual async Task WaitForStalkerGammaServerAsync(GammaInstallerArgs args)
     {
         if (args is { StalkerGammaServerUrl: not null, ExperimentalPythonServerSettings: not null })
         {
-            while (!await stalkerGammaServerProxy.Ready())
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), args.CancellationToken);
-            }
+            await WaitUntilReadyAsync(
+                stalkerGammaServerProxy.Ready,
+                args.StalkerGammaServerUrl,
+                ServerReadyTimeout,
+                TimeSpan.FromSeconds(1),
+                args.CancellationToken
+            );
         }
     }
+
+    /// <summary>
+    /// Polls <paramref name="ready"/> until it's true
+    /// </summary>
+    /// <exception cref="TimeoutException">It isn't true within <paramref name="timeout"/></exception>
+    internal static async Task WaitUntilReadyAsync(
+        Func<Task<bool>> ready,
+        string serverUrl,
+        TimeSpan timeout,
+        TimeSpan pollInterval,
+        CancellationToken cancellationToken
+    )
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(timeout);
+        try
+        {
+            while (!await ready())
+            {
+                await Task.Delay(pollInterval, timeoutCts.Token);
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"The stalker gamma server at {serverUrl} wasn't ready after {timeout.TotalSeconds:0.###} seconds. Check that it started without errors."
+            );
+        }
+    }
+
+    /// <summary>
+    /// The server starts a browser, which can take a while on a slow machine
+    /// </summary>
+    private static readonly TimeSpan ServerReadyTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
     /// Gets a special repo's files ready to be extracted
@@ -477,7 +544,7 @@ public class GammaInstaller(
         return string.IsNullOrWhiteSpace(args.ModPackMakerPath)
                 ? await getStalkerModsFromApi.GetModsAsync(args.CancellationToken)
             : File.Exists(args.ModPackMakerPath)
-                ? await File.ReadAllTextAsync(args.ModPackMakerPath)
+                ? await File.ReadAllTextAsync(args.ModPackMakerPath, args.CancellationToken)
             : throw new FileNotFoundException(
                 $"{nameof(args.ModPackMakerPath)} file not found: {args.ModPackMakerPath}"
             );
@@ -494,6 +561,11 @@ public class GammaInstaller(
         /// addon folder is renamed
         /// </summary>
         public List<ModPackMakerRecord> RenumberedRecords { get; set; } = [];
+
+        /// <summary>
+        /// How the online list differs from the installed one
+        /// </summary>
+        public List<ModPackMakerRecordDiff> Diffs { get; set; } = [];
     }
 
     public async Task<DiffedAddonRecords> DiffAddonRecordsAsync(GammaInstallerArgs args)
@@ -519,6 +591,7 @@ public class GammaInstaller(
             OnlineRecords = onlineModPackMakerRecords,
             AddedOrModifiedRecords = addedOrModifiedRecords,
             RenumberedRecords = renumberedRecords,
+            Diffs = diffs,
         };
     }
 
@@ -637,4 +710,28 @@ public class GammaInstaller(
     {
         _hc.Dispose();
     }
+}
+
+/// <summary>
+/// Addons failed again when they were retried after the others finished
+/// </summary>
+public class AddonsFailedException : AggregateException
+{
+    public AddonsFailedException(IReadOnlyList<(string Name, Exception Error)> failures)
+        : base(failures.Select(x => x.Error))
+    {
+        AddonNames = failures.Select(x => x.Name).ToList();
+        _message =
+            $"{failures.Count} addon{(failures.Count == 1 ? "" : "s")} failed after retrying:"
+            + string.Concat(
+                failures.Select(x => $"{Environment.NewLine}  {x.Name}: {x.Error.Message}")
+            );
+    }
+
+    public IReadOnlyList<string> AddonNames { get; }
+
+    // AggregateException's message would repeat every inner message without the addon names
+    public override string Message => _message;
+
+    private readonly string _message;
 }

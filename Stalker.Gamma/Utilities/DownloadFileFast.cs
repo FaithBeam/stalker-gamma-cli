@@ -17,6 +17,11 @@ public static class DownloadFileFast
     /// file can't pass for a good one, an interrupted download keeps its partial file next to
     /// <paramref name="downloadPath"/> and the next call continues it instead of starting over.
     /// </param>
+    /// <param name="stallTimeout">
+    /// How long the download may go without receiving any data before it fails, so a connection
+    /// that died without being closed fails like any other error instead of hanging forever.
+    /// Defaults to <see cref="DefaultStallTimeout"/>.
+    /// </param>
     public static async Task DownloadAsync(
         HttpClient hc,
         string url,
@@ -24,9 +29,11 @@ public static class DownloadFileFast
         Action<DownloadProgress>? onProgress = null,
         CancellationToken cancellationToken = default,
         bool resume = false,
-        string? expectedMd5 = null
+        string? expectedMd5 = null,
+        TimeSpan? stallTimeout = null
     )
     {
+        var readTimeout = stallTimeout ?? DefaultStallTimeout;
         if (resume)
         {
             var md5 = await DownloadToAsync(
@@ -36,6 +43,7 @@ public static class DownloadFileFast
                 onProgress,
                 resume,
                 computeMd5: expectedMd5 is not null,
+                readTimeout,
                 cancellationToken
             );
             ThrowIfMd5Mismatch(url, downloadPath, expectedMd5, md5);
@@ -55,6 +63,7 @@ public static class DownloadFileFast
                 onProgress,
                 resumePartial,
                 computeMd5: expectedMd5 is not null,
+                readTimeout,
                 cancellationToken
             );
             ThrowIfMd5Mismatch(url, partialPath, expectedMd5, md5);
@@ -66,6 +75,11 @@ public static class DownloadFileFast
             throw;
         }
     }
+
+    /// <summary>
+    /// Matches the stall timeout of the requests made with curl
+    /// </summary>
+    public static readonly TimeSpan DefaultStallTimeout = TimeSpan.FromSeconds(60);
 
     private static void ThrowIfMd5Mismatch(
         string url,
@@ -111,6 +125,7 @@ public static class DownloadFileFast
         Action<DownloadProgress>? onProgress,
         bool resume,
         bool computeMd5,
+        TimeSpan readTimeout,
         CancellationToken cancellationToken
     )
     {
@@ -183,7 +198,8 @@ public static class DownloadFileFast
                     bytesRead = offset + args.TotalBytesRead;
                     onProgress?.Invoke(new DownloadProgress(bytesRead, totalBytes));
                 },
-                cancellationToken: cancellationToken
+                cancellationToken: cancellationToken,
+                readTimeout: readTimeout
             );
 
             // The size is known once the download finishes, so always report completion

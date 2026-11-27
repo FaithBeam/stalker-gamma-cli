@@ -347,6 +347,23 @@ public class CliTests : IDisposable
         Assert.StartsWith("Unable to check Stalker_GAMMA for updates", warning);
     }
 
+    [SevenZipFact]
+    public async Task Invalid_settings_file_fails_with_a_json_result()
+    {
+        Directory.CreateDirectory(_cli.AppData);
+        var settingsPath = Path.Join(_cli.AppData, "settings.json");
+        await File.WriteAllTextAsync(settingsPath, "{ not json");
+
+        var result = await _cli.RunAsync("update", "check", "--json");
+
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal("update check", result.Result.GetProperty("command").GetString());
+        Assert.False(result.Result.GetProperty("success").GetBoolean());
+        Assert.Contains(settingsPath, result.Result.GetProperty("error").GetString());
+        // the framework's stack trace isn't printed
+        Assert.DoesNotContain("   at ", result.StdOut + result.StdErr);
+    }
+
     private static List<(string? Status, string? Name, string? Old, string? New)> Updates(
         CliResult result
     ) =>
